@@ -6,3 +6,6 @@
 3. importش کن اینجا
 4. اجرا: alembic revision --autogenerate -m "add user model"
 """
+from app.models.user import User, UserRole
+
+__all__ = ["User", "UserRole"]
