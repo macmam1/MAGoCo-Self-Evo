@@ -1,0 +1,68 @@
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.env
+.env.local
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+.uv-cache/
+
+# ===== Node =====
+node_modules/
+.pnpm-store/
+.npm
+.yarn
+.pnp.*
+*.local
+.parcel-cache
+.vite/
+dist/
+build/
+coverage/
+
+# ===== IDEs =====
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ===== Docker =====
+docker-compose.override.yml
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== Database =====
+*.db
+*.sqlite
+*.sqlite3
+postgres-data/
+redis-data/
+
+# ===== Storage =====
+uploads/
+storage/
+files/
+!apps/backend/app/services/storage/.gitkeep
+
+# ===== Secrets =====
+*.pem
+*.key
+secrets/
+credentials/

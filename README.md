@@ -1,0 +1,82 @@
+# MAGoCo-Self-Evo
+
+> **Multi-Agent Go-Coordinator with Self-Evolution**
+> پلتفرم multi-agent با قابلیت خودتکاملی
+
+## 🏗️ ساختار
+
+این یه **monorepo** هست با ۳ app مستقل و ۱ shared package:
+
+```
+MAGoCo-Self-Evo/
+├── apps/
+│   ├── backend/      # FastAPI (Python) — API اصلی + Agent Core
+│   ├── frontend/     # Vite + React + TypeScript — رابط حرفه‌ای
+│   └── gradio-ui/    # Gradio — رابط ساده (HF Spaces)
+└── packages/
+    └── shared/       # types, schemas مشترک بین backend و frontend
+```
+
+## 🚀 شروع سریع (Development)
+
+### پیش‌نیازها
+- Docker + docker-compose
+- (اختیاری) uv برای backend توسعه محلی
+- (اختیاری) pnpm/npm برای frontend توسعه محلی
+
+### نصب و اجرا
+```bash
+# 1. کپی env
+cp .env.example .env
+
+# 2. اجرای همه سرویس‌ها
+docker-compose up -d
+
+# 3. بررسی سلامت
+curl http://localhost:8000/health
+open http://localhost:5173
+```
+
+| سرویس | URL | توضیح |
+|--------|-----|-------|
+| Backend API | http://localhost:8000 | FastAPI |
+| API Docs (Swagger) | http://localhost:8000/docs | OpenAPI auto-generated |
+| Frontend | http://localhost:5173 | Vite dev server |
+| Postgres | localhost:5432 | DB |
+| Redis | localhost:6379 | Cache + Queue |
+| Gradio UI | http://localhost:7860 | رابط ساده |
+
+## 🛠️ توسعه محلی (بدون Docker)
+
+### Backend
+```bash
+cd apps/backend
+uv sync
+uv run uvicorn app.main:app --reload
+```
+
+### Frontend
+```bash
+cd apps/frontend
+pnpm install
+pnpm dev
+```
+
+## 📐 اصول معماری
+
+- **🎯 ماژولار**: هر feature یه ماژول مستقل با interface واضح
+- **🔌 Plugin-based**: agent ها، storage ها، LLM provider ها همه pluggable
+- **🚩 Feature flags**: ویژگی‌ها قابل فعال/غیرفعال شدن بدون تغییر کد
+- **🏛️ Hexagonal**: business logic از infrastructure جدا
+- **📦 Microservice-ready**: هر app مستقل deploy میشه
+
+## 📚 مستندات بیشتر
+
+- [معماری](docs/architecture.md)
+- [راه‌اندازی backend](apps/backend/README.md)
+- [راه‌اندازی frontend](apps/frontend/README.md)
+- [راه‌اندازی Gradio](apps/gradio-ui/README.md)
+
+## 📄 License
+
+MIT
