@@ -6,7 +6,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1 import auth, health
+from app.api.v1 import agents, auth, health
 from app.core.config import settings
 from app.core.logging import setup_logging
 
@@ -58,6 +58,7 @@ def create_app() -> FastAPI:
     # Routers
     app.include_router(health.router, prefix="/api/v1", tags=["health"])
     app.include_router(auth.router, prefix="/api/v1/auth", tags=["auth"])
+    app.include_router(agents.router, prefix="/api/v1/agents", tags=["agents"])
 
     @app.get("/")
     async def root() -> dict[str, str]:

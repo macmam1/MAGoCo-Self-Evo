@@ -1,0 +1,56 @@
+# Production Dockerfile برای Hugging Face Spaces
+# Multi-stage: backend + frontend build + nginx
+
+# ===== Stage 1: Frontend Build =====
+FROM node:20-alpine AS frontend-builder
+WORKDIR /build
+COPY apps/frontend/package.json apps/frontend/pnpm-lock.yaml* ./
+RUN corepack enable && corepack prepare pnpm@latest --activate && \
+    pnpm install --frozen-lockfile || pnpm install
+COPY apps/frontend/ ./
+RUN pnpm build
+
+# ===== Stage 2: Backend =====
+FROM python:3.11-slim AS backend
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1
+
+# Install system deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl nginx supervisor && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create non-root user (HF requirement: UID 1000)
+RUN useradd -m -u 1000 user && \
+    mkdir -p /home/user/app /home/user/app/storage /data && \
+    chown -R user:user /home/user/app /data
+
+WORKDIR /home/user/app
+
+# Install Python deps
+COPY --chown=user apps/backend/pyproject.toml ./
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir .
+
+# Copy backend code
+COPY --chown=user apps/backend/app ./app
+
+# Copy frontend build
+COPY --from=frontend-builder --chown=user /build/dist ./static
+
+# Copy nginx config
+COPY --chown=user deployment/nginx.conf /etc/nginx/nginx.conf
+COPY --chown=user deployment/supervisord.conf /etc/supervisord.conf
+
+# Make scripts executable
+RUN chmod +x /home/user/app/app/main.py
+
+USER user
+ENV HOME=/home/user
+EXPOSE 7860
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --retries=3 \
+    CMD curl -f http://localhost:7860/health || exit 1
+
+# Start all services via supervisord
+CMD ["supervisord", "-c", "/etc/supervisord.conf"]
