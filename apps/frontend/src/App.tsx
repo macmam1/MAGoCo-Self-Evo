@@ -1,25 +1,22 @@
 import { useState } from "react";
 import { Sidebar } from "@/components/Layout/Sidebar";
 import { ChatConsole } from "@/components/Chat/ChatConsole";
-import { SettingsDashboard } from "@/components/Settings/SettingsDashboard";
 import { CodingIDE } from "@/components/Coding/CodingIDE";
+import { WorkflowDesigner } from "@/components/Workflow/WorkflowDesigner";
+import { SettingsDashboard } from "@/components/Settings/SettingsDashboard";
 
-function App() {
-  const [currentTab, setCurrentTab] = useState("chat");
+export default function App() {
+  const [currentTab, setCurrentTab] = useState<string>("chat");
 
   return (
-    <div className="flex h-screen bg-bg-0 text-text-0 overflow-hidden">
-      {/* Universal Sidebar */}
+    <div className="flex h-screen w-screen bg-[#0a0a0f] text-slate-100 overflow-hidden font-sans">
       <Sidebar currentTab={currentTab} onTabChange={setCurrentTab} />
-
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {currentTab === "chat" && <ChatConsole />}
         {currentTab === "coding" && <CodingIDE />}
+        {currentTab === "workflow" && <WorkflowDesigner />}
         {currentTab === "settings" && <SettingsDashboard />}
       </div>
     </div>
   );
 }
-
-export default App;
