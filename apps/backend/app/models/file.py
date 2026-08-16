@@ -5,7 +5,7 @@ from enum import Enum as PyEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String, func
-from sqlalchemy.dialects.postgresql import UUID
+from app.db import GUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -33,7 +33,7 @@ class File(Base):
     __tablename__ = "files"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     path: Mapped[str] = mapped_column(String(1000), nullable=False)  # virtual path
@@ -49,7 +49,7 @@ class File(Base):
 
     # Tree structure (for folders)
     parent_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("files.id", ondelete="CASCADE"),
         nullable=True,
         index=True,
@@ -58,10 +58,10 @@ class File(Base):
 
     # Ownership
     owner_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     workspace_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("workspaces.id", ondelete="CASCADE"),
         nullable=False,
         index=True,

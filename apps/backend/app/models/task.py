@@ -5,7 +5,7 @@ from enum import Enum as PyEnum
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Index, Text, func
-from sqlalchemy.dialects.postgresql import UUID
+from app.db import GUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -36,19 +36,19 @@ class Task(Base):
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     name: Mapped[str | None] = mapped_column(nullable=True)
 
     # Optional: linked workflow or agent
     workflow_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("workflows.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
     )
     agent_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("agents.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
@@ -71,7 +71,7 @@ class Task(Base):
 
     # Ownership
     owner_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+        GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
 
     created_at: Mapped[datetime] = mapped_column(

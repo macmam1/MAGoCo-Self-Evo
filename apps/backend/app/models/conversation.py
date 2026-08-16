@@ -5,7 +5,7 @@ from enum import Enum as PyEnum
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String, Text, func
-from sqlalchemy.dialects.postgresql import UUID
+from app.db import GUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
@@ -31,13 +31,13 @@ class Conversation(Base):
     __tablename__ = "conversations"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     title: Mapped[str] = mapped_column(String(200), nullable=False, default="New Chat")
 
     # Optional: pin conversation to a specific agent
     agent_id: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("agents.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
@@ -45,10 +45,10 @@ class Conversation(Base):
 
     # Ownership
     owner_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     workspace_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("workspaces.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -82,10 +82,10 @@ class Message(Base):
     __tablename__ = "messages"
 
     id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+        GUID(), primary_key=True, default=uuid.uuid4
     )
     conversation_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        GUID(),
         ForeignKey("conversations.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
