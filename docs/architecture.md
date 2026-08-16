@@ -1,155 +1,60 @@
-# Architecture — معماری MAGoCo-Self-Evo
+# MAGoCo-Self-Evo Architecture & Blueprint
 
-## 🏛️ نمای کلی
+> **Multi-Agent Go-Coordinator with Self-Evolution & Multi-Interface Platform**
+> پلتفرم جامع هوش مصنوعی چندایجنتی، خودتکاملی، ابزارمحور، با پشتیبانی از وب‌سایت، کدینگ IDE، اتوماسیون و اتصال به شبکه‌های اجتماعی (تلگرام و...).
 
-```
-┌────────────────────────────────────────────────────────┐
-│              Frontend (Vite + React)                    │
-│  ┌──────────┐ ┌──────────────┐ ┌──────────────────┐  │
-│  │Dashboard │ │Workflow Maker│ │     Chat UI      │  │
-│  └──────────┘ └──────────────┘ └──────────────────┘  │
-└─────────────────────┬──────────────────────────────────┘
-                      │ REST + WebSocket
-┌─────────────────────┴──────────────────────────────────┐
-│                Backend (FastAPI)                         │
-│  ┌────────┐ ┌──────────┐ ┌─────────┐ ┌──────────┐    │
-│  │  Auth  │ │  Agents  │ │Workflows│ │  Files   │    │
-│  └────────┘ └──────────┘ └─────────┘ └──────────┘    │
-└──┬──────────┬──────────┬──────────┬──────────────────┘
-   │          │          │          │
-   ▼          ▼          ▼          ▼
-┌──────┐  ┌───────┐  ┌───────┐  ┌─────────┐
-│  PG  │  │ Redis │  │Celery │  │ Storage │
-│      │  │       │  │       │  │  Layer  │
-└──────┘  └───────┘  └───────┘  └────┬────┘
-                                     │
-                       ┌─────────────┼─────────────┐
-                       ▼             ▼             ▼
-                   ┌───────┐    ┌───────┐    ┌───────┐
-                   │  HF   │    │  S3   │    │ Local │
-                   │Dataset│    │  GCS  │    │  FS   │
-                   └───────┘    └───────┘    └───────┘
-```
+---
 
-## 🔧 Tech Stack (نهایی)
+## 🏗️ ۱. ساختار کلان ماژولار (Monorepo)
 
-| لایه | تکنولوژی | دلیل |
-|------|----------|------|
-| **Frontend** | Vite + React 18 + TypeScript | سریع، type-safe، اکوسیستم بزرگ |
-| **UI** | Tailwind + shadcn/ui | توسعه سریع، تمیز |
-| **State** | Zustand + TanStack Query | سبک، ساده |
-| **Forms** | React Hook Form + Zod | type-safe validation |
-| **i18n** | i18next | پشتیبانی فارسی + انگلیسی |
-| **Workflow** | React Flow | قدرتمند، drag-drop |
-| **Backend** | FastAPI | async، سریع، docs auto |
-| **ORM** | SQLAlchemy 2.0 + asyncpg | type-safe async |
-| **Migrations** | Alembic | استاندارد |
-| **Queue** | Celery + Redis | reliable async tasks |
-| **Auth** | JWT (PyJWT) | استاندارد، ساده |
-| **Agent** | CrewAI | multi-agent orchestration |
-| **LLM** | Multi-provider | OpenAI/Anthropic/HF/Ollama |
-| **Vector DB** | Qdrant | برای agent memory |
-| **Storage** | Adapter pattern | HF/S3/GCS/Local |
-| **Testing** | pytest + Vitest | استاندارد |
-| **CI/CD** | GitHub Actions | رایگان، یکپارچه |
-| **Deploy** | HF Spaces + Docker | رایگان + انعطاف |
-
-## 📁 Monorepo
+پروژه به صورت کاملاً ماژولار طراحی شده تا افزودن ویژگی‌های جدید نیازی به بازنویسی کدهای قبلی نداشته باشد:
 
 ```
 MAGoCo-Self-Evo/
 ├── apps/
-│   ├── backend/       FastAPI
-│   ├── frontend/      Vite + React
-│   └── gradio-ui/     Gradio
-├── packages/
-│   └── shared/        types/schemas مشترک
-├── docs/
-├── docker-compose.yml
-└── Makefile
+│   ├── backend/               # FastAPI + WebSocket + Celery Worker
+│   ├── frontend/              # Vite + React + Tailwind + Shadcn/ui (Chat + IDE + Settings + Workflow)
+│   └── gradio-ui/             # Gradio lightweight alternative UI
+├── gateways/                  # پل‌های ارتباطی خارجی
+│   ├── telegram/              # ربات تلگرام دوطرفه (متن، وویس، تاپیک‌ها)
+│   └── webhooks/              # وب‌هوک‌های عمومی و ایونت‌ها
+└── packages/
+    ├── magoco-core/           # هسته مرکزی ایجنت‌ها، حافظه، ابزارها و ReAct Loop
+    └── magoco-workflows/      # موتور اجرای گراف‌ها و تسک‌های زمان‌بندی (Cron/Event)
 ```
 
-## 🎯 اصول معماری
+---
 
-### 1. ماژولاریتی
-- **Plugin architecture**: agent ها، LLM provider ها، storage adapter ها همه pluggable
-- **Hexagonal architecture**: business logic از infrastructure جدا
-- **Loose coupling**: هر ماژول مستقل، interface-based
+## 🎨 ۲. قابلیت‌ها و ماژول‌های کلیدی (Features)
 
-### 2. Feature Flags
-```python
-# app/core/feature_flags.py
-FEATURES = {
-    "self_evolution": True,
-    "workflow_maker": True,
-    "file_manager": True,
-    "external_services": False,  # بعداً فعال میشه
-}
-```
+### الف) لایه ارتباطی و رابط‌های کاربری (Interfaces)
+- **چت و کنسول ایجنت (Chat & Agent Console):**
+  - استریمینگ زنده پاسخ‌ها + بلوک‌های تفکر (Thinking/Reasoning)
+  - کارت‌های تعاملی ابزارها با قابلیت تایید دستی (Human-in-the-loop Approval)
+- **حالت کدینگ (Coding Mode / Web IDE - الهام از QwenPaw):**
+  - پنل سه‌گانه (درخت فایل، ویرایشگر کد با Diff Preview، و چت با ایجنت برنامه‌نویس)
+- **داشبورد تنظیمات (Settings Dashboard):**
+  - مدیریت ارائه‌دهندگان مدل (OpenAI, Anthropic, Ollama, HuggingFace و...)
+  - مدیریت مهارت‌ها (`SKILL.md` پویای الهام‌گرفته از Hermes)
+  - مدیریت حافظه و دسترسی‌ها
+- **سازنده گراف جریان‌کاری (Visual Workflow Designer - الهام از Dify/LangFlow):**
+  - ساخت اتوماسیون‌ها به صورت Drag & Drop
 
-### 3. Adapter Pattern (Storage)
-```python
-class StorageBackend(Protocol):
-    async def save(self, key: str, data: bytes) -> str: ...
-    async def load(self, key: str) -> bytes: ...
-    async def delete(self, key: str) -> None: ...
+### ب) کانال‌های ارتباطی بیرونی (Gateways)
+- **تلگرام:** اتصال دوطرفه کامل (ارسال پیام، مدیریت گروه‌ها و تاپیک‌ها، تبدیل صوت به متن و بالعکس).
+- **وب‌هوک:** قابلیت اتصال به پلتفرم‌های دیگر (n8n، گیت‌هاب و...).
 
-# پیاده‌سازی‌ها
-class LocalStorage: ...
-class HFDatasetsStorage: ...
-class S3Storage: ...
-class GCSStorage: ...
-```
+### ج) هسته ایجنت و امنیت (Core & Security)
+- **سیستم حافظه ۳ لایه (الهام از QwenPaw):** Working Context + Full Verbatim History + Distilled Knowledge
+- **سیستم ابزارها و Sandbox:** اجرای امن کدها در محیط ایزوله و محافظت‌شده (Tool/File Guard)
+- **خودتکاملی (Self-Evolution):** بازخوردگیری خودکار و بهینه‌سازی پرامپت‌ها و مهارت‌ها به مرور زمان.
 
-### 4. Multi-Provider LLM
-```python
-class LLMProvider(Protocol):
-    async def complete(self, prompt: str, **kwargs) -> str: ...
+---
 
-class OpenAIProvider: ...
-class AnthropicProvider: ...
-class HFProvider: ...
-class OllamaProvider: ...
-```
+## 🗺️ ۳. نقشه راه فازبندی توسعه (Roadmap)
 
-### 5. Plugin Architecture (Agents)
-```python
-class AgentPlugin(Protocol):
-    name: str
-    role: str
-    tools: list[Tool]
-
-# ثبت agent جدید
-@agent_registry.register
-class MyCustomAgent:
-    name = "my_agent"
-    role = "specialized task"
-    tools = [...]
-```
-
-## 🔐 Security
-
-- JWT با rotation
-- bcrypt password hashing
-- CORS محدود
-- Input validation (Pydantic + Zod)
-- SQL injection safe (ORM)
-- HTTPS در production
-- Secrets در env vars (نه hardcode)
-
-## 🚀 Deployment
-
-### سطح ۱: Local Dev
-```bash
-make up
-```
-
-### سطح ۲: HF Spaces
-- Gradio app در Space
-- Backend در همون Space (single container)
-
-### سطح ۳: Production
-- Backend: VPS / Cloud Run
-- Frontend: Vercel / Cloudflare Pages
-- DB: managed Postgres (Neon, Supabase)
-- Storage: S3 / R2
+- **فاز ۱:** تکمیل `magoco-core` (ابزارها، Sandbox، حافظه ۳ لایه، ری‌اکت لوپ)
+- **فاز ۲:** تکمیل `backend` و ایجاد APIهای WebSocket و احراز هویت
+- **فاز ۳:** پیاده‌سازی `frontend` شامل پنل چت، Web IDE و داشبورد تنظیمات
+- **فاز ۴:** راه‌اندازی `gateway` تلگرام و سیستم اتوماسیون زمان‌بندی‌شده
+- **فاز ۵:** استقرار نهایی، تست‌های یکپارچه و بهینه‌سازی Docker

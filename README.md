@@ -1,21 +1,32 @@
 # MAGoCo-Self-Evo
 
-> **Multi-Agent Go-Coordinator with Self-Evolution**
-> پلتفرم multi-agent با قابلیت خودتکاملی
+> **Multi-Agent Go-Coordinator with Self-Evolution & Multi-Interface Platform**
+> پلتفرم multi-agent با قابلیت خودتکاملی، کدینگ IDE، چت، داشبورد تنظیمات، اتصال به شبکه‌های اجتماعی (تلگرام) و اتوماسیون.
 
-## 🏗️ ساختار
+## 🏗️ ساختار کلان (ماژولار)
 
-این یه **monorepo** هست با ۳ app مستقل و ۱ shared package:
+این یه **monorepo** کاملاً ماژولار هست:
 
 ```
 MAGoCo-Self-Evo/
 ├── apps/
-│   ├── backend/      # FastAPI (Python) — API اصلی + Agent Core
-│   ├── frontend/     # Vite + React + TypeScript — رابط حرفه‌ای
-│   └── gradio-ui/    # Gradio — رابط ساده (HF Spaces)
+│   ├── backend/               # FastAPI + WebSocket + Celery Worker
+│   ├── frontend/              # Vite + React + Tailwind + Shadcn/ui (Chat + IDE + Settings + Workflow)
+│   └── gradio-ui/             # Gradio lightweight alternative UI
+├── gateways/                  # پل‌های ارتباطی خارجی (Telegram, Webhooks)
 └── packages/
-    └── shared/       # types, schemas مشترک بین backend و frontend
+    ├── magoco-core/           # هسته مرکزی: Agent + Tools + Memory + ReAct + Security Guard
+    └── magoco-workflows/      # موتور اجرای گراف‌ها و تسک‌های زمان‌بندی
 ```
+
+## 🎨 قابلیت‌ها
+
+- **Chat Console** با استریمینگ زنده + بلوک‌های تفکر ایجنت (Thinking/Reasoning)
+- **Coding Mode / Web IDE** سه‌پنلی (فایل، ویرایشگر با Diff Preview، چت با ایجنت برنامه‌نویس)
+- **Settings Dashboard** برای LLM Providers, Skills, Memory
+- **Visual Workflow Designer** (Drag & Drop - الهام از Dify/LangFlow)
+- **Telegram Bot Gateway** (متن، وویس، تاپیک‌ها، Approval inline-buttons)
+- **۳-Layer Memory System** + **Self-Evolution Engine** + **Sandbox Security Guard**
 
 ## 🚀 شروع سریع (Development)
 
