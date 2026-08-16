@@ -28,10 +28,9 @@ services:
       - STORAGE_BACKEND=${STORAGE_BACKEND}
       - STORAGE_LOCAL_PATH=/app/storage
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      # Only depends on postgres/redis if DATABASE_URL/REDIS_URL are set
+      # otherwise runs with SQLite/in-memory
+      - frontend
     networks:
       - magoco_net
     healthcheck:
@@ -40,6 +39,7 @@ services:
       timeout: 10s
       retries: 3
       start_period: 20s
+    profiles: ["with-db"] # Only starts with --profile with-db or if DATABASE_URL is set
 
   # ===== Frontend (Vite + React) =====
   frontend:
@@ -99,6 +99,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    profiles: ["with-db"] # Only starts with --profile with-db or if DATABASE_URL is set
 
   # ===== Redis =====
   redis:
@@ -117,6 +118,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    profiles: ["with-db"] # Only starts with --profile with-db or if REDIS_URL is set
 
   # ===== Ollama (LLM محلی - اختیاری) =====
   ollama:

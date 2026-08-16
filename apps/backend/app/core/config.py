@@ -29,11 +29,14 @@ class Settings(BaseSettings):
     )
 
     # ===== Database =====
-    DATABASE_URL: str = "postgresql+asyncpg://magoco:magoco@postgres:5432/magoco"
+    # Default: SQLite (zero-dependency, works on ANY server).
+    # For production: set DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/db
+    DATABASE_URL: str = "sqlite+aiosqlite:///./magoco.db"
 
-    # ===== Redis =====
-    REDIS_URL: str = "redis://redis:6379/0"
-    REDIS_CELERY_URL: str = "redis://redis:6379/1"
+    # ===== Redis (optional) =====
+    # Used for queue/cache. Falls back to in-memory when empty.
+    REDIS_URL: str = ""
+    REDIS_CELERY_URL: str = ""
 
     # ===== Auth =====
     JWT_SECRET_KEY: str = "change-me-in-production"
