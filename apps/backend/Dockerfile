@@ -1,63 +1,33 @@
-# ===== Stage 1: Base =====
-FROM python:3.11-slim AS base
-
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+FROM python:3.10-slim
 
 WORKDIR /app
 
-# Install system deps
+# Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    git \
-    build-essential \
+    gcc \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# ===== Stage 2: Dependencies =====
-FROM base AS deps
+# Copy python dependencies manifests
+COPY apps/backend/pyproject.toml /app/apps/backend/
+COPY packages/magoco-core /app/packages/magoco-core
+COPY packages/magoco-workflows /app/packages/magoco-workflows
 
-# Install uv (fast Python package manager)
-RUN pip install uv
+# Install core packages in editable mode + backend dependencies
+RUN pip install --no-cache-dir -e /app/packages/magoco-core \
+    && pip install --no-cache-dir -e /app/packages/magoco-workflows \
+    && pip install --no-cache-dir fastapi "uvicorn[standard]" sqlalchemy aiosqlite pydantic-settings httpx pyyaml openai
 
-# Copy pyproject
-COPY pyproject.toml ./
+# Copy full backend application
+COPY apps/backend /app/apps/backend
 
-# Install dependencies
-RUN uv pip install --system --no-cache .
+WORKDIR /app/apps/backend
 
-# ===== Stage 3: Development =====
-FROM deps AS development
-
-# Install dev deps
-RUN uv pip install --system --no-cache ".[dev]"
-
-# Copy app
-COPY . .
-
-# Create storage dir
-RUN mkdir -p /app/storage
+# Set environment defaults
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/packages/magoco-core:/app/packages/magoco-workflows
 
 EXPOSE 8000
 
-# Hot reload in dev
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-
-# ===== Stage 4: Production =====
-FROM deps AS production
-
-# Copy app
-COPY . .
-
-# Create non-root user
-RUN useradd -m -u 1000 magoco && \
-    mkdir -p /app/storage && \
-    chown -R magoco:magoco /app
-
-USER magoco
-
-EXPOSE 8000
-
-# Production: multiple workers
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

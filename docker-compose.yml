@@ -1,36 +1,19 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  # ===== Backend (FastAPI) =====
   backend:
     build:
-      context: ./apps/backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/backend/Dockerfile
     container_name: magoco_backend
     restart: unless-stopped
     ports:
-      - "${BACKEND_PORT:-8000}:8000"
-    volumes:
-      - ./apps/backend:/app
-      - backend_storage:/app/storage
+      - "8000:8000"
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
-      - ENVIRONMENT=${ENVIRONMENT}
-      - DEBUG=${DEBUG}
-      - LOG_LEVEL=${LOG_LEVEL}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-      - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
-      - HUGGINGFACE_HUB_TOKEN=${HUGGINGFACE_HUB_TOKEN}
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
-      - STORAGE_BACKEND=${STORAGE_BACKEND}
-      - STORAGE_LOCAL_PATH=/app/storage
-    depends_on:
-      # Only depends on postgres/redis if DATABASE_URL/REDIS_URL are set
-      # otherwise runs with SQLite/in-memory
-      - frontend
+      - DATABASE_URL=sqlite+aiosqlite:///./magoco.db
+      - DEBUG=true
+    volumes:
+      - backend_data:/app/apps/backend
     networks:
       - magoco_net
     healthcheck:
@@ -38,110 +21,23 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 20s
-    profiles: ["with-db"] # Only starts with --profile with-db or if DATABASE_URL is set
 
-  # ===== Frontend (Vite + React) =====
   frontend:
     build:
-      context: ./apps/frontend
+      context: apps/frontend
       dockerfile: Dockerfile
-      target: development
     container_name: magoco_frontend
     restart: unless-stopped
     ports:
-      - "5173:5173"
-    volumes:
-      - ./apps/frontend:/app
-      - frontend_node_modules:/app/node_modules
-    environment:
-      - VITE_API_URL=http://localhost:8000
-      - VITE_WS_URL=ws://localhost:8000
-    depends_on:
-      - backend
-    networks:
-      - magoco_net
-    command: pnpm dev --host 0.0.0.0
-
-  # ===== Gradio UI (رابط ساده) =====
-  gradio:
-    build:
-      context: ./apps/gradio-ui
-      dockerfile: Dockerfile
-    container_name: magoco_gradio
-    restart: unless-stopped
-    ports:
-      - "7860:7860"
-    environment:
-      - BACKEND_URL=http://backend:8000
+      - "5173:80"
     depends_on:
       - backend
     networks:
       - magoco_net
 
-  # ===== Postgres =====
-  postgres:
-    image: postgres:15-alpine
-    container_name: magoco_postgres
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
-    networks:
-      - magoco_net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    profiles: ["with-db"] # Only starts with --profile with-db or if DATABASE_URL is set
-
-  # ===== Redis =====
-  redis:
-    image: redis:7-alpine
-    container_name: magoco_redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
-    networks:
-      - magoco_net
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    profiles: ["with-db"] # Only starts with --profile with-db or if REDIS_URL is set
-
-  # ===== Ollama (LLM محلی - اختیاری) =====
-  ollama:
-    image: ollama/ollama:latest
-    container_name: magoco_ollama
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    networks:
-      - magoco_net
-    profiles: ["with-ollama"]  # فقط با --profile with-ollama بالا میاد
-
-# ===== Volumes =====
 volumes:
-  postgres_data:
-    redis_data:
-  backend_storage:
-  frontend_node_modules:
-  ollama_data:
+  backend_data:
 
-# ===== Networks =====
 networks:
   magoco_net:
     driver: bridge
