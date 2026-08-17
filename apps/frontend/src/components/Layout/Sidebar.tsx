@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Code, Settings, Workflow, Bot } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Code, Settings, Workflow, Bot, Link, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarItemProps {
@@ -27,10 +27,10 @@ function SidebarItem({ icon: Icon, label, active, onClick }: SidebarItemProps) {
 
 export function Sidebar({ currentTab, onTabChange }: { currentTab: string; onTabChange: (tab: string) => void }) {
   return (
-    <div className="w-56 border-r border-[#1f1f2e] bg-[#0a0a0f] flex flex-col justify-between p-3 select-none">
+    <div className="w-64 border-r border-[#1f1f2e] bg-[#0a0a0f] flex flex-col justify-between p-3 select-none">
       <div className="space-y-4">
         {/* Brand */}
-        <div className="flex items-center gap-2.5 px-2 py-2">
+        <div className="flex items-center gap-2 px-2 py-2">
           <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
             <Bot className="h-4 w-4 text-white" />
           </div>
@@ -50,21 +50,39 @@ export function Sidebar({ currentTab, onTabChange }: { currentTab: string; onTab
           />
           <SidebarItem
             icon={Code}
-            label="Vibe-Coding IDE"
-            active={currentTab === "coding"}
-            onClick={() => onTabChange("coding")}
+            label="Coding IDE"
+            active={currentTab === "ide"}
+            onClick={() => onTabChange("ide")}
           />
           <SidebarItem
             icon={Workflow}
             label="Workflows"
-            active={currentTab === "workflow"}
-            onClick={() => onTabChange("workflow")}
+            active={currentTab === "workflows"}
+            onClick={() => onTabChange("workflows")}
           />
           <SidebarItem
             icon={Settings}
             label="Settings & LLM"
             active={currentTab === "settings"}
             onClick={() => onTabChange("settings")}
+          />
+          <SidebarItem
+            icon={MessageSquare}
+            label="Approvals"
+            active={currentTab === "approvals"}
+            onClick={() => onTabChange("approvals")}
+          />
+          <SidebarItem
+            icon={Link}
+            label="Integrations"
+            active={currentTab === "integrations"}
+            onClick={() => onTabChange("integrations")}
+          />
+          <SidebarItem
+            icon={Clock}
+            label="Execution History"
+            active={currentTab === "history"}
+            onClick={() => onTabChange("history")}
           />
         </div>
       </div>

@@ -1,0 +1,168 @@
+import { useState, useEffect, useCallback } from "react";
+import { CheckCircle, XCircle, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+interface ApprovalRequest {
+  request_id: string;
+  agent_name: string;
+  action_description: string;
+  proposed_input: Record<string, unknown>;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+}
+
+export function ApprovalGates() {
+  const [requests, setRequests] = useState<ApprovalRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchPending = useCallback(async () => {
+    try {
+      const res = await fetch("/api/v1/approvals/pending");
+      if (res.ok) {
+        const data = await res.json();
+        setRequests(data);
+      }
+    } catch {
+      // Fallback demo data
+      setRequests([
+        {
+          request_id: "demo-1",
+          agent_name: "Coder Agent",
+          action_description: "Commit code to main branch: 'fix: update login validation'",
+          proposed_input: { branch: "main", files: ["src/auth.py"] },
+          status: "pending",
+          created_at: new Date().toISOString(),
+        },
+        {
+          request_id: "demo-2",
+          agent_name: "Researcher Agent",
+          action_description: "Send API request to external service: HubSpot CRM",
+          proposed_input: { endpoint: "/api/contacts", method: "POST" },
+          status: "pending",
+          created_at: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPending();
+  }, [fetchPending]);
+
+  const handleApproval = async (id: string, status: "approved" | "rejected") => {
+    try {
+      await fetch(`/api/v1/approvals/${id}/resolve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+    } catch {
+      // Demo mode — just update local state
+    }
+    setRequests((prev) => prev.map((r) => (r.request_id === id ? { ...r, status } : r)));
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-pulse text-gray-400">Loading approvals...</div>
+      </div>
+    );
+  }
+
+  const pending = requests.filter((r) => r.status === "pending");
+  const resolved = requests.filter((r) => r.status !== "pending");
+
+  return (
+    <div className="h-full overflow-y-auto p-6 space-y-6">
+      <div className="flex items-center gap-3">
+        <h2 className="text-xl font-bold text-white">Human-in-the-Loop Approvals</h2>
+        {pending.length > 0 && (
+          <Badge className="bg-yellow-500/20 text-yellow-300 border-yellow-500/30 animate-pulse">
+            {pending.length} pending
+          </Badge>
+        )}
+      </div>
+
+      {pending.length === 0 && (
+        <div className="text-center text-gray-500 py-12">
+          <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500/50" />
+          No pending approvals. All clear!
+        </div>
+      )}
+
+      {pending.map((req) => (
+        <div
+          key={req.request_id}
+          className="glass-card p-5 border-l-4 border-yellow-500/50 space-y-4"
+        >
+          <div className="flex items-start justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <Clock className="w-4 h-4 text-yellow-400" />
+                <span className="text-sm text-yellow-300 font-medium">
+                  {req.agent_name}
+                </span>
+                <Badge className="bg-yellow-500/10 text-yellow-300 text-xs">PENDING</Badge>
+              </div>
+              <p className="text-white font-medium">{req.action_description}</p>
+            </div>
+          </div>
+
+          <div className="bg-black/30 rounded-lg p-3 text-xs font-mono text-gray-300">
+            <pre>{JSON.stringify(req.proposed_input, null, 2)}</pre>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              onClick={() => handleApproval(req.request_id, "approved")}
+              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
+            >
+              <CheckCircle className="w-4 h-4" /> Approve
+            </Button>
+            <Button
+              onClick={() => handleApproval(req.request_id, "rejected")}
+              variant="destructive"
+              className="flex items-center gap-2"
+            >
+              <XCircle className="w-4 h-4" /> Reject
+            </Button>
+          </div>
+        </div>
+      ))}
+
+      {resolved.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">Resolved</h3>
+          {resolved.map((req) => (
+            <div
+              key={req.request_id}
+              className="glass-card p-4 opacity-60 flex items-center gap-3"
+            >
+              {req.status === "approved" ? (
+                <CheckCircle className="w-5 h-5 text-green-400" />
+              ) : (
+                <XCircle className="w-5 h-5 text-red-400" />
+              )}
+              <div className="flex-1">
+                <p className="text-white text-sm">{req.action_description}</p>
+                <p className="text-gray-500 text-xs">{req.agent_name}</p>
+              </div>
+              <Badge
+                className={
+                  req.status === "approved"
+                    ? "bg-green-500/10 text-green-300"
+                    : "bg-red-500/10 text-red-300"
+                }
+              >
+                {req.status.toUpperCase()}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
