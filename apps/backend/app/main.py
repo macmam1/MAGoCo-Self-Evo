@@ -2,6 +2,7 @@
 
 Supports both SQLite (default, zero-dependency) and PostgreSQL (production).
 Database tables are auto-created on first startup.
+Includes: Chat REST API, WebSocket, Workflow Engine, Integrations, and Audit Trail APIs.
 """
 
 from contextlib import asynccontextmanager
@@ -10,20 +11,31 @@ from fastapi.middleware.cors import CORSMiddleware
 import json
 
 from magoco_core.agents.react_agent import ReActAgent
+from magoco_core.agents.orchestrator import MultiAgentOrchestrator
 from magoco_core.memory.three_layer import ThreeLayerMemory
 from magoco_core import tools  # Ensure all tools are registered
+from magoco_core.evolution.engine import init_evolution_engine
+from magoco_core.evolution.hitl import init_hitl_manager
 
 from app.api.v1.chat import router as chat_router
+from app.api.v1.workflows import router as workflow_router
+from app.api.v1.integrations import router as integration_router
+from app.api.v1.executions import router as execution_router
 from app.core.config import settings
 from app.db import init_db
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup: create DB tables. Shutdown: nothing special."""
+    """Startup: create DB tables, seed default orchestrator. Shutdown: nothing special."""
     print(f"[MAGoCo] Database: {settings.DATABASE_URL.split('@')[-1] if '@' in settings.DATABASE_URL else settings.DATABASE_URL}")
     await init_db()
     print("[MAGoCo] Database initialized ✓")
+
+    # Initialize evolution + HITL engines
+    init_evolution_engine(ThreeLayerMemory())
+    init_hitl_manager()
+
     yield
     print("[MAGoCo] Shutdown complete")
 
@@ -44,6 +56,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Register all routers
+app.include_router(chat_router, prefix="/api/v1")
+app.include_router(workflow_router, prefix="/api/v1")
+app.include_router(integration_router, prefix="/api/v1")
+app.include_router(execution_router, prefix="/api/v1")
+
 
 @app.get("/health")
 async def health_check():
@@ -52,6 +70,7 @@ async def health_check():
         "status": "ok",
         "version": "0.3.0",
         "database": db_type,
+        "tools_available": len(tools.__dict__.get('tool_registry', {}).list_tools()) if hasattr(tools, '__dict__') else 0,
     }
 
 

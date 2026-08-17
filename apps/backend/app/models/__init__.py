@@ -15,6 +15,7 @@ from app.models.task import Task, TaskStatus
 from app.models.user import User, UserRole
 from app.models.workflow import Workflow
 from app.models.workspace import Workspace
+from app.models.integration import Integration, IntegrationType, ConnectionStatus, WorkflowExecution
 
 __all__ = [
     # User
@@ -37,4 +38,10 @@ __all__ = [
     # Task
     "Task",
     "TaskStatus",
+    # Integrations
+    "Integration",
+    "IntegrationType",
+    "ConnectionStatus",
+    # Execution History
+    "WorkflowExecution",
 ]

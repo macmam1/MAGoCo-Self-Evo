@@ -100,7 +100,7 @@ class SelfEvolutionEngine:
         self.reflection_log.append(reflection)
         
         # Store in memory
-        await self.memory.add_turn(
+        self.memory.add_turn(
             "system",
             f"REFLECTION[{agent_role}]: Goal='{task_goal}' Success={success} Insights={len(key_insights)} Mistakes={len(mistakes)}"
         )
@@ -177,7 +177,7 @@ Generate an improved system prompt for a {role} agent that:
         skill_file.write_text(json.dumps(asdict(skill), indent=2))
         
         # Add to working memory
-        await self.memory.add_turn(
+        self.memory.add_turn(
             "system",
             f"NEW SKILL GENERATED: {skill.name} - {skill.description}"
         )
@@ -235,7 +235,7 @@ async def execute(context: Dict[str, Any]) -> Dict[str, Any]:
         }
         
         # Store in long-term memory
-        await self.memory.add_turn(
+        self.memory.add_turn(
             "system",
             f"KNOWLEDGE DISTILLED: SuccessRate={distilled['success_rate']:.2f} Skills={distilled['generated_skills_count']}"
         )
