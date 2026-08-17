@@ -1,4 +1,4 @@
-import { LayoutDashboard, MessageSquare, Code, Settings, Workflow, Bot, Link, Clock } from "lucide-react";
+import { LayoutDashboard, MessageSquare, Code, Settings, Workflow, Bot, Link, Clock, Puzzle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface SidebarItemProps {

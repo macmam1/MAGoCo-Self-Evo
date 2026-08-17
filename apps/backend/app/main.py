@@ -18,9 +18,10 @@ from magoco_core.evolution.engine import init_evolution_engine
 from magoco_core.evolution.hitl import init_hitl_manager
 
 from app.api.v1.chat import router as chat_router
-from app.api.v1.workflows import router as workflow_router
-from app.api.v1.integrations import router as integration_router
-from app.api.v1.executions import router as execution_router
+from app.api.v1.integrations import router as integrations_router
+from app.api.v1.executions import router as executions_router
+from app.api.v1.workflows import router as workflows_router
+from app.api.v1.skills import router as skills_router
 from app.core.config import settings
 from app.db import init_db
 
@@ -58,9 +59,10 @@ app.add_middleware(
 
 # Register all routers
 app.include_router(chat_router, prefix="/api/v1")
-app.include_router(workflow_router, prefix="/api/v1")
-app.include_router(integration_router, prefix="/api/v1")
-app.include_router(execution_router, prefix="/api/v1")
+app.include_router(workflows_router, prefix="/api/v1")
+app.include_router(integrations_router, prefix="/api/v1")
+app.include_router(executions_router, prefix="/api/v1")
+app.include_router(skills_router, prefix="/api/v1")
 
 
 @app.get("/health")
