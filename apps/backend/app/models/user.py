@@ -12,6 +12,7 @@ from app.db import Base
 
 if TYPE_CHECKING:
     from app.models.workspace import Workspace
+    from app.models.workflow import Workflow
 
 
 class UserRole(str, PyEnum):
@@ -64,4 +65,7 @@ class User(Base):
     # Relationships
     workspaces: Mapped[list["Workspace"]] = relationship(
         "Workspace", back_populates="owner", cascade="all, delete-orphan", lazy="selectin"
+    )
+    workflows: Mapped[list["Workflow"]] = relationship(
+        "Workflow", back_populates="owner", cascade="all, delete-orphan", lazy="selectin"
     )
