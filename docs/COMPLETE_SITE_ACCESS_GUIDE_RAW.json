@@ -1,0 +1,1549 @@
+[
+  {
+    "url": "https://crates.io",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://maven.apache.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://gradle.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://npmjs.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://npm.js.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://kotlinlang.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://swift.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://react.dev",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://rust-lang.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://angular.io",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://vuejs.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://sveltekit.dev",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://nextjs.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://nuxtjs.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://astro.build",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://remix.run",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://qwik.builder.io",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://alpinejs.dev",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://htmx.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://hotwire.dev",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://solid-js.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://inertia.dev",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://laravel.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://mysql.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://postgresql.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://mongodb.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://redis.io",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://mariadb.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://cassandra.apache.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://couchdb.apache.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://dynamodb.aws.amazon.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://planetscale.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://firebase.google.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://neo4j.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://cockroachlabs.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://influxdata.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://aws.amazon.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://elasticco.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://azure.microsoft.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://heroku.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://cloud.google.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://vultr.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://linode.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://digitalocean.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://hetzner.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://contabo.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://upcloud.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://namecheap.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://ionos.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://godaddy.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://anthropic.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://cloudflare.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://kaggle.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://google.com/ai",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://fastly.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://roboflow.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://tensorflow.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://fast.ai",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://deeplearning.ai",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://keras.io",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://scikit-learn.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://wandb.ai",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://mlflow.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://kubernetes.io",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://jenkins.io",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://docker.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://comet.ml",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://git-scm.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://circleci.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://devdocs.io",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://www.postman.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://insomnia.rest",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://travis-ci.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://developer.mozilla.org",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://w3schools.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://dev.to",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://stackoverflow.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://daily.dev",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://hashnode.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://javascript.info",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://css-tricks.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://github.dev",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://medium.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://replit.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://codesandbox.io",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://codepen.io",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://jsfiddle.net",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://trinket.io",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://ideone.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://glitch.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  },
+  {
+    "url": "https://pastebin.com",
+    "working": false,
+    "primary_method": null,
+    "title": null,
+    "content_sample": null,
+    "backup_methods": [
+      "Manual investigation with browser tools"
+    ],
+    "special_handling": "Site likely requires advanced JavaScript rendering or has strict bot detection.",
+    "command": null,
+    "code_example": null,
+    "archived_url": null,
+    "methods_tried": [
+      "all methods exhausted"
+    ]
+  }
+]
