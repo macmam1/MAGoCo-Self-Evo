@@ -1,0 +1,97 @@
+{
+    "1. npmjs.com": {
+        "issue": "Cloudflare DDoS protection, ConnectionResetError, block of direct automated headless agents.",
+        "solution": "Use Playwright with extra-stealth (playwright-stealth) or a residential proxy. Or fetch registry endpoints directly (e.g., https://registry.npmjs.org/<package>) to extract metadata instead of scraping the web page.",
+        "code_example": "import requests\nresponse = requests.get('https://registry.npmjs.org/express')\nmetadata = response.json()"
+    },
+    "2. sveltekit.dev": {
+        "issue": "Private IP block / DNS resolution failure or redirection to svelte.dev.",
+        "solution": "Follow redirect to https://svelte.dev/docs/kit or use DNS lookup over Google DNS/Cloudflare DNS (1.1.1.1/8.8.8.8) to bypass internal network address false-positives.",
+        "code_example": "import dns.resolver\n# Query public nameservers directly\nresolver = dns.resolver.Resolver()\nresolver.nameservers = ['1.1.1.1']"
+    },
+    "3. dynamodb.aws.amazon.com": {
+        "issue": "Internal AWS network security walls / direct scrape restriction or incorrect subdomains.",
+        "solution": "Scrape AWS documentation or use boto3/AWS CLI to fetch DynamoDB service specifications and region status instead of scraping the subdomain directly.",
+        "code_example": "import boto3\nclient = boto3.client('dynamodb', region_name='us-east-1')\nprint(client.list_tables())"
+    },
+    "4. inertia.dev": {
+        "issue": "Redirects to inertiahs.com or Cloudflare blocks.",
+        "solution": "Map URL correctly to inertiajs.com, configure proper headers like User-Agent, Accept-Encoding, Accept-Language, or use a fetch tool supporting SSL Session Tickets (like curl_cffi).",
+        "code_example": "from curl_cffi import requests\nr = requests.get('https://inertiajs.com', impersonate='chrome110')"
+    },
+    "5. solid-js.com": {
+        "issue": "Redirect / SPA routing or false-positive internal address warning.",
+        "solution": "Navigate with a real headless browser or use a public external proxy (e.g. ScraperAPI, ZenRows) to resolve the DOM post-hydration.",
+        "code_example": "from playwright.sync_api import sync_playwright\nwith sync_playwright() as p:\n    browser = p.chromium.launch()\n    page = browser.new_page()\n    page.goto('https://www.solidjs.com')\n    print(page.title())"
+    },
+    "6. linode.com": {
+        "issue": "Akamai CDN blocking scraper headers.",
+        "solution": "Set custom cookie persistence or fetch via Linode API v4 (api.linode.com) or Akamai Edge Bypass proxies.",
+        "code_example": "import requests\nheaders = {'Authorization': 'Bearer <token>'}\nr = requests.get('https://api.linode.com/v4/regions', headers=headers)"
+    },
+    "7. godaddy.com": {
+        "issue": "Strict Sucuri/Cloudflare Web Application Firewall (WAF) blocking automation.",
+        "solution": "Bypass via Cloudflare Undetected Chromedriver (undetected_chromedriver) or brightdata web unlocker endpoints.",
+        "code_example": "import undetected_chromedriver as uc\ndriver = uc.Chrome()\ndriver.get('https://godaddy.com')"
+    },
+    "8. vultr.com": {
+        "issue": "Cloudflare TLS fingerprint verification (JA3).",
+        "solution": "Use JA3-evading clients like curl_cffi or tls-client in Python.",
+        "code_example": "from curl_cffi import requests\nr = requests.get('https://vultr.com', impersonate='chrome110')"
+    },
+    "9. mysql.com": {
+        "issue": "Oracle secure redirect / Cookie walls.",
+        "solution": "Handle cookie handshake programmatically by saving the session cookies first or simulating the browser session lifecycle.",
+        "code_example": "import requests\nsession = requests.Session()\nsession.get('https://www.mysql.com')\n# Subsequent requests will use active session cookies"
+    },
+    "10. namecheap.com": {
+        "issue": "DDOS-Guard or Cloudflare mitigation screen.",
+        "solution": "Introduce a small wait time (5s) for browser challenge verification or use high-quality residential proxies.",
+        "code_example": "page.wait_for_selector('html', timeout=10000)"
+    },
+    "11. google.com/ai": {
+        "issue": "Dynamic redirect to generic landing page (deepmind.google or ai.google).",
+        "solution": "Target the actual redirect destination directly (https://ai.google/ or https://deepmind.google/) instead of the legacy route.",
+        "code_example": "r = requests.get('https://ai.google/', allow_redirects=True)"
+    },
+    "12. crates.io": {
+        "issue": "Requires API User-Agent specification under Rust/Cargo scraping policy.",
+        "solution": "Add custom descriptive User-Agent detailing your bot and contact email, or fetch via crates.io API directly.",
+        "code_example": "headers = {'User-Agent': 'MyBot/1.0 (contact@example.com)'}\nr = requests.get('https://crates.io/api/v1/crates', headers=headers)"
+    },
+    "13. gitlab.com/features/ci-cd": {
+        "issue": "Cloudflare browser checks and dynamic rendering blocks.",
+        "solution": "Access GitLab via GraphQL or REST API, or use a headless browser with custom screen resolution and viewport sizes.",
+        "code_example": "import requests\nr = requests.get('https://gitlab.com/api/v4/projects')"
+    },
+    "14. stackoverflow.com": {
+        "issue": "Rate limits and Cloudflare challenge blocks.",
+        "solution": "Retrieve data via the Stack Exchange API (api.stackexchange.com) or SEDE (Stack Exchange Data Explorer).",
+        "code_example": "import requests\nr = requests.get('https://api.stackexchange.com/2.3/questions?order=desc&sort=activity&site=stackoverflow')"
+    },
+    "15. medium.com": {
+        "issue": "Strict Paywall and Cloudflare IP block on cloud/hosting ranges.",
+        "solution": "Access archive snapshots on archive.org, parse AMP pages (append ?format=amp), or fetch RSS feed.",
+        "code_example": "r = requests.get('https://medium.com/feed/@username')"
+    },
+    "16. replit.com": {
+        "issue": "GraphQL backend, heavy frontend rendering, Cloudflare blocking.",
+        "solution": "Extract using a dedicated WebSocket or browser automation with intercepted API network requests.",
+        "code_example": "page.on('response', lambda response: print(response.url) if 'graphql' in response.url else None)"
+    },
+    "17. codepen.io": {
+        "issue": "Dynamic iframe rendering and Cloudflare protection.",
+        "solution": "Directly fetch the clean frame outputs by utilizing '/pen/' -> '/details/' or '/debug/' endpoint structures.",
+        "code_example": "r = requests.get('https://codepen.io/pen/debug/<pen_id>')"
+    },
+    "18. elasticco.com": {
+        "issue": "Typo in domain / Cloudflare connection resets.",
+        "solution": "Correct the domain name to https://www.elastic.co/ and handle cookies correctly.",
+        "code_example": "r = requests.get('https://www.elastic.co/')"
+    },
+    "19. azure.microsoft.com": {
+        "issue": "Complex routing and localized geo-redirection.",
+        "solution": "Utilize locale-neutral paths (e.g. /en-us/) and bypass client-side localization redirects.",
+        "code_example": "r = requests.get('https://azure.microsoft.com/en-us/')"
+    }
+}
