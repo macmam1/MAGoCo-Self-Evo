@@ -23,6 +23,7 @@ import { IntegrationsPanel } from "@/components/Integrations/IntegrationsPanel";
 import { ExecutionHistory } from "@/components/History/ExecutionHistory";
 import { SettingsDashboard } from "@/components/Settings/SettingsDashboard";
 import { AgentBrowser } from "@/components/Browser/AgentBrowser";
+import { KeyboardShortcutsModal, useKeyboardShortcuts } from "@/components/ui/KeyboardShortcuts";
 import { applyAllPreferences, watchSystemTheme, applyLang, getLang } from "@/theme/theme";
 import { useTranslation } from "react-i18next";
 
@@ -48,6 +49,7 @@ const TABS: AppTab[] = [
 export default function App() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const { showShortcuts, setShowShortcuts } = useKeyboardShortcuts();
 
   useEffect(() => {
     applyAllPreferences();
@@ -97,6 +99,7 @@ export default function App() {
         tabs={tabs}
         onNavigate={navigate}
       />
+      <KeyboardShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
     </div>
   );
 }

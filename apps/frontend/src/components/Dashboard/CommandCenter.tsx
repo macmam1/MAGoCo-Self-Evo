@@ -1,4 +1,4 @@
-import { ArrowRight, Bot, Play, History, Workflow as WorkflowIcon } from "lucide-react";
+import { ArrowRight, Bot, Play, History, Workflow as WorkflowIcon, Globe } from "lucide-react";
 import { PageHeader } from "@/components/Layout/PageHeader";
 import { useBackendStatus } from "@/hooks/useBackendStatus";
 
@@ -15,6 +15,12 @@ const QUICK = [
     title: "Ask an agent",
     desc: "Chat with ReAct + streaming + tool calls",
     icon: Bot,
+  },
+  {
+    id: "browser",
+    title: "Agent Browser",
+    desc: "Live browser sessions with AI control",
+    icon: Globe,
   },
   {
     id: "workflows",
