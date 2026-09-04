@@ -5,12 +5,14 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_CHAT_URL } from "@/config";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { ArtifactsPanel, Artifact } from "./ArtifactsPanel";
 
 export function ChatConsole() {
   const { t } = useTranslation();
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const [showArtifacts, setShowArtifacts] = useState(false);
 
   const { messages, isThinking, connect, sendMessage, isConnected } =
     useWebSocket(WS_CHAT_URL);
@@ -18,6 +20,7 @@ export function ChatConsole() {
   const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
   const [streamingThinking, setStreamingThinking] = useState<Record<string, string>>({});
   const [streamingAnswer, setStreamingAnswer] = useState<Record<string, string>>({});
+  const [artifacts, setArtifacts] = useState<Artifact[]>([]);
 
   useEffect(() => {
     connect();
@@ -67,6 +70,61 @@ export function ChatConsole() {
 
     return () => clearInterval(interval);
   }, [isThinking, messages]);
+
+  // Extract artifacts from messages (code blocks, images, etc.)
+  useEffect(() => {
+    const extracted: Artifact[] = [];
+    let artifactCounter = 0;
+
+    messages.forEach((msg) => {
+      if (msg.role !== "assistant") return;
+      
+      // Extract code blocks
+      const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+      let match;
+      while ((match = codeBlockRegex.exec(msg.content)) !== null) {
+        const language = match[1] || "text";
+        const content = match[2].trim();
+        if (content) {
+          extracted.push({
+            id: `artifact-${msg.id}-${artifactCounter++}`,
+            type: language === "html" ? "html" : "code",
+            title: `Code: ${language}`,
+            content,
+            language,
+            createdAt: Date.now(),
+            messageId: msg.id,
+          });
+        }
+      }
+
+      // Extract image URLs
+      const imageRegex = /!\[([^\]]*)\]\((https?:\/\/[^)]+)\)/g;
+      let imgMatch;
+      while ((imgMatch = imageRegex.exec(msg.content)) !== null) {
+        const alt = imgMatch[1];
+        const url = imgMatch[2];
+        extracted.push({
+          id: `artifact-${msg.id}-${artifactCounter++}`,
+          type: "image",
+          title: alt || `Image ${artifactCounter}`,
+          content: url,
+          createdAt: Date.now(),
+          messageId: msg.id,
+        });
+      }
+    });
+
+    if (extracted.length > 0) {
+      setArtifacts((prev) => {
+        // Merge with existing, avoiding duplicates
+        const existingIds = new Set(prev.map((a) => a.id));
+        const newArtifacts = extracted.filter((a) => !existingIds.has(a.id));
+        return [...prev, ...newArtifacts];
+      });
+      if (!showArtifacts) setShowArtifacts(true);
+    }
+  }, [messages, showArtifacts]);
 
   return (
     <div className="flex flex-col h-full glass-soft overflow-hidden">
@@ -339,6 +397,29 @@ export function ChatConsole() {
           </div>
         </div>
       </div>
+
+      {/* Artifacts Panel */}
+      <ArtifactsPanel
+        artifacts={artifacts}
+        isOpen={showArtifacts}
+        onClose={() => setShowArtifacts(false)}
+        onCopy={(content) => {
+          navigator.clipboard.writeText(content);
+        }}
+        onDownload={(artifact) => {
+          const blob = new Blob([artifact.content], { 
+            type: artifact.type === "code" ? "text/plain" : 
+                  artifact.type === "html" ? "text/html" : 
+                  artifact.type === "image" ? "image/*" : "text/plain" 
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${artifact.title.replace(/\s+/g, "_")}.${artifact.language || "txt"}`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }}
+      />
     </div>
   );
 }

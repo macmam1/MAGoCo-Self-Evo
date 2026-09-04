@@ -35,6 +35,14 @@ hero: {
         thinking_placeholder: "Agent is reasoning…",
         generating_answer: "Generating answer…",
       },
+      artifacts: {
+        title: "Artifacts",
+        empty: "No artifacts yet",
+        untitled: "Untitled",
+        unknown_lang: "Unknown",
+        copy: "Copy to clipboard",
+        download: "Download",
+      },
       browser: {
         agent: "Agent Browser",
         subtitle: "Live browser sessions with AI control",
@@ -120,6 +128,14 @@ hero: {
         streaming: "در حال جریان…",
         thinking_placeholder: "ایجنت در حال استدلال است…",
         generating_answer: "در حال تولید پاسخ…",
+      },
+      artifacts: {
+        title: "آرتیفکت‌ها",
+        empty: "هنوز آرتیفکت وجود ندارد",
+        untitled: "بدون عنوان",
+        unknown_lang: "نامشخص",
+        copy: "کپی در کلیپ‌بورد",
+        download: "دانلود",
       },
       browser: {
         agent: "مرورگر ایجنت",
