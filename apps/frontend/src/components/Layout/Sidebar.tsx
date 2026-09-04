@@ -1,37 +1,14 @@
-import {
-  MessageSquare,
-  Code,
-  Workflow,
-  Settings,
-  CheckSquare,
-  Link,
-  Clock,
-  Bot,
-  ChevronDown,
-} from "lucide-react";
+import { Bot, ChevronDown, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface SidebarTab {
   id: string;
   label: string;
-  icon: string;
+  group: string;
+  icon: LucideIcon;
 }
 
-const ICONS: Record<string, React.ElementType> = {
-  "🤖": MessageSquare,
-  "💻": Code,
-  "⚡": Workflow,
-  "✅": CheckSquare,
-  "🔌": Link,
-  "📜": Clock,
-  "⚙️": Settings,
-};
-
-const GROUPS: { title: string; ids: string[] }[] = [
-  { title: "General", ids: ["chat", "ide", "workflows"] },
-  { title: "Operations", ids: ["approvals", "integrations", "history"] },
-  { title: "System", ids: ["settings"] },
-];
+const GROUPS = ["General", "Operations", "System"];
 
 function SidebarItem({
   icon: Icon,
@@ -80,7 +57,6 @@ export function Sidebar({
   activeTab: string;
   onTabChange: (tab: string) => void;
 }) {
-  const byId = Object.fromEntries(tabs.map((t) => [t.id, t]));
   return (
     <div
       className="w-60 border-r flex flex-col justify-between p-3 select-none shrink-0"
@@ -122,30 +98,30 @@ export function Sidebar({
         </button>
 
         {/* Grouped nav (NeuroNest pattern) */}
-        {GROUPS.map((g) => (
-          <div key={g.title} className="space-y-1">
-            <div
-              className="px-3 text-[10px] font-semibold uppercase tracking-wider"
-              style={{ color: "var(--text-2)" }}
-            >
-              {g.title}
-            </div>
-            {g.ids.map((id) => {
-              const t = byId[id];
-              if (!t) return null;
-              return (
+        {GROUPS.map((title) => {
+          const items = tabs.filter((t) => t.group === title);
+          if (items.length === 0) return null;
+          return (
+            <div key={title} className="space-y-1">
+              <div
+                className="px-3 text-[10px] font-semibold uppercase tracking-wider"
+                style={{ color: "var(--text-2)" }}
+              >
+                {title}
+              </div>
+              {items.map((t) => (
                 <SidebarItem
-                  key={id}
-                  icon={ICONS[t.icon] ?? MessageSquare}
+                  key={t.id}
+                  icon={t.icon}
                   label={t.label}
-                  badge={id === "approvals" ? "3" : undefined}
-                  active={activeTab === id}
-                  onClick={() => onTabChange(id)}
+                  badge={t.id === "approvals" ? "3" : undefined}
+                  active={activeTab === t.id}
+                  onClick={() => onTabChange(t.id)}
                 />
-              );
-            })}
-          </div>
-        ))}
+              ))}
+            </div>
+          );
+        })}
       </div>
 
       {/* User card (Ask Rune pattern) */}

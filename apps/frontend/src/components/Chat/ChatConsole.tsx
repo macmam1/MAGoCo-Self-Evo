@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User, ChevronDown, ChevronUp } from "lucide-react";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { WS_CHAT_URL } from "@/config";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -10,7 +11,7 @@ export function ChatConsole() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const { messages, isThinking, connect, sendMessage, isConnected } =
-    useWebSocket("ws://localhost:8000/ws/chat");
+    useWebSocket(WS_CHAT_URL);
 
   const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
 
