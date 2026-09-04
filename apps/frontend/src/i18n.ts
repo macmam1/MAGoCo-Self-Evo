@@ -43,6 +43,15 @@ hero: {
         copy: "Copy to clipboard",
         download: "Download",
       },
+      message_actions: {
+        edit: "Edit",
+        fork: "Fork",
+        resubmit: "Resubmit",
+        delete: "Delete",
+        save: "Save",
+        cancel: "Cancel",
+        edit_placeholder: "Edit your message…",
+      },
       browser: {
         agent: "Agent Browser",
         subtitle: "Live browser sessions with AI control",
@@ -136,6 +145,15 @@ hero: {
         unknown_lang: "نامشخص",
         copy: "کپی در کلیپ‌بورد",
         download: "دانلود",
+      },
+      message_actions: {
+        edit: "ویرایش",
+        fork: "شاخه‌زنی",
+        resubmit: "اعاده ارسال",
+        delete: "حذف",
+        save: "ذخیره",
+        cancel: "لغو",
+        edit_placeholder: "پیام خود را ویرایش کنید…",
       },
       browser: {
         agent: "مرورگر ایجنت",

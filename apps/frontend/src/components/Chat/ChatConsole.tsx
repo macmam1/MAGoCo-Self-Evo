@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip, Sparkles, Brain } from "lucide-react";
+import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip, Sparkles, Brain, Edit, GitBranch, RotateCcw, MoreHorizontal, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_CHAT_URL } from "@/config";
@@ -21,6 +21,9 @@ export function ChatConsole() {
   const [streamingThinking, setStreamingThinking] = useState<Record<string, string>>({});
   const [streamingAnswer, setStreamingAnswer] = useState<Record<string, string>>({});
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editInput, setEditInput] = useState("");
+  const [showMessageMenu, setShowMessageMenu] = useState<string | null>(null);
 
   useEffect(() => {
     connect();
@@ -52,6 +55,49 @@ export function ChatConsole() {
       [msgId]: !prev[msgId],
     }));
   }, []);
+
+  const startEditing = useCallback((msgId: string, content: string) => {
+    setEditingMessageId(msgId);
+    setEditInput(content);
+    setShowMessageMenu(null);
+  }, []);
+
+  const saveEdit = useCallback(() => {
+    if (!editingMessageId || !editInput.trim()) return;
+    sendMessage(editInput);
+    setEditingMessageId(null);
+    setEditInput("");
+  }, [editingMessageId, editInput, sendMessage]);
+
+  const cancelEdit = useCallback(() => {
+    setEditingMessageId(null);
+    setEditInput("");
+  }, []);
+
+  const forkMessage = useCallback((msgId: string, content: string) => {
+    sendMessage(content);
+    setShowMessageMenu(null);
+  }, [sendMessage]);
+
+  const resubmitMessage = useCallback((msgId: string, content: string) => {
+    sendMessage(content);
+    setShowMessageMenu(null);
+  }, [sendMessage]);
+
+  const deleteMessage = useCallback((msgId: string) => {
+    setShowMessageMenu(null);
+  }, []);
+
+  // Close message menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (showMessageMenu && !(e.target as HTMLElement).closest('[data-message-menu]')) {
+        setShowMessageMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showMessageMenu]);
 
   // Simulate streaming thinking tokens for demo
   useEffect(() => {
@@ -256,17 +302,95 @@ export function ChatConsole() {
           <div key={msg.id} className="space-y-3">
             {/* User bubble */}
             {msg.role === "user" && (
-              <div className="flex justify-end">
-                <div className="max-w-[80%] bg-white/5 border border-white/10 rounded-2xl rounded-tr-none px-4 py-2.5">
-                  <p className="text-sm text-text-0 whitespace-pre-wrap break-words">
-                    {msg.content}
-                  </p>
-                </div>
+              <div className="flex justify-end relative">
+                {/* Message Menu */}
+                {showMessageMenu === msg.id && (
+                  <div className="absolute right-full top-0 mr-2 z-10 glass-strong rounded-xl border p-1 animate-slide-right"
+                       style={{ borderColor: "var(--border-glass)", background: "var(--bg-1)" }}>
+                    <button
+                      onClick={() => startEditing(msg.id, msg.content)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left rounded-lg hover:bg-white/[0.05]"
+                      style={{ color: "var(--text-0)" }}
+                    >
+                      <Edit className="h-4 w-4" style={{ color: "var(--accent)" }} />
+                      {t("message_actions.edit")}
+                    </button>
+                    <button
+                      onClick={() => forkMessage(msg.id, msg.content)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left rounded-lg hover:bg-white/[0.05]"
+                      style={{ color: "var(--text-0)" }}
+                    >
+                      <GitBranch className="h-4 w-4" style={{ color: "var(--accent-2)" }} />
+                      {t("message_actions.fork")}
+                    </button>
+                    <button
+                      onClick={() => resubmitMessage(msg.id, msg.content)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left rounded-lg hover:bg-white/[0.05]"
+                      style={{ color: "var(--text-0)" }}
+                    >
+                      <RotateCcw className="h-4 w-4" style={{ color: "var(--accent-3)" }} />
+                      {t("message_actions.resubmit")}
+                    </button>
+                    <button
+                      onClick={() => deleteMessage(msg.id)}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left rounded-lg hover:bg-red-500/10 text-red-400"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      {t("message_actions.delete")}
+                    </button>
+                  </div>
+                )}
+                {/* Edit Mode */}
+                {editingMessageId === msg.id ? (
+                  <div className="max-w-[80%] glass-strong rounded-2xl rounded-tr-none px-4 py-3 border border-accent/30 animate-slide-down">
+                    <div className="flex gap-2">
+                      <textarea
+                        value={editInput}
+                        onChange={(e) => setEditInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            saveEdit();
+                          } else if (e.key === "Escape") {
+                            cancelEdit();
+                          }
+                        }}
+                        className="flex-1 bg-transparent border-none outline-none resize-none text-sm text-text-0 placeholder:text-text-2 min-h-[40px] max-h-60"
+                        rows={2}
+                        autoFocus
+                        placeholder={t("message_actions.edit_placeholder")}
+                      />
+                      <div className="flex flex-col gap-1">
+                        <Button size="sm" onClick={saveEdit} variant="primary">
+                          {t("message_actions.save")}
+                        </Button>
+                        <Button size="sm" onClick={cancelEdit} variant="ghost">
+                          {t("message_actions.cancel")}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="max-w-[80%] bg-white/5 border border-white/10 rounded-2xl rounded-tr-none px-4 py-2.5 relative">
+                    <p className="text-sm text-text-0 whitespace-pre-wrap break-words">
+                      {msg.content}
+                    </p>
+                    {/* Message menu trigger */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMessageMenu(showMessageMenu === msg.id ? null : msg.id);
+                      }}
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 hover:opacity-100 transition-opacity glass-strong flex items-center justify-center"
+                      style={{ borderColor: "var(--border-glass)", background: "var(--bg-1)" }}
+                    >
+                      <MoreHorizontal className="h-3.5 w-3.5" style={{ color: "var(--text-2)" }} />
+                    </button>
+                  </div>
+                )}
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent to-accent-2 flex items-center justify-center mr-2">
                   <User size={14} />
                 </div>
-              </div>
-            )}
 
             {/* Assistant bubble with streaming thinking */}
             {(msg.role === "assistant" || msg.role === "status") && (
