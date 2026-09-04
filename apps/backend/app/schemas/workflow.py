@@ -37,3 +37,14 @@ class WorkflowResponse(WorkflowBase):
     workspace_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+
+
+class WorkflowExecuteRequest(BaseModel):
+    context: dict[str, Any] = Field(default_factory=dict)
+
+
+class WorkflowExecutionResponse(BaseModel):
+    workflow_id: uuid.UUID
+    status: str
+    results: dict[str, Any] = Field(default_factory=dict)
+    duration_seconds: float = 0.0

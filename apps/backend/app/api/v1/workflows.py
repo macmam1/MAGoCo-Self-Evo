@@ -1,23 +1,27 @@
-"""Workflow management endpoints - create, execute, monitor DAGs."""
+"""Workflow management endpoints - create, execute, monitor DAGs (ReactFlow graph format)."""
+
+import time
+import uuid
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
-from typing import Dict, Any, List, Optional
-import uuid
-
-from app.api.deps import get_current_user
-from app.models.user import User
-from app.models.workflow import Workflow, WorkflowStatus, WorkflowNode, WorkflowEdge
-from app.schemas.workflow import WorkflowCreate, WorkflowResponse, WorkflowExecuteRequest, WorkflowExecutionResponse
-from app.db import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from magoco_workflows.engine import WorkflowEngine, WorkflowNode as WNode
-from magoco_workflows import engine as workflow_engine
-
+from app.api.deps import get_current_user
+from app.db import get_db
+from app.models.user import User
+from app.schemas.workflow import (
+    WorkflowCreate,
+    WorkflowExecuteRequest,
+    WorkflowExecutionResponse,
+    WorkflowResponse,
+)
 from app.services.workflows import WorkflowService
 
+from magoco_workflows.engine import WorkflowEngine, WorkflowNode as WNode
+
 router = APIRouter(prefix="/workflows", tags=["workflows"])
+
 
 @router.post("/", response_model=WorkflowResponse)
 async def create_workflow(
@@ -25,19 +29,40 @@ async def create_workflow(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Create a new workflow definition."""
-    wf = WorkflowModel(
+    """Create a new workflow definition (graph in ReactFlow format)."""
+    svc = WorkflowService(db)
+    return await svc.create(
         name=workflow.name,
         description=workflow.description,
+        graph={"nodes": [], "edges": []},
         owner_id=current_user.id,
-        owner=current_user,
-        nodes=workflow.nodes,
-        edges=workflow.edges,
+        workspace_id=workflow.workspace_id,
+        is_public=workflow.is_public,
     )
-    db.add(wf)
-    await db.commit()
-    await db.refresh(wf)
-    return wf
+
+
+def _build_engine(graph: dict[str, Any]) -> WorkflowEngine:
+    """Translate a ReactFlow graph into an executable engine."""
+    engine = WorkflowEngine()
+    nodes = graph.get("nodes", []) if isinstance(graph, dict) else []
+    edges = graph.get("edges", []) if isinstance(graph, dict) else []
+    deps: dict[str, set] = {n.get("id"): set() for n in nodes if n.get("id")}
+    for e in edges:
+        if e.get("target") in deps and e.get("source"):
+            deps[e["target"]].add(e["source"])
+    for n in nodes:
+        if not n.get("id"):
+            continue
+        data = n.get("data", {}) or {}
+        engine.add_node(WNode(
+            node_id=n["id"],
+            name=str(data.get("label", n["id"])),
+            node_type=str(n.get("type", "agent")),
+            config=dict(data),
+            dependencies=deps.get(n["id"], set()),
+        ))
+    return engine
+
 
 @router.post("/{workflow_id}/execute", response_model=WorkflowExecutionResponse)
 async def execute_workflow(
@@ -47,37 +72,30 @@ async def execute_workflow(
     db: AsyncSession = Depends(get_db),
 ):
     """Execute an existing workflow with optional input context."""
-    wf = await db.get(WorkflowModel, workflow_id)
-    if not wf:
+    svc = WorkflowService(db)
+    wf = await svc.get(workflow_id)
+    if not wf or wf.owner_id != current_user.id:
         raise HTTPException(404, "Workflow not found")
 
-    engine = WorkflowEngine()
-    for node_def in wf.nodes:
-        node = WNode(
-            node_id=node_def.id,
-            name=node_def.label,
-            node_type=node_def.type,
-            config=node_def.config,
-            dependencies=set(node_def.dependencies),
-        )
-        engine.add_node(node)
-
-    results = await engine.execute(context=request.context)
+    engine = _build_engine(wf.graph or {})
+    started = time.monotonic()
+    try:
+        results = await engine.execute(context=request.context)
+        status = "completed"
+    except Exception as e:
+        raise HTTPException(500, f"Workflow failed: {e}")
     return WorkflowExecutionResponse(
         workflow_id=workflow_id,
-        status="completed",
-        results=results,
-        duration_seconds=0.0,
+        status=status,
+        results=results or {},
+        duration_seconds=time.monotonic() - started,
     )
 
-@router.get("/", response_model=List[WorkflowResponse])
+
+@router.get("/", response_model=list[WorkflowResponse])
 async def list_workflows(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """List all workflows for the current user."""
-    result = await db.execute(
-        select(WorkflowModel).where(WorkflowModel.owner_id == current_user.id)
-    )
-    workflows = result.scalars().all()
-    return workflows
+    return await WorkflowService(db).list_for_owner(current_user.id)

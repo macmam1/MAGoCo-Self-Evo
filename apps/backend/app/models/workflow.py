@@ -1,8 +1,10 @@
 """Workflow model — visual workflow definition."""
+import enum
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
+from pydantic import BaseModel, Field
 from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from app.db import GUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -65,3 +67,29 @@ class Workflow(Base):
 
     def __repr__(self) -> str:
         return f"<Workflow {self.name} v{self.version}>"
+
+
+class WorkflowStatus(str, enum.Enum):
+    DRAFT = "draft"
+    ACTIVE = "active"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    ARCHIVED = "archived"
+
+
+class WorkflowNode(BaseModel):
+    """Single ReactFlow node as stored inside Workflow.graph."""
+
+    id: str
+    type: str = "agent"
+    label: str = ""
+    config: dict[str, Any] = Field(default_factory=dict)
+
+
+class WorkflowEdge(BaseModel):
+    """Single ReactFlow edge as stored inside Workflow.graph."""
+
+    id: str
+    source: str
+    target: str
