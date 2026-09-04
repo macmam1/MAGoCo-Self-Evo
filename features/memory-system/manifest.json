@@ -1,0 +1,28 @@
+{
+  "id": "memory-system",
+  "name": "Memory System",
+  "description": "Unified memory system with semantic, episodic, knowledge graph, and RAG capabilities",
+  "version": "1.0.0",
+  "author": "MAGoCo Team",
+  "dependencies": ["chat-core"],
+  "category": "memory",
+  "priority": 95,
+  "enabledByDefault": true,
+  "minCoreVersion": "0.3.0",
+  "entryPoints": {
+    "main": "MemoryDashboard",
+    "components": {
+      "MemoryDashboard": "./MemoryDashboard",
+      "MemoryExplorer": "./MemoryExplorer",
+      "KnowledgeGraph": "./KnowledgeGraph",
+      "RAGManager": "./RAGManager"
+    }
+  },
+  "permissions": ["memory:read", "memory:write", "memory:search", "memory:kg"],
+  "meta": {
+    "tags": ["memory", "vector", "rag", "knowledge-graph", "episodic"],
+    "icon": "Brain",
+    "color": "#8b5cf6",
+    "docsUrl": "https://docs.magoco.ai/features/memory-system"
+  }
+}
