@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Key, Shield, HardDrive, Cpu, RefreshCw, Save } from "lucide-react";
+import { Key, Shield, HardDrive, Cpu, RefreshCw, Save, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 
 interface SettingsCardProps {
   title: string;
@@ -39,6 +40,15 @@ export function SettingsDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl">
+        {/* Appearance & Themes */}
+        <SettingsCard
+          title="Appearance"
+          description="Switch themes instantly. New designs arrive here as themes."
+          icon={Palette}
+        >
+          <ThemeSwitcher />
+        </SettingsCard>
+
         {/* API Credentials */}
         <SettingsCard
           title="LLM Providers"

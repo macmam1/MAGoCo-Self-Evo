@@ -3,8 +3,10 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Deep space dark theme */
+  /* ---- Theme tokens. New designs from screenshots land here as new blocks. ---- */
+  :root,
+  [data-theme="midnight"] {
+    /* Deep space dark theme (default) */
     --bg-0: #0a0a0f;
     --bg-1: #0f0f17;
     --bg-2: #15151f;
@@ -16,6 +18,44 @@
     --text-0: #f4f4f8;
     --text-1: #a0a0b0;
     --text-2: #6a6a7a;
+    --app-bg:
+      radial-gradient(1200px 600px at 15% -10%, rgba(124, 92, 255, 0.12), transparent 60%),
+      radial-gradient(1000px 500px at 110% 10%, rgba(0, 224, 198, 0.1), transparent 55%),
+      #0a0a0f;
+  }
+
+  [data-theme="linear"] {
+    /* Linear-style: neutral engineering minimal */
+    --bg-0: #08090c;
+    --bg-1: #0e1015;
+    --bg-2: #16181f;
+    --bg-glass: rgba(255, 255, 255, 0.03);
+    --border-glass: rgba(255, 255, 255, 0.07);
+    --accent: #5e6ad2;
+    --accent-2: #8b93e8;
+    --accent-3: #e5484d;
+    --text-0: #f7f8f8;
+    --text-1: #9ca3af;
+    --text-2: #6b7280;
+    --app-bg: #08090c;
+  }
+
+  [data-theme="light"] {
+    /* Daybreak: clean professional light */
+    --bg-0: #f7f8fa;
+    --bg-1: #ffffff;
+    --bg-2: #eef0f4;
+    --bg-glass: rgba(255, 255, 255, 0.7);
+    --border-glass: rgba(15, 23, 42, 0.08);
+    --accent: #4f46e5;
+    --accent-2: #0ea5e9;
+    --accent-3: #e11d48;
+    --text-0: #0f172a;
+    --text-1: #475569;
+    --text-2: #94a3b8;
+    --app-bg:
+      radial-gradient(1200px 600px at 15% -10%, rgba(79, 70, 229, 0.08), transparent 60%),
+      #f7f8fa;
   }
 
   * {
@@ -30,10 +70,7 @@
   body {
     margin: 0;
     min-height: 100vh;
-    background:
-      radial-gradient(1200px 600px at 15% -10%, rgba(124, 92, 255, 0.12), transparent 60%),
-      radial-gradient(1000px 500px at 110% 10%, rgba(0, 224, 198, 0.10), transparent 55%),
-      var(--bg-0);
+    background: var(--app-bg);
     color: var(--text-0);
     -webkit-font-smoothing: antialiased;
   }

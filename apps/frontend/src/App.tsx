@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sidebar } from "@/components/Layout/Sidebar";
 import { ChatConsole } from "@/components/Chat/ChatConsole";
 import { CodingIDE } from "@/components/Coding/CodingIDE";
 import { WorkflowDesigner } from "@/components/Workflow/WorkflowDesigner";
+import { applyTheme, getTheme } from "@/theme/theme";
 import { ApprovalGates } from "@/components/Approvals/ApprovalGates";
 import { IntegrationsPanel } from "@/components/Integrations/IntegrationsPanel";
 import { ExecutionHistory } from "@/components/History/ExecutionHistory";
@@ -21,6 +22,10 @@ const TABS = [
 export default function App() {
   const [activeTab, setActiveTab] = useState("chat");
 
+  useEffect(() => {
+    applyTheme(getTheme());
+  }, []);
+
   const renderContent = () => {
     switch (activeTab) {
       case "chat": return <ChatConsole />;
@@ -35,7 +40,7 @@ export default function App() {
   };
 
   return (
-    <div className="h-screen flex bg-gradient-to-b from-[#0a0a1a] to-[#15152a] text-gray-100">
+    <div className="h-screen flex text-gray-100" style={{ background: "var(--app-bg)" }}>
       <Sidebar
         tabs={TABS}
         activeTab={activeTab}

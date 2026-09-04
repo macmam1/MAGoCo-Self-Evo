@@ -4,6 +4,23 @@ export default {
   theme: {
     extend: {
       colors: {
+        /* Theme-driven tokens (see src/index.css [data-theme=...]).
+           These classes already exist across components (bg-bg-0, text-text-0...). */
+        bg: {
+          0: "var(--bg-0)",
+          1: "var(--bg-1)",
+          2: "var(--bg-2)",
+        },
+        text: {
+          0: "var(--text-0)",
+          1: "var(--text-1)",
+          2: "var(--text-2)",
+        },
+        accent: {
+          DEFAULT: "var(--accent)",
+          2: "var(--accent-2)",
+          3: "var(--accent-3)",
+        },
         primary: {
           50: "#f0f9ff",
           100: "#e0f2fe",
