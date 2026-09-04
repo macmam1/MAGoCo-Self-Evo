@@ -9,6 +9,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 from magoco_core.agents.react_agent import ReActAgent
 from magoco_core.agents.orchestrator import MultiAgentOrchestrator
@@ -24,6 +27,7 @@ from app.api.v1.workflows import router as workflows_router
 from app.api.v1.skills import router as skills_router
 from app.core.config import settings
 from app.db import init_db
+from app.services.browser_service import browser_service
 
 
 @asynccontextmanager
@@ -37,7 +41,14 @@ async def lifespan(app: FastAPI):
     init_evolution_engine(ThreeLayerMemory())
     init_hitl_manager()
 
+    # Initialize browser service
+    await browser_service.start()
+    print("[MAGoCo] Browser service started ✓")
+
     yield
+
+    # Cleanup
+    await browser_service.stop()
     print("[MAGoCo] Shutdown complete")
 
 
@@ -105,6 +116,116 @@ async def websocket_chat_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         print("Client disconnected")
     except Exception as e:
+        await websocket.send_json({"type": "error", "content": str(e)})
+        await websocket.close()
+
+
+# Browser Agent WebSocket
+@app.websocket("/ws/browser")
+async def websocket_browser_endpoint(websocket: WebSocket):
+    await websocket.accept()
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            message = json.loads(data)
+            msg_type = message.get("type")
+
+            if msg_type == "new_session":
+                session = await browser_service.create_session()
+                await websocket.send_json({
+                    "type": "session_created",
+                    "sessionId": session.id,
+                    "sessionData": await browser_service.get_session_state(session.id),
+                })
+
+            elif msg_type == "navigate":
+                session_id = message.get("sessionId")
+                url = message.get("url")
+                session = browser_service.sessions.get(session_id)
+                if session:
+                    success = await browser_service.navigate(session, url)
+                    await websocket.send_json({
+                        "type": "session_updated",
+                        "sessionId": session_id,
+                        "sessionData": await browser_service.get_session_state(session_id),
+                    })
+
+            elif msg_type == "click":
+                session_id = message.get("sessionId")
+                x = message.get("x")
+                y = message.get("y")
+                session = browser_service.sessions.get(session_id)
+                if session:
+                    await browser_service.click(session, x, y)
+                    await websocket.send_json({
+                        "type": "session_updated",
+                        "sessionId": session_id,
+                        "sessionData": await browser_service.get_session_state(session_id),
+                    })
+
+            elif msg_type == "type":
+                session_id = message.get("sessionId")
+                text = message.get("text")
+                session = browser_service.sessions.get(session_id)
+                if session:
+                    await browser_service.type(session, text)
+                    await websocket.send_json({
+                        "type": "session_updated",
+                        "sessionId": session_id,
+                        "sessionData": await browser_service.get_session_state(session_id),
+                    })
+
+            elif msg_type == "close_session":
+                session_id = message.get("sessionId")
+                await browser_service.close_session(session_id)
+                await websocket.send_json({
+                    "type": "session_closed",
+                    "sessionId": session_id,
+                })
+
+            elif msg_type == "pause":
+                session_id = message.get("sessionId")
+                session = browser_service.sessions.get(session_id)
+                if session:
+                    session.status = "paused"
+                    await websocket.send_json({
+                        "type": "session_updated",
+                        "sessionId": session_id,
+                        "sessionData": await browser_service.get_session_state(session_id),
+                    })
+
+            elif msg_type == "approve":
+                session_id = message.get("sessionId")
+                session = browser_service.sessions.get(session_id)
+                if session and session.pending_click:
+                    x = session.pending_click["x"]
+                    y = session.pending_click["y"]
+                    await browser_service.click(session, x, y)
+                    session.pending_click = None
+                    await websocket.send_json({
+                        "type": "session_updated",
+                        "sessionId": session_id,
+                        "sessionData": await browser_service.get_session_state(session_id),
+                    })
+
+            # Periodic screenshot streaming for active sessions
+            elif msg_type == "request_screenshot":
+                session_id = message.get("sessionId")
+                session = browser_service.sessions.get(session_id)
+                if session:
+                    await browser_service._capture_screenshot(session)
+                    await websocket.send_json({
+                        "type": "screenshot_frame",
+                        "sessionId": session_id,
+                        "screenshot": session.screenshot,
+                        "status": session.status,
+                    })
+
+    except WebSocketDisconnect:
+        logger.info("Browser WebSocket client disconnected")
+    except Exception as e:
+        logger.error(f"Browser WebSocket error: {e}")
         await websocket.send_json({"type": "error", "content": str(e)})
         await websocket.close()
 

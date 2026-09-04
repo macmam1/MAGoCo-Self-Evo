@@ -8,6 +8,7 @@ import {
   Link,
   Clock,
   Settings,
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 import { Sidebar } from "@/components/Layout/Sidebar";
@@ -21,6 +22,7 @@ import { ApprovalGates } from "@/components/Approvals/ApprovalGates";
 import { IntegrationsPanel } from "@/components/Integrations/IntegrationsPanel";
 import { ExecutionHistory } from "@/components/History/ExecutionHistory";
 import { SettingsDashboard } from "@/components/Settings/SettingsDashboard";
+import { AgentBrowser } from "@/components/Browser/AgentBrowser";
 import { applyAllPreferences, watchSystemTheme, applyLang, getLang } from "@/theme/theme";
 import { useTranslation } from "react-i18next";
 
@@ -36,6 +38,7 @@ const TABS: AppTab[] = [
   { id: "chat", label: "nav.chat", group: "groups.general", icon: MessageSquare },
   { id: "ide", label: "nav.ide", group: "groups.general", icon: Code },
   { id: "workflows", label: "nav.workflows", group: "groups.general", icon: Workflow },
+  { id: "browser", label: "nav.browser", group: "groups.general", icon: Globe },
   { id: "approvals", label: "nav.approvals", group: "groups.operations", icon: CheckSquare },
   { id: "integrations", label: "nav.integrations", group: "groups.operations", icon: Link },
   { id: "history", label: "nav.history", group: "groups.operations", icon: Clock },
@@ -81,6 +84,7 @@ export default function App() {
           {activeTab === "chat" && <ChatConsole />}
           {activeTab === "ide" && <CodingIDE />}
           {activeTab === "workflows" && <WorkflowDesigner />}
+          {activeTab === "browser" && <AgentBrowser />}
           {activeTab === "approvals" && <ApprovalGates />}
           {activeTab === "integrations" && <IntegrationsPanel />}
           {activeTab === "history" && <ExecutionHistory />}
