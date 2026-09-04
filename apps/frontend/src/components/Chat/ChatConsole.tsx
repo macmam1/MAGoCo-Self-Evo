@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip, Sparkles, Brain } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_CHAT_URL } from "@/config";
@@ -16,6 +16,8 @@ export function ChatConsole() {
     useWebSocket(WS_CHAT_URL);
 
   const [expandedThinking, setExpandedThinking] = useState<Record<string, boolean>>({});
+  const [streamingThinking, setStreamingThinking] = useState<Record<string, string>>({});
+  const [streamingAnswer, setStreamingAnswer] = useState<Record<string, string>>({});
 
   useEffect(() => {
     connect();
@@ -41,12 +43,30 @@ export function ChatConsole() {
     }
   };
 
-  const toggleThinking = (msgId: string) => {
+  const toggleThinking = useCallback((msgId: string) => {
     setExpandedThinking((prev) => ({
       ...prev,
       [msgId]: !prev[msgId],
     }));
-  };
+  }, []);
+
+  // Simulate streaming thinking tokens for demo
+  useEffect(() => {
+    if (!isThinking) return;
+    
+    // Find the last assistant message that's being streamed
+    const streamingMsg = messages.findLast((m) => m.role === "assistant" && !m.content);
+    if (!streamingMsg) return;
+
+    const interval = setInterval(() => {
+      setStreamingThinking((prev) => ({
+        ...prev,
+        [streamingMsg.id]: prev[streamingMsg.id] + "▊",
+      }));
+    }, 50);
+
+    return () => clearInterval(interval);
+  }, [isThinking, messages]);
 
   return (
     <div className="flex flex-col h-full glass-soft overflow-hidden">
@@ -190,39 +210,63 @@ export function ChatConsole() {
               </div>
             )}
 
-            {/* Assistant bubble with thinking */}
+            {/* Assistant bubble with streaming thinking */}
             {(msg.role === "assistant" || msg.role === "status") && (
               <div className="flex items-start space-x-3">
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent to-accent-2 flex items-center justify-center flex-shrink-0">
                   <Bot size={14} />
                 </div>
                 <div className="max-w-[80%] space-y-2">
-                  {/* Thinking block */}
-                  <div className="glass-soft rounded-xl p-3 border border-white/5">
-                    <button
-                      onClick={() => toggleThinking(msg.id)}
-                      className="flex items-center space-x-2 text-xs text-text-2 hover:text-text-0 transition-colors w-full"
-                    >
-                      <span>🤔 در حال فکر کردن</span>
-                      {expandedThinking[msg.id] ? (
-                        <ChevronUp size={12} />
-                      ) : (
-                        <ChevronDown size={12} />
-                      )}
-                    </button>
+                  {/* Streaming Thinking Block */}
+                  {(msg.thinking || streamingThinking[msg.id] || isThinking) && (
+                    <div className="glass-soft rounded-xl p-3 border border-white/5 transition-all duration-200">
+                      <button
+                        onClick={() => toggleThinking(msg.id)}
+                        className="flex items-center space-x-2 text-xs text-text-2 hover:text-text-0 transition-colors w-full"
+                      >
+                        <Brain className="h-3.5 w-3.5" style={{ color: "var(--accent-2)" }} />
+                        <span>{t("thinking_process")}</span>
+                        {expandedThinking[msg.id] ? (
+                          <ChevronUp size={12} />
+                        ) : (
+                          <ChevronDown size={12} />
+                        )}
+                        {(streamingThinking[msg.id] || isThinking) && (
+                          <span className="ml-auto text-[10px] animate-pulse" style={{ color: "var(--accent-2)" }}>
+                            {t("streaming")}
+                          </span>
+                        )}
+                      </button>
 
-                    {expandedThinking[msg.id] && msg.thinking && (
-                      <div className="mt-2 text-xs text-text-2 whitespace-pre-wrap break-words">
-                        {msg.thinking}
+                      {expandedThinking[msg.id] && (
+                        <div className="mt-2 text-xs text-text-2 whitespace-pre-wrap break-words font-mono">
+                          {streamingThinking[msg.id] || msg.thinking || t("thinking_placeholder")}
+                          {(streamingThinking[msg.id] || isThinking) && (
+                            <span className="animate-pulse" style={{ color: "var(--accent)" }}>▊</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Answer with streaming */}
+                  <div className="bg-white/5 border border-white/10 rounded-2xl rounded-bl-none px-4 py-3 relative">
+                    {streamingAnswer[msg.id] && (
+                      <div className="absolute inset-0 bg-black/10 rounded-2xl rounded-bl-none pointer-events-none" />
+                    )}
+                    <p className="text-sm text-text-0 whitespace-pre-wrap break-words relative z-10">
+                      {streamingAnswer[msg.id] || msg.content || t("generating_answer")}
+                      {streamingAnswer[msg.id] && <span className="animate-pulse" style={{ color: "var(--accent)" }}>▊</span>}
+                    </p>
+                    {!msg.content && !streamingAnswer[msg.id] && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="flex items-center space-x-1">
+                          <span className="w-1.5 h-1.5 bg-accent rounded-full thinking-dot" />
+                          <span className="w-1.5 h-1.5 bg-accent-2 rounded-full thinking-dot" style={{ animationDelay: "0.2s" }} />
+                          <span className="w-1.5 h-1.5 bg-accent-3 rounded-full thinking-dot" style={{ animationDelay: "0.4s" }} />
+                        </div>
                       </div>
                     )}
-                  </div>
-
-                  {/* Answer */}
-                  <div className="bg-white/5 border border-white/10 rounded-2xl rounded-bl-none px-4 py-3">
-                    <p className="text-sm text-text-0 whitespace-pre-wrap break-words">
-                      {msg.content}
-                    </p>
                   </div>
                 </div>
               </div>

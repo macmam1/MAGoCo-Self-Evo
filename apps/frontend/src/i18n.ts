@@ -23,13 +23,19 @@ const resources = {
       },
       groups: { general: "General", operations: "Operations", system: "System" },
       topbar: { search: "Search or jump to…" },
-      hero: {
+hero: {
         greeting: "Good evening, Operator",
         sub: "I'm Rune, where should we start today?",
         example: "Example: Summarise my last agent run and suggest next steps…",
         previous: "Previous chats",
       },
-browser: {
+      thinking: {
+        thinking_process: "Thinking Process",
+        streaming: "Streaming…",
+        thinking_placeholder: "Agent is reasoning…",
+        generating_answer: "Generating answer…",
+      },
+      browser: {
         agent: "Agent Browser",
         subtitle: "Live browser sessions with AI control",
         connecting: "Connecting to browser service…",
@@ -108,6 +114,12 @@ browser: {
         sub: "من رون هستم، امروز از کجا شروع کنیم؟",
         example: "مثال: آخرین اجرای ایجنت را خلاصه کن و قدم بعدی را پیشنهاد بده…",
         previous: "گفتگوهای قبلی",
+      },
+      thinking: {
+        thinking_process: "فرآیند تفکر",
+        streaming: "در حال جریان…",
+        thinking_placeholder: "ایجنت در حال استدلال است…",
+        generating_answer: "در حال تولید پاسخ…",
       },
       browser: {
         agent: "مرورگر ایجنت",
