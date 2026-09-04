@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Bot, ChevronDown, type LucideIcon } from "lucide-react";
+import { Bot, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { getDensity } from "@/theme/theme";
 
 export interface SidebarTab {
@@ -61,10 +62,12 @@ export function Sidebar({
   tabs,
   activeTab,
   onTabChange,
+  browserSessions = 0,
 }: {
   tabs: SidebarTab[];
   activeTab: string;
   onTabChange: (tab: string) => void;
+  browserSessions?: number;
 }) {
   const [compact, setCompact] = useState(getDensity() === "compact");
 
@@ -118,6 +121,9 @@ export function Sidebar({
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
               9Router · Auto
             </span>
+            <Badge variant="default" className="h-2.5 w-2.5 rounded-full">
+              {browserSessions > 0 && <span>{browserSessions}</span>}
+            </Badge>
             <ChevronDown className="h-3.5 w-3.5" />
           </button>
         )}
