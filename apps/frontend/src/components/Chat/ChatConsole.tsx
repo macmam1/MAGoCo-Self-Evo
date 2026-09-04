@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip, Sparkles, Brain, Edit, GitBranch, RotateCcw, MoreHorizontal, Trash2 } from "lucide-react";
+import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip, Sparkles, Brain, Edit, GitBranch, RotateCcw, MoreHorizontal, Trash2, Settings, Zap } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_CHAT_URL } from "@/config";
@@ -24,6 +24,8 @@ export function ChatConsole() {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editInput, setEditInput] = useState("");
   const [showMessageMenu, setShowMessageMenu] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState("9Router · Auto");
+  const [showModelMenu, setShowModelMenu] = useState(false);
 
   useEffect(() => {
     connect();
@@ -48,6 +50,17 @@ export function ChatConsole() {
       handleSend();
     }
   };
+
+  const MODELS = [
+    { id: "9router-auto", name: "9Router · Auto", icon: Zap, desc: "Auto-select best model" },
+    { id: "gpt-4o", name: "GPT-4o", icon: Brain, desc: "OpenAI GPT-4o" },
+    { id: "gpt-4o-mini", name: "GPT-4o Mini", icon: Brain, desc: "Fast, cost-effective" },
+    { id: "claude-3.5-sonnet", name: "Claude 3.5 Sonnet", icon: Sparkles, desc: "Anthropic flagship" },
+    { id: "claude-3.5-haiku", name: "Claude 3.5 Haiku", icon: Sparkles, desc: "Fast Claude" },
+    { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", icon: Settings, desc: "Google long context" },
+    { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", icon: Settings, desc: "Fast Google" },
+    { id: "local-llama", name: "Local (Ollama)", icon: Zap, desc: "Run locally" },
+  ];
 
   const toggleThinking = useCallback((msgId: string) => {
     setExpandedThinking((prev) => ({
@@ -94,10 +107,13 @@ export function ChatConsole() {
       if (showMessageMenu && !(e.target as HTMLElement).closest('[data-message-menu]')) {
         setShowMessageMenu(null);
       }
+      if (showModelMenu && !(e.target as HTMLElement).closest('[data-model-menu]')) {
+        setShowModelMenu(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showMessageMenu]);
+  }, [showMessageMenu, showModelMenu]);
 
   // Simulate streaming thinking tokens for demo
   useEffect(() => {
@@ -198,16 +214,62 @@ export function ChatConsole() {
         >
           {isConnected ? "Online" : "Offline"}
         </Badge>
-        <span
-          className="text-[11px] font-medium px-2.5 py-1 rounded-full border hidden sm:inline-block"
-          style={{
-            background: "var(--bg-2)",
-            borderColor: "var(--border-glass)",
-            color: "var(--text-1)",
-          }}
-        >
-          9Router · Auto ▾
-        </span>
+
+        {/* Model Selector */}
+        <div className="relative hidden sm:inline-block">
+          <button
+            onClick={() => setShowModelMenu(!showModelMenu)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium transition-colors hover:border-[var(--accent)]"
+            style={{
+              background: "var(--bg-2)",
+              borderColor: "var(--border-glass)",
+              color: "var(--text-1)",
+            }}
+          >
+            <Zap className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} />
+            <span>{selectedModel}</span>
+            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showModelMenu && "rotate-180")} />
+          </button>
+
+          {showModelMenu && (
+            <div className="absolute right-0 top-full mt-1 z-20 glass-strong rounded-xl border p-1 animate-slide-down min-w-[200px]"
+                 style={{ borderColor: "var(--border-glass)", background: "var(--bg-1)" }}>
+              {MODELS.map((model) => {
+                const Icon = model.icon;
+                return (
+                  <button
+                    key={model.id}
+                    onClick={() => {
+                      setSelectedModel(model.name);
+                      setShowModelMenu(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors",
+                      selectedModel === model.name
+                        ? "bg-primary/20 text-primary"
+                        : "text-text-1 hover:bg-white/[0.03] hover:text-text-0"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" style={{ color: "var(--accent)" }} />
+                    <div className="flex-1 text-left">
+                      <div className="font-medium truncate" style={{ color: "var(--text-0)" }}>
+                        {model.name}
+                      </div>
+                      <div className="text-[10px] truncate" style={{ color: "var(--text-2)" }}>
+                        {model.desc}
+                      </div>
+                    </div>
+                    {selectedModel === model.name && (
+                      <span className="text-[10px]" style={{ color: "var(--accent)" }}>
+                        ✓
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Messages */}

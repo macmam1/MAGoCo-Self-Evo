@@ -52,6 +52,11 @@ hero: {
         cancel: "Cancel",
         edit_placeholder: "Edit your message…",
       },
+      model_switcher: {
+        select_model: "Select Model",
+        current_model: "Current Model",
+        auto_select: "Auto-select best model",
+      },
       browser: {
         agent: "Agent Browser",
         subtitle: "Live browser sessions with AI control",
@@ -154,6 +159,11 @@ hero: {
         save: "ذخیره",
         cancel: "لغو",
         edit_placeholder: "پیام خود را ویرایش کنید…",
+      },
+      model_switcher: {
+        select_model: "انتخاب مدل",
+        current_model: "مدل فعلی",
+        auto_select: "انتخاب خودکار بهترین مدل",
       },
       browser: {
         agent: "مرورگر ایجنت",
