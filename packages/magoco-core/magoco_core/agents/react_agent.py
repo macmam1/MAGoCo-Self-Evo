@@ -123,12 +123,10 @@ class ReActAgent:
         )
 
     async def _act(self, tool_name: str, **kwargs) -> ToolResult:
-        """Execute a tool action."""
-        tool = tool_registry.get(tool_name)
-        if not tool:
-            return ToolResult(success=False, content="", error=f"Tool '{tool_name}' not found")
+        """Execute a tool action via the guarded executor (policy + hooks + audit)."""
+        from magoco_core.security import default_executor
 
-        result = await tool.execute(**kwargs)
+        result = await default_executor.run(tool_name, kwargs)
         self.memory.append({"role": "tool", "content": result.content})
         return result
 

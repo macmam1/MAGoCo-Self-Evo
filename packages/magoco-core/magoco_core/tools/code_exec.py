@@ -33,7 +33,7 @@ class CodeExecTool(Tool):
         }
     
     async def execute(self, code: str, timeout: float = 10) -> ToolResult:
-        """Execute Python code with timeout and resource limits."""
+        """Execute Python code once with timeout and resource limits."""
         try:
             # Security: Block dangerous imports
             dangerous_patterns = [
@@ -42,55 +42,39 @@ class CodeExecTool(Tool):
             for pattern in dangerous_patterns:
                 if pattern in code:
                     return ToolResult(
-                        success=False, 
-                        content="", 
+                        success=False,
+                        content="",
                         error=f"Blocked dangerous pattern: {pattern}"
                     )
-            
+
             # Validate code syntax
             try:
                 ast.parse(code)
             except SyntaxError as e:
                 return ToolResult(success=False, content="", error=f"Syntax error: {e}")
-            
-            # Execute code in isolated subprocess using python -c
-            exec_code = f"""
-import sys
-import io
 
-stdout_capture = io.StringIO()
-stderr_capture = io.StringIO()
-
-# Capture stdout
-old_stdout = sys.stdout
-sys.stdout = stdout_capture
-
-try:
-{self._indent(code)}
-finally:
-    sys.stdout = old_stdout
-
-stdout_val = stdout_capture.getvalue()
-stderr_val = ""
-
-# Capture stderr
-old_stderr = sys.stderr
-sys.stderr = stderr_capture
-
-try:
-{self._indent(code)}
-finally:
-    sys.stderr = old_stderr
-
-stderr_val = stderr_capture.getvalue()
-
-# Execute with clean exit
-exit_code = 0
-
-print("__EXIT__:" + str(exit_code))
-print("__STDOUT__:" + stdout_val)
-print("__STDERR__:" + stderr_val)
-"""
+            # Run user code exactly ONCE, capturing stdout+stderr.
+            # Markers are base64 so multi-line output survives line parsing.
+            exec_code = (
+                "import sys, io, traceback, base64\n"
+                "_buf_out = io.StringIO()\n"
+                "_buf_err = io.StringIO()\n"
+                "_old_out, _old_err = sys.stdout, sys.stderr\n"
+                "sys.stdout, sys.stderr = _buf_out, _buf_err\n"
+                "_exit = 0\n"
+                "try:\n"
+                f"{self._indent(code)}\n"
+                "except SystemExit as _se:\n"
+                "    _exit = int(_se.code or 0)\n"
+                "except BaseException:\n"
+                "    _exit = 1\n"
+                "    traceback.print_exc()\n"
+                "finally:\n"
+                "    sys.stdout, sys.stderr = _old_out, _old_err\n"
+                "print('__EXIT__:' + str(_exit))\n"
+                "print('__STDOUT_B64__:' + base64.b64encode(_buf_out.getvalue().encode()).decode())\n"
+                "print('__STDERR_B64__:' + base64.b64encode(_buf_err.getvalue().encode()).decode())\n"
+            )
             
             with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
                 f.write(exec_code)
@@ -112,25 +96,32 @@ print("__STDERR__:" + stderr_val)
             stdout_val = ""
             stderr_val = ""
             
+            import base64 as _b64
+
             for line in result.stdout.splitlines():
                 if line.startswith("__EXIT__:"):
-                    exit_code = int(line.split(":")[1])
-                elif line.startswith("__STDOUT__:"):
-                    stdout_val = ":".join(line.split(":")[1:])
-                elif line.startswith("__STDERR__:"):
-                    stderr_val = ":".join(line.split(":")[1:])
+                    exit_code = int(line.split("__EXIT__:", 1)[1].strip() or 0)
+                elif line.startswith("__STDOUT_B64__:"):
+                    try:
+                        stdout_val = _b64.b64decode(line.split("__STDOUT_B64__:", 1)[1]).decode()
+                    except Exception:
+                        stdout_val = ""
+                elif line.startswith("__STDERR_B64__:"):
+                    try:
+                        stderr_val = _b64.b64decode(line.split("__STDERR_B64__:", 1)[1]).decode()
+                    except Exception:
+                        stderr_val = ""
+
+            if result.stderr and not stderr_val:
+                stderr_val = result.stderr.strip()[:2000]
+            if result.returncode != 0 and exit_code == 0:
+                exit_code = result.returncode
             
-            # Also check result stdout/stdout
-            stdout_val = stdout_val or ""
-            stderr_val = stderr_val or ""
-            
-            if result.stdout and not stdout_val and not stderr_val:
-                stdout_val = result.stdout.strip()
-            
+            ok = exit_code == 0
             return ToolResult(
-                success=exit_code == 0,
+                success=ok,
                 content=stdout_val,
-                error=stderr_val if stderr_val and exit_code else None,
+                error=None if ok else (stderr_val or f"exit {exit_code}"),
                 metadata={"exit_code": exit_code}
             )
             

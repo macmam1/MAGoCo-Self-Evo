@@ -11,13 +11,16 @@ from magoco_core.tools.code_exec import CodeExecTool
 def test_registry():
     """Verify all tools registered."""
     tools = tool_registry.list_tools()
-    assert len(tools) == 4, f"Expected 4 tools, got {len(tools)}"
-    
+    assert len(tools) == 7, f"Expected 7 tools, got {len(tools)}"
+
     names = [t.name for t in tools]
     assert "file_read" in names
     assert "file_write" in names
     assert "file_list" in names
     assert "python_exec" in names
+    assert "bash_exec" in names
+    assert "web_search" in names
+    assert "web_fetch" in names
     
     print("✅ All tools registered:", names)
 
