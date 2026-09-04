@@ -25,6 +25,7 @@ from app.api.v1.integrations import router as integrations_router
 from app.api.v1.executions import router as executions_router
 from app.api.v1.workflows import router as workflows_router
 from app.api.v1.skills import router as skills_router
+from app.api.v1.features import router as features_router
 from app.core.config import settings
 from app.db import init_db
 from app.services.browser_service import browser_service
@@ -74,6 +75,7 @@ app.include_router(workflows_router, prefix="/api/v1")
 app.include_router(integrations_router, prefix="/api/v1")
 app.include_router(executions_router, prefix="/api/v1")
 app.include_router(skills_router, prefix="/api/v1")
+app.include_router(features_router, prefix="/api/v1")
 
 
 @app.get("/health")

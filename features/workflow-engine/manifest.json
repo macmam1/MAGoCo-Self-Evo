@@ -1,0 +1,25 @@
+{
+  "id": "workflow-engine",
+  "name": "Workflow Engine",
+  "description": "Visual DAG workflow builder with conditional branching, parallel execution, and templates",
+  "version": "1.0.0",
+  "author": "MAGoCo Team",
+  "dependencies": ["chat-core"],
+  "category": "workflow",
+  "priority": 80,
+  "enabledByDefault": true,
+  "minCoreVersion": "0.3.0",
+  "entryPoints": {
+    "main": "WorkflowDesigner",
+    "components": {
+      "WorkflowDesigner": "./WorkflowDesigner"
+    }
+  },
+  "permissions": ["workflow:create", "workflow:execute", "workflow:manage"],
+  "meta": {
+    "tags": ["workflow", "dag", "automation"],
+    "icon": "GitBranch",
+    "color": "#f5a524",
+    "docsUrl": "https://docs.magoco.ai/features/workflow-engine"
+  }
+}

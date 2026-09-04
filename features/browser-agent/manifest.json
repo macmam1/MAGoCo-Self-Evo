@@ -1,0 +1,25 @@
+{
+  "id": "browser-agent",
+  "name": "Browser Agent",
+  "description": "Live browser automation with screenshot streaming and human-in-the-loop controls",
+  "version": "1.0.0",
+  "author": "MAGoCo Team",
+  "dependencies": ["chat-core"],
+  "category": "browser",
+  "priority": 90,
+  "enabledByDefault": true,
+  "minCoreVersion": "0.3.0",
+  "entryPoints": {
+    "main": "AgentBrowser",
+    "components": {
+      "AgentBrowser": "./AgentBrowser"
+    }
+  },
+  "permissions": ["browser:navigate", "browser:click", "browser:type", "browser:screenshot"],
+  "meta": {
+    "tags": ["browser", "automation", "playwright"],
+    "icon": "Globe",
+    "color": "#22d3ee",
+    "docsUrl": "https://docs.magoco.ai/features/browser-agent"
+  }
+}
