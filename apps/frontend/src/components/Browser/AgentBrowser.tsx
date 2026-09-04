@@ -6,6 +6,7 @@ import { WS_AGENT_BROWSER_URL } from "@/config";
 import { cn } from "@/lib/utils";
 import { Button, Badge, Card, CardHeader, CardTitle, CardContent } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 
 export interface BrowserSession {
   id: string;
@@ -27,6 +28,12 @@ export function AgentBrowser() {
     type: "navigate" | "close" | "approve";
     data: any;
   } | null>(null);
+  const [, setBrowserSessionCount] = useLocalStorage("browser-sessions-count", 0);
+
+  // Sync session count to localStorage for Sidebar badge
+  useEffect(() => {
+    setBrowserSessionCount(sessions.length);
+  }, [sessions.length, setBrowserSessionCount]);
 
   const { messages, isConnected, connect, sendMessage, ws } = useWebSocket(
     WS_AGENT_BROWSER_URL
