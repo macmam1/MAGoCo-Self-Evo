@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Mic, Paperclip, ArrowRight } from "lucide-react";
+import { Send, Bot, User, Mic, Paperclip, ArrowRight, AlertTriangle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_AGENT_BROWSER_URL } from "@/config";
 import { cn } from "@/lib/utils";
 import { Button, Badge, Card, CardHeader, CardTitle, CardContent } from "@/components/ui";
+import { Modal } from "@/components/ui/Modal";
 
 export interface BrowserSession {
   id: string;
@@ -22,6 +23,10 @@ export function AgentBrowser() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [serverStatus, setServerStatus] = useState<string>("disconnected");
+  const [pendingAction, setPendingAction] = useState<{
+    type: "navigate" | "close" | "approve";
+    data: any;
+  } | null>(null);
 
   const { messages, isConnected, connect, sendMessage, ws } = useWebSocket(
     WS_AGENT_BROWSER_URL
@@ -78,13 +83,9 @@ export function AgentBrowser() {
   const navigate = useCallback(
     (url: string) => {
       if (!isConnected || !activeSessionId) return;
-      sendMessage(JSON.stringify({
-        type: "navigate",
-        sessionId: activeSessionId,
-        url,
-      }));
+      confirmAction("navigate", { url, sessionId: activeSessionId });
     },
-    [isConnected, activeSessionId, sendMessage]
+    [isConnected, activeSessionId, confirmAction]
   );
 
   // Send click command to agent (user-approved)
@@ -127,6 +128,39 @@ export function AgentBrowser() {
     },
     [isConnected, sendMessage, activeSessionId]
   );
+
+  // Confirm action handler
+  const confirmAction = useCallback(
+    (type: "navigate" | "close" | "approve", data: any) => {
+      setPendingAction({ type, data });
+    },
+    []
+  );
+
+  const executePendingAction = useCallback(() => {
+    if (!pendingAction || !isConnected) return;
+    const { type, data } = pendingAction;
+    
+    switch (type) {
+      case "navigate":
+        navigate(data.url);
+        break;
+      case "close":
+        closeSession(data.id);
+        break;
+      case "approve":
+        sendMessage(JSON.stringify({
+          type: "approve",
+          sessionId: data.sessionId,
+        }));
+        break;
+    }
+    setPendingAction(null);
+  }, [pendingAction, isConnected, navigate, closeSession, sendMessage]);
+
+  const cancelPendingAction = useCallback(() => {
+    setPendingAction(null);
+  }, []);
 
   // Format timestamp
   const formatTimestamp = useCallback(
@@ -278,10 +312,7 @@ export function AgentBrowser() {
           size="sm"
           onClick={() => {
             if (!activeSessionId) return;
-            sendMessage(JSON.stringify({
-              type: "approve",
-              sessionId: activeSessionId,
-            }));
+            confirmAction("approve", { sessionId: activeSessionId });
           }}
         >
           {t("approve_action")}
@@ -303,12 +334,43 @@ export function AgentBrowser() {
           size="sm"
           onClick={() => {
             if (!activeSessionId) return;
-            closeSession(activeSessionId);
+            confirmAction("close", { id: activeSessionId });
           }}
         >
           {t("close_session")}
         </Button>
       </div>
+    </div>
+
+    {/* Confirmation Modal */}
+    <Modal
+      isOpen={!!pendingAction}
+      onClose={cancelPendingAction}
+      title={
+        pendingAction?.type === "navigate"
+          ? t("confirm_navigate")
+          : pendingAction?.type === "close"
+          ? t("confirm_close")
+          : t("confirm_approve")
+      }
+      description={
+        pendingAction?.type === "navigate"
+          ? t("confirm_navigate_desc", { url: pendingAction.data.url })
+          : pendingAction?.type === "close"
+          ? t("confirm_close_desc")
+          : t("confirm_approve_desc")
+      }
+      size="sm"
+    >
+      <div className="flex justify-end gap-2 pt-2">
+        <Button variant="outline" onClick={cancelPendingAction}>
+          {t("cancel")}
+        </Button>
+        <Button variant="primary" onClick={executePendingAction}>
+          {t("confirm")}
+        </Button>
+      </div>
+    </Modal>
     </div>
   );
 }
