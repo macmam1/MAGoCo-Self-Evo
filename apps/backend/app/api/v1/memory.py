@@ -314,9 +314,6 @@ async def extract_memories(
     store=Depends(get_store)
 ):
     """Extract memories from text content (placeholder for LLM-based extraction)"""
-    # This is a placeholder - in production, use LLM to extract structured memories
-    # For now, create a simple episodic entry
-    
     entry = MemoryEntry(
         type=MemoryType.EPISODIC,
         scope=MemoryScope.SESSION,
@@ -329,3 +326,101 @@ async def extract_memories(
     
     store.add(entry)
     return {"success": True, "id": entry.id, "extracted": 1}
+
+
+# ============ Enhanced Episodic ============
+
+class ConsolidateRequest(BaseModel):
+    session_id: str
+    importance_threshold: float = 0.7
+
+
+class SummarizeRequest(BaseModel):
+    session_id: str
+    max_length: int = 500
+
+
+@router.post("/episodic/consolidate", response_model=Dict[str, Any])
+async def consolidate_session(request: ConsolidateRequest, store=Depends(get_store)):
+    """Consolidate episodic memories from a session to long-term semantic memory"""
+    count = store.consolidate_working_to_longterm(
+        session_id=request.session_id,
+        importance_threshold=request.importance_threshold,
+    )
+    return {"success": True, "consolidated": count, "session_id": request.session_id}
+
+
+@router.post("/episodic/summarize", response_model=Dict[str, Any])
+async def summarize_session(request: SummarizeRequest, store=Depends(get_store)):
+    """Generate a summary of a session"""
+    summary = store.summarize_session(request.session_id, request.max_length)
+    return {"success": True, "session_id": request.session_id, "summary": summary}
+
+
+@router.get("/episodic/timeline/{session_id}", response_model=List[Dict[str, Any]])
+async def get_session_timeline(session_id: str, store=Depends(get_store)):
+    """Get timeline of a session"""
+    timeline = store.get_session_timeline(session_id)
+    return timeline
+
+
+@router.get("/memory-graph/{entity}", response_model=Dict[str, Any])
+async def get_memory_graph(entity: str, max_depth: int = 2, store=Depends(get_store)):
+    """Get memory graph around an entity"""
+    graph = store.get_memory_graph(entity, max_depth)
+    return graph
+
+
+@router.post("/episodic/extract-facts", response_model=Dict[str, Any])
+async def extract_facts_from_session(
+    session_id: str,
+    store=Depends(get_store)
+):
+    """Extract structured facts from a session's conversation"""
+    # Get all messages from the session
+    entries = store.get_episodic_log(session_id=session_id, limit=1000)
+    
+    messages = []
+    for entry in entries:
+        messages.append({
+            "content": entry.content,
+            "role": entry.metadata.get("role", "unknown"),
+        })
+    
+    facts = store.extract_facts_from_conversation(messages, session_id)
+    return {
+        "success": True,
+        "session_id": session_id,
+        "facts_extracted": len(facts),
+        "facts": [f.to_dict() for f in facts],
+    }
+
+
+@router.get("/episodic/sessions", response_model=List[Dict[str, Any]])
+async def list_sessions(limit: int = 50, store=Depends(get_store)):
+    """List all sessions with episodic memories"""
+    # Get unique session IDs from episodic log
+    sessions = {}
+    try:
+        with open(store.episodic_log, "r", encoding="utf-8") as f:
+            for line in f:
+                data = json.loads(line)
+                if data.get("type") == "episodic":
+                    sid = data.get("session_id")
+                    if sid:
+                        if sid not in sessions:
+                            sessions[sid] = {
+                                "session_id": sid,
+                                "first_seen": data.get("timestamp"),
+                                "last_seen": data.get("timestamp"),
+                                "message_count": 0,
+                            }
+                        sessions[sid]["message_count"] += 1
+                        if data.get("timestamp") > sessions[sid]["last_seen"]:
+                            sessions[sid]["last_seen"] = data.get("timestamp")
+    except Exception as e:
+        logger.error(f"Failed to read sessions: {e}")
+    
+    # Sort by last_seen descending
+    session_list = sorted(sessions.values(), key=lambda x: x["last_seen"], reverse=True)
+    return session_list[:limit]

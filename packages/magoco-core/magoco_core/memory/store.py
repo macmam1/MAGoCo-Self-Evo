@@ -702,22 +702,220 @@ class MemoryStore:
             cursor.execute("SELECT COUNT(*) FROM document_chunks")
             chunks = cursor.fetchone()[0]
         
-        episodic_count = 0
-        try:
-            with open(self.episodic_log, "r") as f:
-                episodic_count = sum(1 for _ in f)
-        except:
-            pass
+episodic_count = 0
+            try:
+                with open(self.episodic_log, "r") as f:
+                    episodic_count = sum(1 for _ in f)
+            except:
+                pass
+            
+            return {
+                "total_memories": total,
+                "by_type": type_counts,
+                "episodic_count": episodic_count,
+                "kg_nodes": kg_nodes,
+                "kg_edges": kg_edges,
+                "document_chunks": chunks,
+                "vector_store": "lancedb" if self.vector_table else "disabled",
+            }
+    
+    # ============ Auto-Extraction & Consolidation ============
+    
+    def extract_entities_and_relations(self, text: str) -> tuple[List[str], List[Dict[str, str]]]:
+        """
+        Extract entities and relations from text.
+        Placeholder for LLM-based extraction - in production use spaCy/Stanza + LLM.
+        """
+        # Simple regex-based extraction for demo
+        import re
         
-        return {
-            "total_memories": total,
-            "by_type": type_counts,
-            "episodic_count": episodic_count,
-            "kg_nodes": kg_nodes,
-            "kg_edges": kg_edges,
-            "document_chunks": chunks,
-            "vector_store": "lancedb" if self.vector_table else "disabled",
-        }
+        # Extract capitalized words as potential entities
+        entities = re.findall(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b', text)
+        entities = list(set(e for e in entities if len(e) > 2))
+        
+        # Simple relation patterns
+        relations = []
+        patterns = [
+            (r'(\w+)\s+is\s+(\w+)', 'is_a'),
+            (r'(\w+)\s+has\s+(\w+)', 'has'),
+            (r'(\w+)\s+works\s+(?:at|for)\s+(\w+)', 'works_at'),
+            (r'(\w+)\s+likes\s+(\w+)', 'likes'),
+        ]
+        
+        for pattern, relation in patterns:
+            for match in re.finditer(pattern, text, re.IGNORECASE):
+                relations.append({
+                    "source": match.group(1),
+                    "target": match.group(2),
+                    "relation": relation,
+                })
+        
+        return entities, relations
+    
+    def extract_facts_from_conversation(self, messages: List[Dict[str, Any]], session_id: str) -> List[MemoryEntry]:
+        """
+        Extract structured facts from conversation messages.
+        Creates semantic memories from conversation.
+        """
+        facts = []
+        
+        # Combine all messages
+        full_text = " ".join([m.get("content", "") for m in messages if m.get("content")])
+        
+        # Extract entities and relations
+        entities, relations = self.extract_entities_and_relations(full_text)
+        
+        # Create semantic memory entries for key facts
+        # In production, use LLM to extract structured facts
+        for entity in entities[:10]:  # Limit
+            entry = MemoryEntry(
+                type=MemoryType.SEMANTIC,
+                scope=MemoryScope.SESSION,
+                content=f"Entity mentioned: {entity}",
+                session_id=session_id,
+                experience_type="extracted_fact",
+                source="extracted",
+                tags={"entity", "auto-extracted"},
+                entities=[entity],
+                metadata={"source_text": full_text[:500]},
+            )
+            facts.append(entry)
+        
+        for rel in relations[:10]:
+            entry = MemoryEntry(
+                type=MemoryType.SEMANTIC,
+                scope=MemoryScope.SESSION,
+                content=f"Relation: {rel['source']} {rel['relation']} {rel['target']}",
+                session_id=session_id,
+                experience_type="extracted_relation",
+                source="extracted",
+                tags={"relation", "auto-extracted"},
+                entities=[rel["source"], rel["target"]],
+                relations=[rel],
+                metadata={"source_text": full_text[:500]},
+            )
+            facts.append(entry)
+        
+        # Add to store
+        for fact in facts:
+            self.add(fact)
+        
+        return facts
+    
+    def consolidate_working_to_longterm(self, session_id: str, importance_threshold: float = 0.7) -> int:
+        """
+        Consolidate working/episodic memories from a session to long-term semantic memory.
+        Moves important episodic memories to semantic memory.
+        """
+        episodic_entries = self.get_episodic_log(session_id=session_id, limit=1000)
+        
+        consolidated = 0
+        for entry in episodic_entries:
+            if entry.importance >= importance_threshold and entry.type == MemoryType.EPISODIC:
+                # Create semantic version
+                semantic_entry = MemoryEntry(
+                    type=MemoryType.SEMANTIC,
+                    scope=MemoryScope.USER,
+                    content=f"From session {session_id}: {entry.content}",
+                    metadata={
+                        "original_session": session_id,
+                        "original_timestamp": entry.timestamp.isoformat(),
+                        "consolidated_from": entry.id,
+                    },
+                    importance=entry.importance,
+                    source="consolidated",
+                    tags=entry.tags | {"consolidated"},
+                    entities=entry.entities,
+                    confidence=entry.confidence * 0.9,  # Slightly lower confidence
+                )
+                
+                self.add(semantic_entry)
+                consolidated += 1
+        
+        logger.info(f"Consolidated {consolidated} memories from session {session_id}")
+        return consolidated
+    
+    def summarize_session(self, session_id: str, max_length: int = 500) -> str:
+        """Generate a summary of a session from episodic log"""
+        entries = self.get_episodic_log(session_id=session_id, limit=200)
+        
+        if not entries:
+            return "No conversation history found."
+        
+        # Simple summary - in production use LLM
+        user_messages = [e.content for e in entries if e.metadata.get("role") == "user"]
+        assistant_messages = [e.content for e in entries if e.metadata.get("role") == "assistant"]
+        
+        summary_parts = []
+        if user_messages:
+            summary_parts.append(f"User asked about: {', '.join(user_messages[:3])}")
+        if assistant_messages:
+            summary_parts.append(f"Assistant provided: {', '.join(assistant_messages[:3])}")
+        
+        summary = ". ".join(summary_parts)
+        return summary[:max_length]
+    
+    def get_session_timeline(self, session_id: str) -> List[Dict[str, Any]]:
+        """Get timeline of a session"""
+        entries = self.get_episodic_log(session_id=session_id, limit=500)
+        
+        timeline = []
+        for entry in entries:
+            timeline.append({
+                "timestamp": entry.timestamp.isoformat(),
+                "type": entry.type.value,
+                "content": entry.content[:200],
+                "role": entry.metadata.get("role", "unknown"),
+                "importance": entry.importance,
+            })
+        
+        return timeline
+    
+    def get_memory_graph(self, center_entity: str, max_depth: int = 2) -> Dict[str, Any]:
+        """Get subgraph around an entity for visualization"""
+        nodes = []
+        edges = []
+        visited = set()
+        
+        def traverse(entity: str, depth: int):
+            if depth > 2 or entity in visited:
+                return
+            visited.add(entity)
+            
+            # Add center node
+            if entity not in [n["id"] for n in nodes]:
+                nodes.append({
+                    "id": entity,
+                    "label": entity,
+                    "type": "entity",
+                })
+            
+            # Find related edges
+            kg_edges = self.get_kg_neighbors(entity, max_depth=1)
+            for edge in kg_edges:
+                if edge.id not in [e["id"] for e in edges]:
+                    edges.append({
+                        "id": edge.id,
+                        "source": edge.source,
+                        "target": edge.target,
+                        "relation": edge.relation,
+                        "weight": edge.weight,
+                    })
+                
+                # Traverse neighbors
+                for edge in kg_edges:
+                    neighbor = edge.target if edge.source == entity else edge.source
+                    if neighbor not in visited:
+                        if neighbor not in [n["id"] for n in nodes]:
+                            nodes.append({
+                                "id": neighbor,
+                                "label": neighbor,
+                                "type": "entity",
+                            })
+        
+        traverse(center_entity, 0)
+        
+        return {"nodes": nodes, "edges": edges}
     
     def close(self):
         """Close connections"""
