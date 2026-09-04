@@ -1,89 +1,171 @@
-import { LayoutDashboard, MessageSquare, Code, Settings, Workflow, Bot, Link, Clock, Puzzle } from "lucide-react";
+import {
+  MessageSquare,
+  Code,
+  Workflow,
+  Settings,
+  CheckSquare,
+  Link,
+  Clock,
+  Bot,
+  ChevronDown,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface SidebarItemProps {
-  icon: React.ElementType;
+export interface SidebarTab {
+  id: string;
   label: string;
-  active?: boolean;
-  onClick?: () => void;
+  icon: string;
 }
 
-function SidebarItem({ icon: Icon, label, active, onClick }: SidebarItemProps) {
+const ICONS: Record<string, React.ElementType> = {
+  "🤖": MessageSquare,
+  "💻": Code,
+  "⚡": Workflow,
+  "✅": CheckSquare,
+  "🔌": Link,
+  "📜": Clock,
+  "⚙️": Settings,
+};
+
+const GROUPS: { title: string; ids: string[] }[] = [
+  { title: "General", ids: ["chat", "ide", "workflows"] },
+  { title: "Operations", ids: ["approvals", "integrations", "history"] },
+  { title: "System", ids: ["settings"] },
+];
+
+function SidebarItem({
+  icon: Icon,
+  label,
+  badge,
+  active,
+  onClick,
+}: {
+  icon: React.ElementType;
+  label: string;
+  badge?: string;
+  active?: boolean;
+  onClick?: () => void;
+}) {
   return (
     <button
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+        "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 border border-transparent",
         active
-          ? "bg-indigo-600/10 text-indigo-400 border border-indigo-500/20"
-          : "text-slate-400 hover:bg-[#15151f] hover:text-slate-200"
+          ? "text-[var(--text-0)]"
+          : "text-[var(--text-1)] hover:text-[var(--text-0)] hover:bg-white/[0.04]"
       )}
+      style={active ? { background: "var(--bg-2)", borderColor: "var(--border-glass)" } : undefined}
     >
-      <Icon className="h-4 w-4" />
-      <span>{label}</span>
+      <Icon className="h-4 w-4 shrink-0" style={active ? { color: "var(--accent)" } : undefined} />
+      <span className="flex-1 text-left">{label}</span>
+      {badge && (
+        <span
+          className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+          style={{ background: "color-mix(in srgb, var(--accent) 15%, transparent)", color: "var(--accent)" }}
+        >
+          {badge}
+        </span>
+      )}
     </button>
   );
 }
 
-export function Sidebar({ currentTab, onTabChange }: { currentTab: string; onTabChange: (tab: string) => void }) {
+export function Sidebar({
+  tabs,
+  activeTab,
+  onTabChange,
+}: {
+  tabs: SidebarTab[];
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+}) {
+  const byId = Object.fromEntries(tabs.map((t) => [t.id, t]));
   return (
-    <div className="w-64 border-r border-[#1f1f2e] bg-[#0a0a0f] flex flex-col justify-between p-3 select-none">
-      <div className="space-y-4">
+    <div
+      className="w-60 border-r flex flex-col justify-between p-3 select-none shrink-0"
+      style={{ borderColor: "var(--border-glass)", background: "var(--bg-1)" }}
+    >
+      <div className="space-y-5 overflow-y-auto">
         {/* Brand */}
-        <div className="flex items-center gap-2 px-2 py-2">
-          <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+        <div className="flex items-center gap-2.5 px-2 pt-1">
+          <div
+            className="h-8 w-8 rounded-[10px] flex items-center justify-center shadow-lg"
+            style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-2))" }}
+          >
             <Bot className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-sm text-slate-100 leading-none">MAGoCo</h1>
-            <span className="text-[10px] text-indigo-400 font-medium">Self-Evo Studio</span>
+            <h1 className="font-bold text-sm leading-none" style={{ color: "var(--text-0)" }}>
+              MAGoCo
+            </h1>
+            <span className="text-[10px] font-medium" style={{ color: "var(--accent)" }}>
+              Self-Evo Studio
+            </span>
           </div>
         </div>
 
-        {/* Navigation */}
-        <div className="space-y-1">
-          <SidebarItem
-            icon={MessageSquare}
-            label="Agent Chat"
-            active={currentTab === "chat"}
-            onClick={() => onTabChange("chat")}
-          />
-          <SidebarItem
-            icon={Code}
-            label="Coding IDE"
-            active={currentTab === "ide"}
-            onClick={() => onTabChange("ide")}
-          />
-          <SidebarItem
-            icon={Workflow}
-            label="Workflows"
-            active={currentTab === "workflows"}
-            onClick={() => onTabChange("workflows")}
-          />
-          <SidebarItem
-            icon={Settings}
-            label="Settings & LLM"
-            active={currentTab === "settings"}
-            onClick={() => onTabChange("settings")}
-          />
-          <SidebarItem
-            icon={MessageSquare}
-            label="Approvals"
-            active={currentTab === "approvals"}
-            onClick={() => onTabChange("approvals")}
-          />
-          <SidebarItem
-            icon={Link}
-            label="Integrations"
-            active={currentTab === "integrations"}
-            onClick={() => onTabChange("integrations")}
-          />
-          <SidebarItem
-            icon={Clock}
-            label="Execution History"
-            active={currentTab === "history"}
-            onClick={() => onTabChange("history")}
-          />
+        {/* Model pill (LucidAI pattern) */}
+        <button
+          className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium border"
+          style={{
+            background: "var(--bg-2)",
+            borderColor: "var(--border-glass)",
+            color: "var(--text-1)",
+          }}
+        >
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            9Router · Auto
+          </span>
+          <ChevronDown className="h-3.5 w-3.5" />
+        </button>
+
+        {/* Grouped nav (NeuroNest pattern) */}
+        {GROUPS.map((g) => (
+          <div key={g.title} className="space-y-1">
+            <div
+              className="px-3 text-[10px] font-semibold uppercase tracking-wider"
+              style={{ color: "var(--text-2)" }}
+            >
+              {g.title}
+            </div>
+            {g.ids.map((id) => {
+              const t = byId[id];
+              if (!t) return null;
+              return (
+                <SidebarItem
+                  key={id}
+                  icon={ICONS[t.icon] ?? MessageSquare}
+                  label={t.label}
+                  badge={id === "approvals" ? "3" : undefined}
+                  active={activeTab === id}
+                  onClick={() => onTabChange(id)}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
+
+      {/* User card (Ask Rune pattern) */}
+      <div
+        className="flex items-center gap-2.5 p-2.5 rounded-xl border mt-3"
+        style={{ background: "var(--bg-2)", borderColor: "var(--border-glass)" }}
+      >
+        <div
+          className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+          style={{ background: "linear-gradient(135deg, var(--accent-2), var(--accent-3))" }}
+        >
+          U
+        </div>
+        <div className="min-w-0">
+          <div className="text-xs font-semibold truncate" style={{ color: "var(--text-0)" }}>
+            Operator
+          </div>
+          <div className="text-[10px] truncate" style={{ color: "var(--text-2)" }}>
+            local workspace
+          </div>
         </div>
       </div>
     </div>

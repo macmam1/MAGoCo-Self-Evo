@@ -5,6 +5,24 @@
 @layer base {
   /* ---- Theme tokens. New designs from screenshots land here as new blocks. ---- */
   :root,
+  [data-theme="fusion"] {
+    /* Fusion: Ask Rune command-center + LucidAI thread + Finley cards */
+    --bg-0: #0a0a10;
+    --bg-1: #101016;
+    --bg-2: #171722;
+    --bg-glass: rgba(255, 255, 255, 0.035);
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --accent: #7c5cff;
+    --accent-2: #f5a524;
+    --accent-3: #22d3ee;
+    --text-0: #f4f4f8;
+    --text-1: #a3a3b5;
+    --text-2: #63636f;
+    --app-bg:
+      radial-gradient(1000px 500px at 50% -10%, rgba(124, 92, 255, 0.1), transparent 60%),
+      #0a0a10;
+  }
+
   [data-theme="midnight"] {
     /* Deep space dark theme (default) */
     --bg-0: #0a0a0f;

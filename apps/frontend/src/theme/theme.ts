@@ -9,6 +9,13 @@ export interface ThemeMeta {
 
 export const THEMES: ThemeMeta[] = [
   {
+    id: "fusion",
+    name: "Fusion",
+    blurb: "Ask Rune × NeuroNest × LucidAI — pro command center",
+    dark: true,
+    preview: ["#0a0a10", "#7c5cff", "#f5a524"],
+  },
+  {
     id: "midnight",
     name: "Midnight",
     blurb: "Deep-space dark, violet + teal glow",
@@ -40,7 +47,7 @@ export function getTheme(): string {
   } catch {
     /* ssr / private mode */
   }
-  return "midnight";
+  return "fusion";
 }
 
 export function applyTheme(id: string) {
