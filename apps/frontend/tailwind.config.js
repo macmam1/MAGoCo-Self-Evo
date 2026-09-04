@@ -31,7 +31,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["Vazirmatn", "Inter", "system-ui", "sans-serif"],
+        sans: ["var(--font-body)", "Vazirmatn", "Inter", "system-ui", "sans-serif"],
       },
     },
   },

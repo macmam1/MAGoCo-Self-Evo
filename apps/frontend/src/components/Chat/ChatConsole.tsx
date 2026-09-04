@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, ChevronDown, ChevronUp } from "lucide-react";
+import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_CHAT_URL } from "@/config";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
 export function ChatConsole() {
+  const { t } = useTranslation();
   const [input, setInput] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -93,10 +95,10 @@ export function ChatConsole() {
               className="text-2xl font-semibold text-center"
               style={{ color: "var(--text-0)" }}
             >
-              Good evening, Operator
+              {t("hero.greeting")}
             </h3>
             <p className="text-sm mt-1 mb-6" style={{ color: "var(--text-2)" }}>
-              I'm Rune, where should we start today?
+              {t("hero.sub")}
             </p>
 
             {/* Example composer → fills the real input */}
@@ -105,10 +107,18 @@ export function ChatConsole() {
                 setInput("Summarise my last agent run and suggest next steps")
               }
               className="w-full text-left rounded-2xl border p-4 mb-3 transition-colors hover:border-[var(--accent)]"
-              style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}
+              style={{
+                background: "var(--bg-1)",
+                borderColor: "var(--border-glass)",
+                boxShadow: "var(--shadow-card)",
+              }}
             >
-              <span className="text-sm" style={{ color: "var(--text-2)" }}>
-                Example: Summarise my last agent run and suggest next steps…
+              <span className="text-sm block" style={{ color: "var(--text-2)" }}>
+                {t("hero.example")}
+              </span>
+              <span className="flex items-center gap-3 mt-3" style={{ color: "var(--text-2)" }}>
+                <Paperclip className="h-4 w-4" />
+                <Mic className="h-4 w-4" />
               </span>
             </button>
 
@@ -138,7 +148,7 @@ export function ChatConsole() {
             {/* Previous chats (Finley-card pattern, mock for now) */}
             <div className="w-full">
               <div className="text-xs font-semibold mb-2" style={{ color: "var(--text-2)" }}>
-                Previous chats (128)
+                {t("hero.previous")} (128)
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {[

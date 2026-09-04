@@ -1,8 +1,19 @@
-import { Search, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { Search, ChevronDown, Languages } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useBackendStatus } from "@/hooks/useBackendStatus";
+import { applyLang, getLang } from "@/theme/theme";
 
 export function TopBar({ onOpenPalette }: { onOpenPalette: () => void }) {
   const backend = useBackendStatus();
+  const { t, i18n } = useTranslation();
+  const [lang, setLang] = useState(getLang());
+
+  const toggleLang = () => {
+    const next = lang === "fa" ? "en" : "fa";
+    i18n.changeLanguage(applyLang(next));
+    setLang(next);
+  };
 
   return (
     <header
@@ -20,7 +31,7 @@ export function TopBar({ onOpenPalette }: { onOpenPalette: () => void }) {
         }}
       >
         <Search className="h-3.5 w-3.5" />
-        <span className="flex-1 text-left">Search or jump to…</span>
+        <span className="flex-1 text-left">{t("topbar.search")}</span>
         <kbd
           className="text-[10px] px-1.5 py-0.5 rounded border"
           style={{ borderColor: "var(--border-glass)" }}
@@ -55,6 +66,21 @@ export function TopBar({ onOpenPalette }: { onOpenPalette: () => void }) {
         />
         {backend.online ? "Backend" : "Offline"}
       </span>
+
+      {/* Language toggle */}
+      <button
+        onClick={toggleLang}
+        title={lang === "fa" ? "Switch to English" : "تغییر به فارسی"}
+        className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg border transition-colors hover:border-[var(--accent)]"
+        style={{
+          background: "var(--bg-2)",
+          borderColor: "var(--border-glass)",
+          color: "var(--text-1)",
+        }}
+      >
+        <Languages className="h-3.5 w-3.5" />
+        {lang === "fa" ? "FA" : "EN"}
+      </button>
 
       {/* User */}
       <div
