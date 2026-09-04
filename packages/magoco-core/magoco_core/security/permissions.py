@@ -69,17 +69,21 @@ class PermissionEngine:
 
 
 def default_policy() -> PermissionEngine:
-    """Secure-by-default baseline: read-friendly, write/shell gated, secrets blocked."""
+    """Secure-by-default baseline: read-friendly, write/shell gated, secrets blocked.
+
+    NOTE: last match wins, so broad allows come FIRST and specific denies AFTER.
+    An explicit per-path allow appended later can still override (see tests).
+    """
     e = PermissionEngine()
-    # secrets first (can be overridden later by explicit allow — last wins)
+    # 1) broad read-friendly base ...
+    e.allow("read", "*").allow("glob", "*").allow("grep", "*")
+    e.allow("webfetch", "*").allow("websearch", "*")
+    # 2) ... gated actions ...
+    e.ask("edit", "*").ask("shell", "*").ask("subagent", "*").ask("skill", "*")
+    # 3) ... secrets denies LAST so they win over both base and gates
     e.deny("read", "*.env").deny("read", "*.env.*").deny("read", "*/.env")
     e.deny("edit", "*.env").deny("edit", "*.env.*").deny("edit", "*/.env")
     e.allow("read", "*.env.example")
-    # read-friendly
-    e.allow("read", "*").allow("glob", "*").allow("grep", "*")
-    e.allow("webfetch", "*").allow("websearch", "*")
-    # gated
-    e.ask("edit", "*").ask("shell", "*").ask("subagent", "*").ask("skill", "*")
     return e
 
 
