@@ -1,0 +1,113 @@
+"""Providers API - BYOM: user adds Ollama-local or OpenAI-compatible endpoints."""
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Dict, List, Optional, Any
+
+from magoco_core.llm.registry import get_provider_registry
+
+router = APIRouter(prefix="/providers", tags=["providers"])
+
+
+class ProviderCreate(BaseModel):
+    name: str
+    kind: str = "openai-compatible"  # ollama-local | openai-compatible
+    base_url: str = ""
+    api_key: str = ""
+    models: List[str] = []
+    default_model: str = ""
+    enabled: bool = True
+    timeout: float = 120.0
+    extra_headers: Dict[str, str] = {}
+
+
+class ProviderUpdate(BaseModel):
+    name: Optional[str] = None
+    kind: Optional[str] = None
+    base_url: Optional[str] = None
+    api_key: Optional[str] = None
+    models: Optional[List[str]] = None
+    default_model: Optional[str] = None
+    enabled: Optional[bool] = None
+    timeout: Optional[float] = None
+    extra_headers: Optional[Dict[str, str]] = None
+
+
+def _public(cfg) -> Dict[str, Any]:
+    d = cfg.to_dict()
+    d.pop("api_key_encrypted", None)  # NEVER leak ciphertext to clients
+    return d
+
+
+@router.get("/")
+async def list_providers(enabled_only: bool = False):
+    reg = get_provider_registry()
+    return [_public(c) for c in reg.list(enabled_only=enabled_only)]
+
+
+@router.post("/")
+async def create_provider(req: ProviderCreate):
+    reg = get_provider_registry()
+    if req.kind not in ("ollama-local", "openai-compatible"):
+        raise HTTPException(status_code=400, detail="kind must be ollama-local|openai-compatible")
+    if not req.base_url:
+        raise HTTPException(status_code=400, detail="base_url required")
+    cfg = reg.create(req.name, req.kind, req.base_url, req.api_key, req.models,
+                     req.default_model, req.enabled, req.timeout, req.extra_headers)
+    return _public(cfg)
+
+
+@router.get("/{provider_id}")
+async def get_provider(provider_id: str):
+    reg = get_provider_registry()
+    cfg = reg.get(provider_id)
+    if not cfg:
+        raise HTTPException(status_code=404, detail="not found")
+    return _public(cfg)
+
+
+@router.patch("/{provider_id}")
+async def update_provider(provider_id: str, req: ProviderUpdate):
+    reg = get_provider_registry()
+    cfg = reg.update(provider_id, **{k: v for k, v in req.model_dump().items() if v is not None})
+    if not cfg:
+        raise HTTPException(status_code=404, detail="not found")
+    return _public(cfg)
+
+
+@router.delete("/{provider_id}")
+async def delete_provider(provider_id: str):
+    reg = get_provider_registry()
+    if not reg.delete(provider_id):
+        raise HTTPException(status_code=404, detail="not found")
+    return {"success": True}
+
+
+@router.post("/{provider_id}/fetch-models")
+async def fetch_models_endpoint(provider_id: str):
+    reg = get_provider_registry()
+    try:
+        models = await reg.fetch_and_save_models(provider_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="not found")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"fetch failed: {str(e)[:300]}")
+    return {"success": True, "models": models}
+
+
+@router.post("/{provider_id}/test")
+async def test_provider(provider_id: str):
+    reg = get_provider_registry()
+    result = await reg.test_connection(provider_id)
+    if not result.get("ok") and result.get("error") == "provider not found":
+        raise HTTPException(status_code=404, detail="not found")
+    return result
+
+
+@router.post("/autodetect-ollama")
+async def autodetect_ollama():
+    reg = get_provider_registry()
+    cfg = await reg.autodetect_ollama()
+    if not cfg:
+        return {"success": False, "message": "no reachable Ollama, or already configured"}
+    return {"success": True, "provider": _public(cfg)}
