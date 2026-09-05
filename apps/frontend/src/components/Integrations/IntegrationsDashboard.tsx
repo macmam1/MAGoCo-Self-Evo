@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Globe, Plug, Webhook, KeyRound, RefreshCw, Download } from "lucide-react";
+import { Globe, Plug, Webhook, KeyRound, RefreshCw, Download, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button, Badge } from "@/components/ui";
 import { API_URL } from "@/config";
+import { TelegramPanel } from "./TelegramPanel";
 
-type TabId = "marketplace" | "installed" | "webhooks" | "oauth";
+type TabId = "marketplace" | "installed" | "webhooks" | "oauth" | "telegram";
 
 export function IntegrationsDashboard() {
   const { t } = useTranslation();
@@ -47,6 +48,7 @@ export function IntegrationsDashboard() {
     { id: "installed", label: t("integrations.installed", "Installed"), icon: Plug },
     { id: "webhooks", label: t("integrations.webhooks", "Webhooks"), icon: Webhook },
     { id: "oauth", label: t("integrations.oauth", "OAuth"), icon: KeyRound },
+    { id: "telegram", label: t("integrations.telegram", "Telegram"), icon: Send },
   ];
 
   return (
@@ -114,6 +116,7 @@ export function IntegrationsDashboard() {
         {tab === "installed" && <p className="text-sm text-text-2">Installed instances (local) — coming from instance API next.</p>}
         {tab === "webhooks" && <WebhookPanel />}
         {tab === "oauth" && <OAuthPanel />}
+        {tab === "telegram" && <TelegramPanel />}
       </div>
     </div>
   );
