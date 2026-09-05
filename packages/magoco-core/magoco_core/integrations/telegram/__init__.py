@@ -297,6 +297,9 @@ class TelegramGateway:
     async def start(self) -> None:
         """Start all enabled bots."""
         self._running = True
+        # Load from config file first
+        self.load_from_config_file()
+
         for bot_id, bot in self.bots.items():
             if bot.enabled and bot.mode == TelegramMode.POLLING:
                 task = asyncio.create_task(self.start_polling(bot_id))
@@ -337,6 +340,71 @@ class TelegramGateway:
             "running": self._running,
         }
 
+    def load_from_config_file(self, config_path: str = "./data/telegram/telegram.json") -> int:
+        """Load Telegram bots from a JSON config file.
+
+        Format:
+        {
+            "version": "1.0",
+            "bots": [
+                {
+                    "name": "My Assistant Bot",
+                    "token": "123456789:AAF...",
+                    "mode": "polling",
+                    "webhook_url": "",
+                    "allowed_chat_ids": [],
+                    "admin_chat_ids": [],
+                    "default_provider_id": "openai",
+                    "default_model": "gpt-4o",
+                    "system_prompt": "",
+                    "max_history": 20,
+                    "enabled": true
+                }
+            ]
+        }
+        """
+        from pathlib import Path
+        path = Path(config_path)
+        if not path.exists():
+            logger.info(f"Telegram config file not found: {config_path}")
+            return 0
+
+        try:
+            data = json.loads(path.read_text())
+            bots_data = data.get("bots", [])
+            if not bots_data:
+                return 0
+
+            loaded = 0
+            for b in bots_data:
+                bot_id = b.get("name", "").lower().strip().replace(" ", "-") or str(uuid.uuid4())[:8]
+                mode_str = b.get("mode", "polling")
+                mode = TelegramMode(mode_str) if mode_str in ("polling", "webhook") else TelegramMode.POLLING
+
+                config = TelegramBotConfig(
+                    bot_id=bot_id,
+                    token=b.get("token", ""),
+                    name=b.get("name", "MAGoCo Bot"),
+                    mode=mode,
+                    webhook_url=b.get("webhook_url", ""),
+                    allowed_chat_ids=b.get("allowed_chat_ids", []),
+                    admin_chat_ids=b.get("admin_chat_ids", []),
+                    default_provider_id=b.get("default_provider_id"),
+                    default_model=b.get("default_model"),
+                    system_prompt=b.get("system_prompt", ""),
+                    max_history=b.get("max_history", 20),
+                    enabled=b.get("enabled", True),
+                )
+                self.add_bot(config)
+                loaded += 1
+                logger.info(f"[Telegram] Loaded bot from config: {config.name}")
+
+            return loaded
+        except Exception as e:
+            logger.error(f"[Telegram] Error loading config {config_path}: {e}")
+            return 0
+
 
 # Global instance
 telegram_gateway = TelegramGateway()
+
