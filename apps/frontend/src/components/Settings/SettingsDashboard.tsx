@@ -1,7 +1,34 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Key, Shield, HardDrive, Cpu, RefreshCw, Save, Palette } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "./ThemeSwitcher";
+import { ProvidersPanel } from "./ProvidersPanel";
+import { API_URL } from "@/config";
+
+function MemoryStatsBlock() {
+  const [stats, setStats] = useState<any>(null);
+  useEffect(() => {
+    fetch(`${API_URL}/api/v1/memory/stats`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setStats)
+      .catch(() => {});
+  }, []);
+  const items = [
+    { label: "Total memories", value: stats?.total_memories ?? "—", color: "text-primary-400" },
+    { label: "Episodic", value: stats?.episodic_count ?? "—", color: "text-purple-400" },
+    { label: "KG nodes", value: stats?.kg_nodes ?? "—", color: "text-emerald-400" },
+  ];
+  return (
+    <div className="grid grid-cols-3 gap-2">
+      {items.map((s) => (
+        <div key={s.label} className="p-3 bg-white/5 rounded-xl text-center border border-white/5">
+          <span className="block text-[10px] text-text-2 font-medium">{s.label}</span>
+          <span className={`text-sm font-semibold ${s.color}`}>{s.value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 interface SettingsCardProps {
   title: string;
@@ -28,9 +55,6 @@ function SettingsCard({ title, description, icon: Icon, children }: SettingsCard
 }
 
 export function SettingsDashboard() {
-  const [loading, setLoading] = useState(false);
-  const [apiKey, setApiKey] = useState("sk-proj-....................");
-
   return (
     <div className="flex-1 overflow-y-auto bg-bg-0 p-8 space-y-8">
       {/* Header */}
@@ -49,31 +73,13 @@ export function SettingsDashboard() {
           <ThemeSwitcher />
         </SettingsCard>
 
-        {/* API Credentials */}
+        {/* Model Providers (BYOM) */}
         <SettingsCard
-          title="LLM Providers"
-          description="Manage credentials and configurations for OpenAI, Anthropic, Ollama."
+          title="Model Providers"
+          description="Bring your own model: local Ollama or any OpenAI-compatible endpoint. Keys are encrypted."
           icon={Key}
         >
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-text-1 mb-1.5">OpenAI API Key</label>
-              <input
-                type="password"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-text-0 focus:outline-none focus:border-primary-500 transition-colors"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-text-1 mb-1.5">Ollama Base URL</label>
-              <input
-                type="text"
-                defaultValue="http://localhost:11434"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm text-text-0 focus:outline-none focus:border-primary-500 transition-colors"
-              />
-            </div>
-          </div>
+          <ProvidersPanel />
         </SettingsCard>
 
         {/* Dynamic Skills */}
@@ -108,30 +114,11 @@ export function SettingsDashboard() {
 
         {/* Memory System */}
         <SettingsCard
-          title="3-Layer Memory Inspector"
-          description="View and manage context size and knowledge graphs."
+          title="Memory System"
+          description="Live stats from the unified memory store (semantic, episodic, KG, RAG)."
           icon={HardDrive}
         >
-          <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-2">
-              <div className="p-3 bg-white/5 rounded-xl text-center border border-white/5">
-                <span className="block text-[10px] text-text-2 font-medium">Working Context</span>
-                <span className="text-sm font-semibold text-primary-400">4 / 50 turns</span>
-              </div>
-              <div className="p-3 bg-white/5 rounded-xl text-center border border-white/5">
-                <span className="block text-[10px] text-text-2 font-medium">Verbatim History</span>
-                <span className="text-sm font-semibold text-purple-400">128 turns</span>
-              </div>
-              <div className="p-3 bg-white/5 rounded-xl text-center border border-white/5">
-                <span className="block text-[10px] text-text-2 font-medium">Distilled Facts</span>
-                <span className="text-sm font-semibold text-emerald-400">12 rules</span>
-              </div>
-            </div>
-            <button className="w-full flex items-center justify-center space-x-2 py-2 bg-white/5 hover:bg-white/10 text-xs font-medium rounded-xl border border-white/10 transition-colors text-text-1 hover:text-text-0">
-              <RefreshCw size={12} />
-              <span>Distill & Clear Context</span>
-            </button>
-          </div>
+          <MemoryStatsBlock />
         </SettingsCard>
 
         {/* Security Guard */}

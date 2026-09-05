@@ -63,7 +63,7 @@ export function useWebSocket(url: string) {
   }, [url]);
 
   const sendMessage = useCallback(
-    (content: string) => {
+    (content: string, extra?: { provider_id?: string | null; model?: string | null }) => {
       const userMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "user",
@@ -73,7 +73,11 @@ export function useWebSocket(url: string) {
       setMessages((prev) => [...prev, userMsg]);
 
       if (wsRef.current?.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ message: content }));
+        wsRef.current.send(JSON.stringify({
+          message: content,
+          provider_id: extra?.provider_id ?? null,
+          model: extra?.model ?? null,
+        }));
       }
     },
     [],

@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip, Sparkles, Brain, Edit, GitBranch, RotateCcw, MoreHorizontal, Trash2, Settings, Zap } from "lucide-react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip, Brain, Edit, GitBranch, RotateCcw, MoreHorizontal, Trash2, Zap } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useWebSocket } from "@/hooks/useWebSocket";
-import { WS_CHAT_URL } from "@/config";
+import { WS_CHAT_URL, API_URL } from "@/config";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { ArtifactsPanel, Artifact } from "./ArtifactsPanel";
@@ -24,22 +24,61 @@ export function ChatConsole() {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [editInput, setEditInput] = useState("");
   const [showMessageMenu, setShowMessageMenu] = useState<string | null>(null);
-  const [selectedModel, setSelectedModel] = useState("9Router · Auto");
+  const [selected, setSelected] = useState<{ provider_id: string | null; model: string | null; label: string }>({
+    provider_id: null, model: null, label: "Auto",
+  });
   const [showModelMenu, setShowModelMenu] = useState(false);
+  const [providers, setProviders] = useState<any[]>([]);
 
   useEffect(() => {
     connect();
     return () => {};
   }, [connect]);
 
+  const fetchProviders = useCallback(async () => {
+    try {
+      const r = await fetch(`${API_URL}/api/v1/providers/`);
+      if (r.ok) setProviders(await r.json());
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchProviders();
+  }, [fetchProviders]);
+
+  useEffect(() => {
+    if (showModelMenu) fetchProviders();
+  }, [showModelMenu, fetchProviders]);
+
+  const modelOptions = useMemo(() => {
+    const opts: { id: string; provider_id: string | null; model: string | null; name: string; desc: string; icon: any }[] = [
+      { id: "auto", provider_id: null, model: null, name: "Auto", icon: Zap, desc: "Auto-select best configured provider" },
+    ];
+    for (const p of providers) {
+      if (!p.enabled) continue;
+      const models = p.models?.length ? p.models : (p.default_model ? [p.default_model] : []);
+      for (const m of models) {
+        opts.push({
+          id: `${p.id}::${m}`, provider_id: p.id, model: m,
+          name: m, icon: p.kind === "ollama-local" ? Zap : Brain, desc: p.name,
+        });
+      }
+    }
+    return opts;
+  }, [providers]);
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isThinking]);
 
+  const sendChat = useCallback((text: string) => {
+    sendMessage(text, { provider_id: selected.provider_id, model: selected.model });
+  }, [sendMessage, selected]);
+
   const handleSend = () => {
     const trimmed = input.trim();
     if (!trimmed || !isConnected) return;
-    sendMessage(trimmed);
+    sendChat(trimmed);
     setInput("");
     inputRef.current?.focus();
   };
@@ -50,17 +89,6 @@ export function ChatConsole() {
       handleSend();
     }
   };
-
-  const MODELS = [
-    { id: "auto", name: "Auto", icon: Zap, desc: "Auto-select best configured provider" },
-    { id: "gpt-4o", name: "GPT-4o", icon: Brain, desc: "OpenAI GPT-4o" },
-    { id: "gpt-4o-mini", name: "GPT-4o Mini", icon: Brain, desc: "Fast, cost-effective" },
-    { id: "claude-3.5-sonnet", name: "Claude 3.5 Sonnet", icon: Sparkles, desc: "Anthropic flagship" },
-    { id: "claude-3.5-haiku", name: "Claude 3.5 Haiku", icon: Sparkles, desc: "Fast Claude" },
-    { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", icon: Settings, desc: "Google long context" },
-    { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", icon: Settings, desc: "Fast Google" },
-    { id: "local-llama", name: "Local (Ollama)", icon: Zap, desc: "Run locally" },
-  ];
 
   const toggleThinking = useCallback((msgId: string) => {
     setExpandedThinking((prev) => ({
@@ -77,10 +105,10 @@ export function ChatConsole() {
 
   const saveEdit = useCallback(() => {
     if (!editingMessageId || !editInput.trim()) return;
-    sendMessage(editInput);
+    sendChat(editInput);
     setEditingMessageId(null);
     setEditInput("");
-  }, [editingMessageId, editInput, sendMessage]);
+  }, [editingMessageId, editInput, sendChat]);
 
   const cancelEdit = useCallback(() => {
     setEditingMessageId(null);
@@ -88,14 +116,14 @@ export function ChatConsole() {
   }, []);
 
   const forkMessage = useCallback((msgId: string, content: string) => {
-    sendMessage(content);
+    sendChat(content);
     setShowMessageMenu(null);
-  }, [sendMessage]);
+  }, [sendChat]);
 
   const resubmitMessage = useCallback((msgId: string, content: string) => {
-    sendMessage(content);
+    sendChat(content);
     setShowMessageMenu(null);
-  }, [sendMessage]);
+  }, [sendChat]);
 
   const deleteMessage = useCallback((msgId: string) => {
     setShowMessageMenu(null);
@@ -227,25 +255,26 @@ export function ChatConsole() {
             }}
           >
             <Zap className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} />
-            <span>{selectedModel}</span>
+            <span>{selected.label}</span>
             <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showModelMenu && "rotate-180")} />
           </button>
 
           {showModelMenu && (
-            <div className="absolute right-0 top-full mt-1 z-20 glass-strong rounded-xl border p-1 animate-slide-down min-w-[200px]"
+            <div className="absolute right-0 top-full mt-1 z-20 glass-strong rounded-xl border p-1 animate-slide-down min-w-[200px] max-h-80 overflow-y-auto"
                  style={{ borderColor: "var(--border-glass)", background: "var(--bg-1)" }}>
-              {MODELS.map((model) => {
+              {modelOptions.map((model) => {
                 const Icon = model.icon;
+                const active = selected.provider_id === model.provider_id && selected.model === model.model;
                 return (
                   <button
                     key={model.id}
                     onClick={() => {
-                      setSelectedModel(model.name);
+                      setSelected({ provider_id: model.provider_id, model: model.model, label: model.id === "auto" ? "Auto" : model.name });
                       setShowModelMenu(false);
                     }}
                     className={cn(
                       "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors",
-                      selectedModel === model.name
+                      active
                         ? "bg-primary/20 text-primary"
                         : "text-text-1 hover:bg-white/[0.03] hover:text-text-0"
                     )}
@@ -259,7 +288,7 @@ export function ChatConsole() {
                         {model.desc}
                       </div>
                     </div>
-                    {selectedModel === model.name && (
+                    {active && (
                       <span className="text-[10px]" style={{ color: "var(--accent)" }}>
                         ✓
                       </span>
@@ -267,6 +296,11 @@ export function ChatConsole() {
                   </button>
                 );
               })}
+              {modelOptions.length <= 1 && (
+                <div className="px-3 py-2 text-[11px] text-text-2">
+                  {t("chat.no_providers_hint")}
+                </div>
+              )}
             </div>
           )}
         </div>
