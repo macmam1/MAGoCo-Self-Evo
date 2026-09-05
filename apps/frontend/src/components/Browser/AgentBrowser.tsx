@@ -175,9 +175,9 @@ export function AgentBrowser() {
       const date = new Date(ts);
       const now = new Date();
       const diff = now.getTime() - ts;
-      if (diff < 60000) return t("just_now");
-      if (diff < 3600000) return `${Math.floor(diff / 60000)}${t("minutes_ago")}`;
-      if (diff < 86400000) return `${Math.floor(diff / 86400000)}${t("days_ago")}`;
+      if (diff < 60000) return t("browser.just_now");
+      if (diff < 3600000) return `${Math.floor(diff / 60000)}${t("browser.minutes_ago")}`;
+      if (diff < 86400000) return `${Math.floor(diff / 86400000)}${t("browser.days_ago")}`;
       return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
     },
     [t]
@@ -187,7 +187,7 @@ export function AgentBrowser() {
     return (
       <div className="flex flex-col h-full items-center justify-center p-8">
         <Badge variant="outline" className="mb-4">
-          {t("browser_connecting")}
+          {t("browser.connecting")}
         </Badge>
         <div className="animate-spin h-12 w-12 border-b-2 border-current" />
       </div>
@@ -203,9 +203,9 @@ export function AgentBrowser() {
             <Send size={16} />
           </div>
           <div>
-            <h2 className="font-medium text-sm text-white">{t("browser_agent")}</h2>
+            <h2 className="font-medium text-sm text-white">{t("browser.agent")}</h2>
             <p className="text-xs text-text-2">
-              {t("browser_subtitle")}
+              {t("browser.subtitle")}
             </p>
           </div>
         </div>
@@ -227,7 +227,7 @@ export function AgentBrowser() {
               sendMessage(JSON.stringify({ type: "new_session" }));
             }}
           >
-            {t("new_session")}
+            {t("browser.new_session")}
           </Button>
         </div>
       </div>
@@ -238,7 +238,7 @@ export function AgentBrowser() {
         <div className="w-64 bg-gray-800/50 border-r border-white/5 overflow-y-auto hidden sm:block">
           <div className="p-3">
             <h3 className="text-xs font-medium text-text-2 mb-3">
-              {t("active_sessions")}
+              {t("browser.active_sessions")}
               {sessions.length > 0 ? `(${sessions.length})` : ""}
             </h3>
             {sessions.map((session) => (
@@ -258,7 +258,7 @@ export function AgentBrowser() {
               </div>
             ))}
             {sessions.length === 0 && (
-              <p className="text-[10px] text-text-2/4">{t("no_sessions")}</p>
+              <p className="text-[10px] text-text-2/4">{t("browser.no_sessions")}</p>
             )}
           </div>
         </div>
@@ -277,12 +277,12 @@ export function AgentBrowser() {
           ) : (
             {/* Empty state */}
             <div className="p-8 flex flex-col items-center justify-center h-full text-text-2">
-              <h3>{t("no_active_session")}</h3>
-              <p>{t("start_new_session")}</p>
+              <h3>{t("browser.no_active_session")}</h3>
+              <p>{t("browser.start_new_session")}</p>
               <Button
                 onClick={() => sendMessage(JSON.stringify({ type: "new_session" }))}
               >
-                {t("create_session")}
+                {t("browser.create_session")}
               </Button>
             </div>
           )}
@@ -291,7 +291,7 @@ export function AgentBrowser() {
           {!activeSessionId && sessions.length > 0 && (
             <div className="p-4 border-t border-white/5">
               <p className="text-sm text-text-2">
-                {t("select_session_to_view")}
+                {t("browser.select_session_to_view")}
               </p>
             </div>
           )}
@@ -311,7 +311,7 @@ export function AgentBrowser() {
             }));
           }}
         >
-          {t("pause")}
+          {t("browser.pause")}
         </Button>
 
         <Button
@@ -322,7 +322,7 @@ export function AgentBrowser() {
             confirmAction("approve", { sessionId: activeSessionId });
           }}
         >
-          {t("approve_action")}
+          {t("browser.approve_action")}
         </Button>
 
         <Button
@@ -333,7 +333,7 @@ export function AgentBrowser() {
             sendMessage(JSON.stringify({ type: "new_session" }));
           }}
         >
-          {t("new_session")}
+          {t("browser.new_session")}
         </Button>
 
         <Button
@@ -344,7 +344,7 @@ export function AgentBrowser() {
             confirmAction("close", { id: activeSessionId });
           }}
         >
-          {t("close_session")}
+          {t("browser.close_session")}
         </Button>
       </div>
     </div>
@@ -355,26 +355,26 @@ export function AgentBrowser() {
       onClose={cancelPendingAction}
       title={
         pendingAction?.type === "navigate"
-          ? t("confirm_navigate")
+          ? t("browser.confirm_navigate")
           : pendingAction?.type === "close"
-          ? t("confirm_close")
-          : t("confirm_approve")
+          ? t("browser.confirm_close")
+          : t("browser.confirm_approve")
       }
       description={
         pendingAction?.type === "navigate"
-          ? t("confirm_navigate_desc", { url: pendingAction.data.url })
+          ? t("browser.confirm_navigate_desc", { url: pendingAction.data.url })
           : pendingAction?.type === "close"
-          ? t("confirm_close_desc")
-          : t("confirm_approve_desc")
+          ? t("browser.confirm_close_desc")
+          : t("browser.confirm_approve_desc")
       }
       size="sm"
     >
       <div className="flex justify-end gap-2 pt-2">
         <Button variant="outline" onClick={cancelPendingAction}>
-          {t("cancel")}
+          {t("browser.cancel")}
         </Button>
         <Button variant="primary" onClick={executePendingAction}>
-          {t("confirm")}
+          {t("browser.confirm")}
         </Button>
       </div>
     </Modal>
@@ -405,7 +405,7 @@ function BrowserView({
       <div className="h-[calc(100vh_-140px)] bg-black overflow-hidden relative">
         <img
           src={session.screenshot || "/placeholder-browser.svg"}
-          alt={session.title || t("browser_viewport")}
+          alt={session.title || t("browser.viewport")}
           className="w-full h-full object-cover transition-opacity duration-500"
           onError={(e) => {
             e.target.src = "/placeholder-browser.svg";
@@ -417,7 +417,7 @@ function BrowserView({
           <div className="absolute inset-0 flex items-center justify-center text-text-2/4">
             <div className="text-center">
               <Send className="w-12 h-12 mb-3" />
-              <p>{t("loading_page")}</p>
+              <p>{t("browser.loading_page")}</p>
             </div>
           </div>
         )}
@@ -425,7 +425,7 @@ function BrowserView({
         {/* Action preview overlay */}
         {session.status === "running" && (
           <div className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-xs">
-            <p>{t("agent_thinking")}...</p>
+            <p>{t("browser.agent_thinking")}...</p>
           </div>
         )}
       </div>
@@ -436,7 +436,7 @@ function BrowserView({
           type="text"
           value=""
           onChange={(e) => onNavigate(e.target.value)}
-          placeholder={t("enter_url")}
+          placeholder={t("browser.enter_url")}
           className="flex-1 bg-gray-800/50 border border-white/10 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary"
         />
         <Button
@@ -445,7 +445,7 @@ function BrowserView({
           onClick={() => onNavigate("about:blank")}
           className="hidden sm:block"
         >
-          {t("new_tab")}
+          {t("browser.new_tab")}
         </Button>
       </div>
     </div>

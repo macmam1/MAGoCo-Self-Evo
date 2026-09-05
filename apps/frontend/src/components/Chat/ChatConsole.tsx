@@ -469,7 +469,7 @@ export function ChatConsole() {
                         className="flex items-center space-x-2 text-xs text-text-2 hover:text-text-0 transition-colors w-full"
                       >
                         <Brain className="h-3.5 w-3.5" style={{ color: "var(--accent-2)" }} />
-                        <span>{t("thinking_process")}</span>
+                        <span>{t("thinking.thinking_process")}</span>
                         {expandedThinking[msg.id] ? (
                           <ChevronUp size={12} />
                         ) : (
@@ -477,14 +477,14 @@ export function ChatConsole() {
                         )}
                         {(streamingThinking[msg.id] || isThinking) && (
                           <span className="ml-auto text-[10px] animate-pulse" style={{ color: "var(--accent-2)" }}>
-                            {t("streaming")}
+                            {t("thinking.streaming")}
                           </span>
                         )}
                       </button>
 
                       {expandedThinking[msg.id] && (
                         <div className="mt-2 text-xs text-text-2 whitespace-pre-wrap break-words font-mono">
-                          {streamingThinking[msg.id] || msg.thinking || t("thinking_placeholder")}
+                          {streamingThinking[msg.id] || msg.thinking || t("thinking.thinking_placeholder")}
                           {(streamingThinking[msg.id] || isThinking) && (
                             <span className="animate-pulse" style={{ color: "var(--accent)" }}>▊</span>
                           )}
@@ -499,7 +499,7 @@ export function ChatConsole() {
                       <div className="absolute inset-0 bg-black/10 rounded-2xl rounded-bl-none pointer-events-none" />
                     )}
                     <p className="text-sm text-text-0 whitespace-pre-wrap break-words relative z-10">
-                      {streamingAnswer[msg.id] || msg.content || t("generating_answer")}
+                      {streamingAnswer[msg.id] || msg.content || t("thinking.generating_answer")}
                       {streamingAnswer[msg.id] && <span className="animate-pulse" style={{ color: "var(--accent)" }}>▊</span>}
                     </p>
                     {!msg.content && !streamingAnswer[msg.id] && (

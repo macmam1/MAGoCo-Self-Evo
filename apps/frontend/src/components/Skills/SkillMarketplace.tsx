@@ -89,7 +89,7 @@ export function SkillMarketplace({ isOpen, onClose, onInstall }: SkillMarketplac
               value={filters.query}
               onChange={(e) => handleFilterChange("query", e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && fetchSkills()}
-              placeholder={t("marketplace.search_placeholder")}
+              placeholder={t("skills.search_placeholder")}
               className="w-full bg-gray-800/50 border border-white/10 rounded-lg px-10 py-2 focus:ring-2 focus:ring-primary"
             />
           </div>
@@ -100,7 +100,7 @@ export function SkillMarketplace({ isOpen, onClose, onInstall }: SkillMarketplac
               onChange={(e) => handleFilterChange("category", e.target.value)}
               className="bg-gray-800/50 border border-white/10 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary text-sm"
             >
-              <option value="">{t("all_categories")}</option>
+              <option value="">{t("skills.all_categories")}</option>
               <option value="automation">Automation</option>
               <option value="coding">Coding</option>
               <option value="data_processing">Data Processing</option>
@@ -124,7 +124,7 @@ export function SkillMarketplace({ isOpen, onClose, onInstall }: SkillMarketplac
                 onChange={(e) => handleFilterChange("free_only", e.target.checked)}
                 className="rounded border-white/20"
               />
-              {t("free_only")}
+              {t("skills.free_only")}
             </label>
 
             <label className="flex items-center gap-1 text-sm text-text-2">
@@ -134,7 +134,7 @@ export function SkillMarketplace({ isOpen, onClose, onInstall }: SkillMarketplac
                 onChange={(e) => handleFilterChange("featured_only", e.target.checked)}
                 className="rounded border-white/20"
               />
-              {t("featured_only")}
+              {t("skills.featured_only")}
             </label>
 
             <select
@@ -142,11 +142,11 @@ export function SkillMarketplace({ isOpen, onClose, onInstall }: SkillMarketplac
               onChange={(e) => handleFilterChange("sort_by", e.target.value)}
               className="bg-gray-800/50 border border-white/10 rounded-lg px-2 py-2 text-xs focus:ring-2 focus:ring-primary"
             >
-              <option value="relevance">{t("relevance")}</option>
-              <option value="rating">{t("rating")}</option>
-              <option value="downloads">{t("downloads")}</option>
-              <option value="updated">{t("recently_updated")}</option>
-              <option value="created">{t("newest")}</option>
+              <option value="relevance">{t("skills.relevance")}</option>
+              <option value="rating">{t("skills.rating")}</option>
+              <option value="downloads">{t("skills.downloads")}</option>
+              <option value="updated">{t("skills.recently_updated")}</option>
+              <option value="created">{t("skills.newest")}</option>
             </select>
           </div>
         </div>
@@ -162,7 +162,7 @@ export function SkillMarketplace({ isOpen, onClose, onInstall }: SkillMarketplac
           {!loading && skills.length === 0 && (
             <div className="flex flex-col items-center justify-center h-64 text-text-2">
               <Package className="w-12 h-12 mb-3 opacity-30" />
-              <p>{t("marketplace.no_skills")}</p>
+              <p>{t("skills.no_skills")}</p>
             </div>
           )}
 
@@ -184,10 +184,10 @@ export function SkillMarketplace({ isOpen, onClose, onInstall }: SkillMarketplac
                 onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}
                 disabled={pagination.page <= 1}
               >
-                {t("previous")}
+                {t("skills.previous")}
               </Button>
               <span className="px-3 text-sm text-text-2">
-                {t("page")} {pagination.page}
+                {t("skills.page")} {pagination.page}
               </span>
               <Button
                 variant="outline"
@@ -195,7 +195,7 @@ export function SkillMarketplace({ isOpen, onClose, onInstall }: SkillMarketplac
                 onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
                 disabled={skills.length < pagination.page_size}
               >
-                {t("next")}
+                {t("skills.next")}
               </Button>
             </div>
           )}
@@ -307,7 +307,7 @@ function MarketplaceSkillCard({ skill, onInstall }: { skill: any; onInstall: (id
           ) : (
             <Badge variant="secondary" className="text-[10px] px-2 py-0.5" 
                    style={{ background: "#22c55e20", borderColor: "#22c55e", color: "#22c55e" }}>
-              {t("free")}
+              {t("skills.free")}
             </Badge>
           )}
         </div>
@@ -320,7 +320,7 @@ function MarketplaceSkillCard({ skill, onInstall }: { skill: any; onInstall: (id
             color: "black",
           }}
         >
-          {installing ? t("installing") : t("install")}
+          {installing ? t("skills.installing") : t("skills.install")}
         </button>
       </div>
     </div>

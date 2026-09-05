@@ -473,19 +473,19 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                 <div className="flex items-center justify-between">
                   <h4 className="font-medium">{t("skills.parameters")}</h4>
                   <Button variant="outline" size="sm" onClick={addParameter}>
-                    <Plus className="h-4 w-4 mr-1" /> {t("add_parameter")}
+                    <Plus className="h-4 w-4 mr-1" /> {t("skills.add_parameter")}
                   </Button>
                 </div>
                 <div className="space-y-3">
                   {formData.parameters.map((param: any, i: number) => (
                     <div key={i} className="p-4 rounded-lg border" style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}>
                       <div className="flex items-center justify-between mb-3">
-                        <h5 className="font-medium">{t("parameter")} #{i + 1}</h5>
+                        <h5 className="font-medium">{t("skills.parameter")} #{i + 1}</h5>
                         <button onClick={() => removeParameter(i)} className="text-red-400 hover:text-red-300">×</button>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div>
-                          <label className="block text-sm font-medium mb-1">{t("name")}</label>
+                          <label className="block text-sm font-medium mb-1">{t("skills.name")}</label>
                           <input
                             value={param.name}
                             onChange={e => updateParameter(i, "name", e.target.value)}
@@ -494,7 +494,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">{t("type")}</label>
+                          <label className="block text-sm font-medium mb-1">{t("skills.type")}</label>
                           <select
                             value={param.type}
                             onChange={e => updateParameter(i, "type", e.target.value)}
@@ -510,7 +510,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                           </select>
                         </div>
                         <div className="md:col-span-2">
-                          <label className="block text-sm font-medium mb-1">{t("description")}</label>
+                          <label className="block text-sm font-medium mb-1">{t("skills.description")}</label>
                           <input
                             value={param.description}
                             onChange={e => updateParameter(i, "description", e.target.value)}
@@ -518,7 +518,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">{t("required")}</label>
+                          <label className="block text-sm font-medium mb-1">{t("skills.required")}</label>
                           <label className="flex items-center gap-2 cursor-pointer">
                             <input
                               type="checkbox"
@@ -526,11 +526,11 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                               onChange={e => updateParameter(i, "required", e.target.checked)}
                               className="rounded border-white/20"
                             />
-                            <span className="text-sm">{t("required")}</span>
+                            <span className="text-sm">{t("skills.required")}</span>
                           </label>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium mb-1">{t("default")}</label>
+                          <label className="block text-sm font-medium mb-1">{t("skills.default")}</label>
                           <input
                             value={param.default ?? ""}
                             onChange={e => updateParameter(i, "default", e.target.value)}
@@ -546,7 +546,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                     <h4 className="font-medium mb-3">{t("skills.returns")}</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium mb-1">{t("return_type")}</label>
+                        <label className="block text-sm font-medium mb-1">{t("skills.return_type")}</label>
                         <input
                           value={formData.returns?.type || "any"}
                           onChange={e => setFormData(prev => ({ ...prev, returns: { ...prev.returns, type: e.target.value } }))}
@@ -554,7 +554,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">{t("return_description")}</label>
+                        <label className="block text-sm font-medium mb-1">{t("skills.return_description")}</label>
                         <input
                           value={formData.returns?.description || ""}
                           onChange={e => setFormData(prev => ({ ...prev, returns: { ...prev.returns, description: e.target.value } }))}
@@ -569,7 +569,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium">{t("skills.dependencies")}</h4>
                       <Button variant="outline" size="sm" onClick={addDependency}>
-                        <Plus className="h-4 w-4 mr-1" /> {t("add_dependency")}
+                        <Plus className="h-4 w-4 mr-1" /> {t("skills.add_dependency")}
                       </Button>
                     </div>
                     <div className="space-y-3">
@@ -594,7 +594,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                               onChange={e => setFormData(prev => ({ ...prev, dependencies: prev.dependencies.map((d, j) => j === i ? { ...d, required: e.target.checked } : d) }))}
                               className="rounded border-white/20"
                             />
-                            <span className="text-sm">{t("required")}</span>
+                            <span className="text-sm">{t("skills.required")}</span>
                           </label>
                           <button onClick={() => removeDependency(i)} className="text-red-400 hover:text-red-300">×</button>
                         </div>
@@ -675,14 +675,14 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
           {/* Navigation */}
           <div className="flex justify-between pt-6 border-t border-white/5">
             <Button variant="outline" onClick={prevStep} disabled={activeStep === 1}>
-              ← {t("previous")}
+              ← {t("skills.previous")}
             </Button>
             <div className="flex items-center gap-2">
               {activeStep < 4 ? (
-                <Button onClick={nextStep}>{t("next")} →</Button>
+                <Button onClick={nextStep}>{t("skills.next")} →</Button>
               ) : (
                 <Button variant="primary" onClick={handleSubmit} disabled={loading}>
-                  {loading ? t("saving") : (initialSkill ? t("skills.update_skill") : t("skills.create_skill"))}
+                  {loading ? t("skills.saving") : (initialSkill ? t("skills.update_skill") : t("skills.create_skill"))}
                 </Button>
               )}
             </div>

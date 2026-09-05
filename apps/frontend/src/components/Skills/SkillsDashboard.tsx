@@ -86,8 +86,8 @@ export function SkillsDashboard() {
             <Package className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h2 className="font-medium text-sm text-white">{t("skills_system")}</h2>
-            <p className="text-xs text-text-2">{t("skills_subtitle")}</p>
+            <h2 className="font-medium text-sm text-white">{t("skills.system")}</h2>
+            <p className="text-xs text-text-2">{t("skills.subtitle")}</p>
           </div>
         </div>
 
@@ -183,7 +183,7 @@ export function SkillsDashboard() {
           </div>
 
           <Button variant="outline" size="sm" onClick={fetchSkills} disabled={loading}>
-            <FilterIcon className="h-4 w-4 mr-1" /> {t("apply_filters")}
+            <FilterIcon className="h-4 w-4 mr-1" /> {t("skills.apply_filters")}
           </Button>
         </div>
       </div>
@@ -259,10 +259,10 @@ export function SkillsDashboard() {
               onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}
               disabled={pagination.page <= 1}
             >
-              <ChevronRight className="h-4 w-4" style={{ transform: "rotate(180deg)" }} /> {t("previous")}
+              <ChevronRight className="h-4 w-4" style={{ transform: "rotate(180deg)" }} /> {t("skills.previous")}
             </Button>
             <span className="px-3 text-sm text-text-2">
-              {t("page")} {pagination.page}
+              {t("skills.page")} {pagination.page}
             </span>
             <Button
               variant="outline"
@@ -270,7 +270,7 @@ export function SkillsDashboard() {
               onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
               disabled={skills.length < pagination.page_size}
             >
-              {t("next")} <ChevronRight className="h-4 w-4" />
+              {t("skills.next")} <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         )}
@@ -320,8 +320,8 @@ function SkillListItem({ skill, onClick }: { skill: any; onClick: () => void }) 
           </span>
           <Badge variant="outline" className="text-[10px] capitalize">{skill.category}</Badge>
           <Badge variant="secondary" className="text-[10px]">{skill.type}</Badge>
-          {skill.featured && <Badge variant="secondary" className="text-[10px]"><Star className="h-3 w-3 mr-1" /> {t("featured")}</Badge>}
-          {skill.price === 0 && <Badge variant="outline" className="text-[10px]">{t("free")}</Badge>}
+          {skill.featured && <Badge variant="secondary" className="text-[10px]"><Star className="h-3 w-3 mr-1" /> {t("skills.featured")}</Badge>}
+          {skill.price === 0 && <Badge variant="outline" className="text-[10px]">{t("skills.free")}</Badge>}
         </div>
         <p className="text-xs text-text-2 truncate mt-1">{skill.description}</p>
         <div className="flex items-center gap-3 mt-1 text-[10px] text-text-2">
@@ -369,20 +369,20 @@ function SkillDetailModal({ skill, isOpen, onClose }: { skill: any; isOpen: bool
 
             <div className="border-t border-white/5 pt-4 space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-text-2">{t("author")}</span>
+                <span className="text-text-2">{t("skills.author")}</span>
                 <span className="font-medium">{skill.author}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-text-2">{t("version")}</span>
+                <span className="text-text-2">{t("skills.version")}</span>
                 <span className="font-medium">{skill.version}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-text-2">{t("downloads")}</span>
+                <span className="text-text-2">{t("skills.downloads")}</span>
                 <span className="font-medium">{skill.downloads || 0}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-text-2">{t("rating")}</span>
-                <span className="font-medium">⭐ {skill.rating?.toFixed(1) || "0.0"} ({skill.review_count || 0} {t("reviews")})</span>
+                <span className="text-text-2">{t("skills.rating")}</span>
+                <span className="font-medium">⭐ {skill.rating?.toFixed(1) || "0.0"} ({skill.review_count || 0} {t("skills.reviews")})</span>
               </div>
             </div>
           </div>
@@ -407,7 +407,7 @@ function SkillDetailModal({ skill, isOpen, onClose }: { skill: any; isOpen: bool
             {skill.requirements && skill.requirements.length > 0 && (
               <div className="p-4 rounded-xl border"
                    style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}>
-                <h4 className="font-medium mb-2">{t("requirements")}</h4>
+                <h4 className="font-medium mb-2">{t("skills.requirements")}</h4>
                 <div className="flex flex-wrap gap-1">
                   {skill.requirements.map((req: string) => (
                     <Badge key={req} variant="outline" className="text-[10px]">{req}</Badge>
@@ -419,7 +419,7 @@ function SkillDetailModal({ skill, isOpen, onClose }: { skill: any; isOpen: bool
             {skill.parameters && skill.parameters.length > 0 && (
               <div className="p-4 rounded-xl border"
                    style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}>
-                <h4 className="font-medium mb-2">{t("parameters")}</h4>
+                <h4 className="font-medium mb-2">{t("skills.parameters")}</h4>
                 <div className="space-y-2">
                   {skill.parameters.map((param: any) => (
                     <div key={param.name} className="flex items-center justify-between text-sm">
@@ -434,7 +434,7 @@ function SkillDetailModal({ skill, isOpen, onClose }: { skill: any; isOpen: bool
             {skill.examples && skill.examples.length > 0 && (
               <div className="p-4 rounded-xl border"
                    style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}>
-                <h4 className="font-medium mb-2">{t("examples")}</h4>
+                <h4 className="font-medium mb-2">{t("skills.examples")}</h4>
                 <div className="space-y-2">
                   {skill.examples.map((ex: any, i: number) => (
                     <div key={i} className="p-3 rounded-lg"

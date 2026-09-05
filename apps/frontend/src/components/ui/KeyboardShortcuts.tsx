@@ -56,7 +56,7 @@ export function KeyboardShortcutsModal({ isOpen, onClose }: { isOpen: boolean; o
           <div className="flex items-center gap-2">
             <Keyboard className="h-5 w-5" style={{ color: "var(--accent)" }} />
             <h3 className="font-semibold" style={{ color: "var(--text-0)" }}>
-              {t("keyboard_shortcuts")}
+              {t("shortcuts.keyboard_shortcuts")}
             </h3>
           </div>
           <Button
@@ -64,7 +64,7 @@ export function KeyboardShortcutsModal({ isOpen, onClose }: { isOpen: boolean; o
             size="sm"
             onClick={onClose}
             className="h-8 w-8 p-0"
-            aria-label={t("close")}
+            aria-label={t("shortcuts.close")}
           >
             <X className="h-4 w-4" />
           </Button>

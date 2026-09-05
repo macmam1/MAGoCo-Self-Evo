@@ -878,8 +878,8 @@ function NodeConfigPanel({ node, onSave, onClose }: { node: WorkflowNode; onSave
         />
       </div>
       <div className="flex justify-end gap-2 pt-2">
-        <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
-        <Button onClick={() => onSave({ label, description })}>{t("save")}</Button>
+        <Button variant="outline" onClick={onClose}>{t("workflow.cancel")}</Button>
+        <Button onClick={() => onSave({ label, description })}>{t("workflow.save")}</Button>
       </div>
     </div>
   );
@@ -914,8 +914,8 @@ function WorkflowSettingsPanel({ workflow, onSave, onClose }: { workflow: Workfl
         />
       </div>
       <div className="flex justify-end gap-2 pt-2">
-        <Button variant="outline" onClick={onClose}>{t("cancel")}</Button>
-        <Button onClick={() => onSave({ name, description })}>{t("save")}</Button>
+        <Button variant="outline" onClick={onClose}>{t("workflow.cancel")}</Button>
+        <Button onClick={() => onSave({ name, description })}>{t("workflow.save")}</Button>
       </div>
     </div>
   );

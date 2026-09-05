@@ -66,7 +66,7 @@ export function IntegrationsDashboard() {
             <Download className="h-4 w-4 mr-1" />{t("integrations.seed", "Seed")}
           </Button>
           <Button variant="outline" size="sm" onClick={fetchMarket} disabled={loading}>
-            <RefreshCw className={cn("h-4 w-4 mr-1", loading && "animate-spin")} />{t("refresh", "Refresh")}
+            <RefreshCw className={cn("h-4 w-4 mr-1", loading && "animate-spin")} />{t("integrations.refresh", "Refresh")}
           </Button>
         </div>
       </div>
@@ -89,7 +89,7 @@ export function IntegrationsDashboard() {
                 onKeyDown={(e) => e.key === "Enter" && fetchMarket()}
                 placeholder={t("integrations.search_placeholder", "Search integrations...")}
                 className="flex-1 bg-gray-800/50 border border-white/10 rounded-lg px-4 py-2" />
-              <Button size="sm" onClick={fetchMarket}>{t("search", "Search")}</Button>
+              <Button size="sm" onClick={fetchMarket}>{t("integrations.search", "Search")}</Button>
             </div>
             {loading ? <p className="text-text-2 text-sm">Loading...</p> : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

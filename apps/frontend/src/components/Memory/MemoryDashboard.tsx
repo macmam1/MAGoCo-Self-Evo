@@ -66,8 +66,8 @@ export function MemoryDashboard() {
             <Brain className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h2 className="font-medium text-sm text-white">{t("memory_system")}</h2>
-            <p className="text-xs text-text-2">{t("memory_subtitle")}</p>
+            <h2 className="font-medium text-sm text-white">{t("memory.memory_system")}</h2>
+            <p className="text-xs text-text-2">{t("memory.memory_subtitle")}</p>
           </div>
         </div>
 
@@ -76,7 +76,7 @@ export function MemoryDashboard() {
             {stats?.vector_store || "unknown"}
           </Badge>
           <Button variant="outline" size="sm" onClick={fetchStats}>
-            <RefreshCw className="h-4 w-4 mr-1" /> {t("refresh")}
+            <RefreshCw className="h-4 w-4 mr-1" /> {t("memory.refresh")}
           </Button>
         </div>
       </div>
@@ -267,7 +267,7 @@ function SearchTab() {
           disabled={loading || !query.trim()}
           className="px-4 py-2 bg-gradient-to-r from-accent to-accent-2 text-black font-medium rounded-lg hover:shadow-lg disabled:opacity-50"
         >
-          {loading ? t("searching") : t("search")}
+          {loading ? t("memory.searching") : t("memory.search")}
         </button>
       </div>
 
@@ -324,7 +324,7 @@ function GraphTab() {
           disabled={loading || !entity.trim()}
           className="px-4 py-2 bg-gradient-to-r from-accent to-accent-2 text-black font-medium rounded-lg"
         >
-          {loading ? t("loading") : t("explore")}
+          {loading ? t("memory.loading") : t("memory.explore")}
         </button>
       </div>
 
@@ -334,7 +334,7 @@ function GraphTab() {
             <div className="p-4 border-b border-white/5 flex items-center justify-between">
               <h3 className="font-medium">{t("memory.graph_for")} "{entity}"</h3>
               <span className="text-xs text-text-2">
-                {graph.nodes?.length || 0} {t("nodes")}, {graph.edges?.length || 0} {t("edges")}
+                {graph.nodes?.length || 0} {t("memory.nodes")}, {graph.edges?.length || 0} {t("memory.edges")}
               </span>
             </div>
             <div className="h-[calc(100%-60px)] p-4">
@@ -400,7 +400,7 @@ function EpisodicTab() {
           disabled={loading}
           className="px-3 py-1.5 text-xs rounded-lg border hover:border-[var(--accent)]"
         >
-          {loading ? t("loading") : t("refresh")}
+          {loading ? t("memory.loading") : t("memory.refresh")}
         </button>
       </div>
 
@@ -569,7 +569,7 @@ function EpisodicSessionCard({ session }: { session: any }) {
               {session.session_id}
             </div>
             <div className="text-xs text-text-2">
-              {session.message_count} {t("messages")} · {formatDate(session.last_seen)}
+              {session.message_count} {t("memory.messages")} · {formatDate(session.last_seen)}
             </div>
           </div>
         </div>
