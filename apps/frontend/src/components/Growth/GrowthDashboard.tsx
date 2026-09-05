@@ -34,11 +34,16 @@ export function GrowthDashboard() {
     load();
   };
 
+  const [applied, setApplied] = useState<any>(null);
   const applySuggestion = async (id: string) => {
     const r = await fetch(`${API_URL}/api/v1/growth/suggestions/${id}/apply`, { method: "POST" });
     if (r.ok) {
       const data = await r.json();
-      alert(`Draft skill created: ${data.skill_id}@${data.version} — check Skills tab`);
+      setApplied(data);
+      try {
+        localStorage.setItem("magoco:open-skill", JSON.stringify(data));
+        window.dispatchEvent(new CustomEvent("magoco:open-skill", { detail: data }));
+      } catch {}
     }
     load();
   };
@@ -77,6 +82,12 @@ export function GrowthDashboard() {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {applied && (
+          <div className="p-3 rounded-xl border flex items-center justify-between" style={{ background: "rgba(52,211,153,.08)", borderColor: "#34d399" }}>
+            <span className="text-sm">Draft skill created: <b>{applied.skill_id}@{applied.version}</b> — open the Skills tab to review, test and publish.</span>
+            <button onClick={() => setApplied(null)} className="text-xs px-2 py-1 rounded border border-white/10">Dismiss</button>
+          </div>
+        )}
         {stats && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {[["Events", stats.total_events], ["Suggestions", stats.suggestions], ["Applied", stats.applied], ["Conversion", `${Math.round((stats.conversion || 0) * 100)}%`]].map(([k, v]) => (
