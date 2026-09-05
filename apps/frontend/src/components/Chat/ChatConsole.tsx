@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip, Brain, Edit, GitBranch, RotateCcw, MoreHorizontal, Trash2, Zap } from "lucide-react";
+import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip, Brain, Edit, GitBranch, RotateCcw, MoreHorizontal, Trash2, Zap, Swap, Settings, FileText, Target } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_CHAT_URL, API_URL } from "@/config";
@@ -29,6 +29,10 @@ export function ChatConsole() {
   });
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [providers, setProviders] = useState<any[]>([]);
+  const [currentProvider, setCurrentProvider] = useState<{ provider_id: string | null; model: string | null; label: string } | null>(null);
+  const [showQuickSwitch, setShowQuickSwitch] = useState(false);
+  const [showPlanning, setShowPlanning] = useState(false);
+  const [activePlan, setActivePlan] = useState<any>(null);
 
   useEffect(() => {
     connect();
@@ -51,8 +55,8 @@ export function ChatConsole() {
   }, [showModelMenu, fetchProviders]);
 
   const modelOptions = useMemo(() => {
-    const opts: { id: string; provider_id: string | null; model: string | null; name: string; desc: string; icon: any }[] = [
-      { id: "auto", provider_id: null, model: null, name: "Auto", icon: Zap, desc: "Auto-select best configured provider" },
+    const opts: { id: string; provider_id: string | null; model: string | null; name: string; desc: string; icon: any; capabilities: string[] }[] = [
+      { id: "auto", provider_id: null, model: null, name: "Auto", icon: Zap, desc: t("chat.auto_select"), capabilities: [] },
     ];
     for (const p of providers) {
       if (!p.enabled) continue;
@@ -60,12 +64,12 @@ export function ChatConsole() {
       for (const m of models) {
         opts.push({
           id: `${p.id}::${m}`, provider_id: p.id, model: m,
-          name: m, icon: p.kind === "ollama-local" ? Zap : Brain, desc: p.name,
+          name: m, icon: p.kind === "ollama-local" ? Zap : Brain, desc: p.name, capabilities: [],
         });
       }
     }
     return opts;
-  }, [providers]);
+  }, [providers, t]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -89,6 +93,58 @@ export function ChatConsole() {
       handleSend();
     }
   };
+
+  // In-session provider/model switching
+  const switchProvider = useCallback((provider_id: string | null, model: string | null, label: string) => {
+    setSelected({ provider_id, model, label });
+    setCurrentProvider({ provider_id, model, label });
+    // Send switch command to WebSocket
+    sendMessage("", { type: "switch_provider", provider_id, model });
+    setShowModelMenu(false);
+    setShowQuickSwitch(false);
+  }, [sendMessage]);
+
+  const quickSwitch = useCallback((provider_id: string | null, model: string | null, label: string) => {
+    switchProvider(provider_id, model, label);
+  }, [switchProvider]);
+
+  // Fetch current session state
+  const fetchSessionState = useCallback(async () => {
+    try {
+      sendMessage("", { type: "get_session_state" });
+    } catch {}
+  }, [sendMessage]);
+
+  useEffect(() => {
+    if (isConnected) {
+      fetchSessionState();
+    }
+  }, [isConnected, fetchSessionState]);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isThinking]);
+
+  const sendChat = useCallback((text: string) => {
+    sendMessage(text, { provider_id: selected.provider_id, model: selected.model });
+  }, [sendMessage, selected]);
+
+  const handleSend = () => {
+    const trimmed = input.trim();
+    if (!trimmed || !isConnected) return;
+    sendChat(trimmed);
+    setInput("");
+    inputRef.current?.focus();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  // ... rest of the existing functions (toggleThinking, startEditing, saveEdit, cancelEdit, forkMessage, resubmitMessage, deleteMessage)
 
   const toggleThinking = useCallback((msgId: string) => {
     setExpandedThinking((prev) => ({
@@ -231,78 +287,180 @@ export function ChatConsole() {
             </p>
           </div>
         </div>
-        <Badge
-          variant={isConnected ? "default" : "destructive"}
-          className={cn(
-            "text-xs",
-            isConnected
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-              : "bg-red-500/10 text-red-400 border-red-500/20",
+
+        {/* Provider/Model Status & Quick Switch */}
+        <div className="flex items-center gap-2">
+          {/* Current Provider/Model Display */}
+          {(currentProvider || selected.provider_id || selected.model) && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border glass-soft"
+                 style={{ borderColor: "var(--border-glass)", background: "var(--bg-2)" }}>
+              <Zap className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} />
+              <span className="text-[11px] font-medium text-text-1">
+                {currentProvider?.label || selected.label || "Auto"}
+              </span>
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0.5" style={{ color: "var(--accent)" }}>
+                {currentProvider?.model || selected.model || "auto"}
+              </Badge>
+              <button
+                onClick={() => setShowQuickSwitch(!showQuickSwitch)}
+                className="ml-1 p-0.5 rounded hover:bg-white/[0.05] transition-colors"
+                title={t("chat.quick_switch")}
+              >
+                <Swap className="h-3.5 w-3.5 text-text-2 hover:text-accent transition-colors" />
+              </button>
+            </div>
           )}
-        >
-          {isConnected ? "Online" : "Offline"}
-        </Badge>
 
-        {/* Model Selector */}
-        <div className="relative hidden sm:inline-block">
-          <button
-            onClick={() => setShowModelMenu(!showModelMenu)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium transition-colors hover:border-[var(--accent)]"
-            style={{
-              background: "var(--bg-2)",
-              borderColor: "var(--border-glass)",
-              color: "var(--text-1)",
-            }}
-          >
-            <Zap className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} />
-            <span>{selected.label}</span>
-            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showModelMenu && "rotate-180")} />
-          </button>
-
-          {showModelMenu && (
-            <div className="absolute right-0 top-full mt-1 z-20 glass-strong rounded-xl border p-1 animate-slide-down min-w-[200px] max-h-80 overflow-y-auto"
+          {/* Quick Switch Dropdown */}
+          {showQuickSwitch && (
+            <div className="absolute right-0 top-full mt-1 z-20 glass-strong rounded-xl border p-2 animate-slide-down min-w-[240px] max-h-80 overflow-y-auto"
                  style={{ borderColor: "var(--border-glass)", background: "var(--bg-1)" }}>
-              {modelOptions.map((model) => {
-                const Icon = model.icon;
-                const active = selected.provider_id === model.provider_id && selected.model === model.model;
-                return (
+              <div className="px-2 py-1.5 border-b border-white/5 flex items-center justify-between">
+                <span className="text-xs font-medium text-text-2">{t("chat.quick_switch")}</span>
+                <button onClick={() => setShowQuickSwitch(false)} className="p-1 text-text-2 hover:text-text-0">
+                  <ChevronUp size={12} />
+                </button>
+              </div>
+              <button
+                onClick={() => quickSwitch(null, null, "Auto")}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors",
+                  (currentProvider?.provider_id === null && currentProvider?.model === null) || (!currentProvider && !selected.provider_id && !selected.model)
+                    ? "bg-primary/20 text-primary"
+                    : "text-text-1 hover:bg-white/[0.03] hover:text-text-0"
+                )}
+              >
+                <Zap className="h-4 w-4 shrink-0" style={{ color: "var(--accent)" }} />
+                <div className="flex-1 text-left">
+                  <div className="font-medium truncate" style={{ color: "var(--text-0)" }}>Auto</div>
+                  <div className="text-[10px] truncate" style={{ color: "var(--text-2)" }}>{t("chat.auto_select")}</div>
+                </div>
+              </button>
+              {providers.filter(p => p.enabled).map((p) => {
+                const models = p.models?.length ? p.models : (p.default_model ? [p.default_model] : []);
+                return models.map((m: string) => (
                   <button
-                    key={model.id}
-                    onClick={() => {
-                      setSelected({ provider_id: model.provider_id, model: model.model, label: model.id === "auto" ? "Auto" : model.name });
-                      setShowModelMenu(false);
-                    }}
+                    key={`${p.id}::${m}`}
+                    onClick={() => quickSwitch(p.id, m, m)}
                     className={cn(
                       "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors",
-                      active
+                      (currentProvider?.provider_id === p.id && currentProvider?.model === m) || (selected.provider_id === p.id && selected.model === m)
                         ? "bg-primary/20 text-primary"
                         : "text-text-1 hover:bg-white/[0.03] hover:text-text-0"
                     )}
                   >
-                    <Icon className="h-4 w-4 shrink-0" style={{ color: "var(--accent)" }} />
+                    <Zap className="h-4 w-4 shrink-0" style={{ color: p.kind === "ollama-local" ? "var(--accent-2)" : "var(--accent)" }} />
                     <div className="flex-1 text-left">
-                      <div className="font-medium truncate" style={{ color: "var(--text-0)" }}>
-                        {model.name}
-                      </div>
-                      <div className="text-[10px] truncate" style={{ color: "var(--text-2)" }}>
-                        {model.desc}
-                      </div>
+                      <div className="font-medium truncate" style={{ color: "var(--text-0)" }}>{m}</div>
+                      <div className="text-[10px] truncate" style={{ color: "var(--text-2)" }}>{p.name}</div>
                     </div>
-                    {active && (
-                      <span className="text-[10px]" style={{ color: "var(--accent)" }}>
-                        ✓
-                      </span>
-                    )}
                   </button>
-                );
+                ));
               })}
-              {modelOptions.length <= 1 && (
-                <div className="px-3 py-2 text-[11px] text-text-2">
-                  {t("chat.no_providers_hint")}
-                </div>
-              )}
+              <div className="pt-2 border-t border-white/5">
+                <button
+                  onClick={() => setShowModelMenu(true)}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left text-text-2 hover:bg-white/[0.03] hover:text-text-0 transition-colors"
+                >
+                  <Settings className="h-4 w-4 shrink-0" style={{ color: "var(--text-2)" }} />
+                  <span>{t("chat.all_providers")}</span>
+                </button>
+              </div>
             </div>
           )}
+
+          {/* Model Selector Dropdown (Full) */}
+          <div className="relative hidden sm:inline-block">
+            <button
+              onClick={() => setShowModelMenu(!showModelMenu)}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-medium transition-colors hover:border-[var(--accent)]"
+              style={{
+                background: "var(--bg-2)",
+                borderColor: "var(--border-glass)",
+                color: "var(--text-1)",
+              }}
+            >
+              <Zap className="h-3.5 w-3.5" style={{ color: "var(--accent)" }} />
+              <span>{selected.label}</span>
+              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", showModelMenu && "rotate-180")} />
+            </button>
+
+            {showModelMenu && (
+              <div className="absolute right-0 top-full mt-1 z-20 glass-strong rounded-xl border p-1 animate-slide-down min-w-[200px] max-h-80 overflow-y-auto"
+                   style={{ borderColor: "var(--border-glass)", background: "var(--bg-1)" }}>
+                {modelOptions.map((model) => {
+                  const Icon = model.icon;
+                  const active = selected.provider_id === model.provider_id && selected.model === model.model;
+                  return (
+                    <button
+                      key={model.id}
+                      onClick={() => {
+                        setSelected({ provider_id: model.provider_id, model: model.model, label: model.id === "auto" ? "Auto" : model.name });
+                        setShowModelMenu(false);
+                      }}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors",
+                        active
+                          ? "bg-primary/20 text-primary"
+                          : "text-text-1 hover:bg-white/[0.03] hover:text-text-0"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" style={{ color: "var(--accent)" }} />
+                      <div className="flex-1 text-left">
+                        <div className="font-medium truncate" style={{ color: "var(--text-0)" }}>
+                          {model.name}
+                        </div>
+                        <div className="text-[10px] truncate" style={{ color: "var(--text-2)" }}>
+                          {model.desc}
+                        </div>
+                      </div>
+                      {active && (
+                        <span className="text-[10px]" style={{ color: "var(--accent)" }}>
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+                {modelOptions.length <= 1 && (
+                  <div className="px-3 py-2 text-[11px] text-text-2">
+                    {t("chat.no_providers_hint")}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Planning Button */}
+          <button
+            onClick={() => setShowPlanning(!showPlanning)}
+            className="p-2 rounded-lg border glass-soft transition-colors hover:border-[var(--accent)] hover:bg-white/[0.03]"
+            style={{ borderColor: "var(--border-glass)", background: "var(--bg-2)" }}
+            title={t("chat.planning")}
+          >
+            <FileText className="h-4 w-4 text-text-2 hover:text-accent transition-colors" />
+          </button>
+
+          {/* Provider Groups Button */}
+          <button
+            className="p-2 rounded-lg border glass-soft transition-colors hover:border-[var(--accent)] hover:bg-white/[0.03]"
+            style={{ borderColor: "var(--border-glass)", background: "var(--bg-2)" }}
+            title={t("chat.provider_groups")}
+          >
+            <Target className="h-4 w-4 text-text-2 hover:text-accent transition-colors" />
+          </button>
+
+          <Badge
+            variant={isConnected ? "default" : "destructive"}
+            className={cn(
+              "text-xs",
+              isConnected
+                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                : "bg-red-500/10 text-red-400 border-red-500/20",
+            )}
+          >
+            {isConnected ? "Online" : "Offline"}
+          </Badge>
         </div>
       </div>
 

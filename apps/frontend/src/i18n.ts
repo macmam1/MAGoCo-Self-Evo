@@ -39,6 +39,13 @@ hero: {
       },
       chat: {
         no_providers_hint: "No providers configured — add one in Settings → Providers.",
+        auto_select: "Auto-select best configured provider",
+        quick_switch: "Quick switch provider",
+        all_providers: "All providers",
+        planning: "Planning",
+        provider_groups: "Provider Groups",
+        task_routing: "Task Routing",
+        create_plan: "Create Plan",
       },
       artifacts: {
         title: "Artifacts",
@@ -409,6 +416,13 @@ hero: {
       },
       chat: {
         no_providers_hint: "پرووایدری تنظیم نشده — در تنظیمات → پرووایدرها اضافه کن.",
+        auto_select: "انتخاب خودکار بهترین پرووایدر",
+        quick_switch: "سوییچ سریع پرووایدر",
+        all_providers: "همه پرووایدرها",
+        planning: "برنامه‌ریزی",
+        provider_groups: "گروه‌های پرووایدر",
+        task_routing: "مسیردهی تسک",
+        create_plan: "ایجاد برنامه",
       },
       artifacts: {
         title: "آرتیفکت‌ها",

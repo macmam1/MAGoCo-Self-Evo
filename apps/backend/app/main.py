@@ -42,6 +42,8 @@ from app.api.v1.integrations_registry import router as integrations_registry_rou
 from app.api.v1.growth import router as growth_router
 from app.api.v1.approvals import router as approvals_router
 from app.api.v1.providers import router as providers_router
+from app.api.v1.planning import router as planning_router
+from app.api.v1.provider_groups import router as provider_groups_router
 from app.core.config import settings
 from app.db import init_db
 from app.services.browser_service import browser_service
@@ -98,6 +100,8 @@ app.include_router(integrations_registry_router, prefix="/api/v1")
 app.include_router(growth_router, prefix="/api/v1")
 app.include_router(approvals_router, prefix="/api/v1")
 app.include_router(providers_router, prefix="/api/v1")
+app.include_router(planning_router, prefix="/api/v1")
+app.include_router(provider_groups_router, prefix="/api/v1")
 
 
 @app.get("/health")
@@ -118,14 +122,44 @@ async def websocket_chat_endpoint(websocket: WebSocket):
 
     agent = ReActAgent()
     memory = ThreeLayerMemory()
+    
+    # Session state for provider/model switching
+    current_provider_id: Optional[str] = None
+    current_model: Optional[str] = None
 
     try:
         while True:
             data = await websocket.receive_text()
             payload = json.loads(data)
+            msg_type = payload.get("type", "message")
+            
+            if msg_type == "switch_provider":
+                # In-session provider/model switching
+                current_provider_id = payload.get("provider_id")
+                current_model = payload.get("model")
+                await websocket.send_json({
+                    "type": "provider_switched",
+                    "provider_id": current_provider_id,
+                    "model": current_model,
+                    "message": f"Switched to {current_model or 'auto'} on {current_provider_id or 'default'}"
+                })
+                continue
+            
+            elif msg_type == "get_session_state":
+                # Return current session state
+                await websocket.send_json({
+                    "type": "session_state",
+                    "provider_id": current_provider_id,
+                    "model": current_model,
+                    "memory_length": len(memory.turns) if hasattr(memory, 'turns') else 0,
+                })
+                continue
+
+            # Regular message handling
             user_input = payload.get("message", "")
-            provider_id = payload.get("provider_id")
-            model = payload.get("model")
+            # Use session state if not explicitly provided
+            provider_id = payload.get("provider_id") or current_provider_id
+            model = payload.get("model") or current_model
 
             memory.add_turn("user", user_input)
             await websocket.send_json({"type": "status", "content": "thinking"})
