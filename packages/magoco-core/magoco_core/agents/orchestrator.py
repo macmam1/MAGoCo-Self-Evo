@@ -12,6 +12,11 @@ Roles:
 
 Each agent is a thin wrapper around a reasoning loop (ReActAgent or a simple
 LLM call) with role-specific system instructions and tool scoping.
+
+Integration with Planning System:
+- Plans from PlanningEngine can be executed by the orchestrator
+- Task dependencies are resolved automatically
+- Parallel execution with configurable max_parallel
 """
 
 from __future__ import annotations
@@ -20,6 +25,7 @@ import asyncio
 import json
 import uuid
 from dataclasses import dataclass, field
+from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, Coroutine
 
@@ -343,6 +349,119 @@ class MultiAgentOrchestrator:
             except asyncio.CancelledError:
                 pass
             del self.background_tasks[agent_name]
+
+    async def execute_plan(self, plan_id: str, max_parallel: int = 3) -> dict:
+        """Execute a plan from the Planning Engine using the agent team.
+        
+        This is the core OS integration: Planning → Orchestration → Execution.
+        """
+        from magoco_core.planning import planning_engine, PlanStatus, TaskStatus
+        
+        plan = planning_engine.get_plan(plan_id)
+        if not plan:
+            raise ValueError(f"Plan {plan_id} not found")
+        
+        plan.status = PlanStatus.ACTIVE
+        plan.started_at = datetime.utcnow()
+        
+        results = {
+            "plan_id": plan_id,
+            "tasks_executed": 0,
+            "tasks_failed": 0,
+            "task_results": [],
+        }
+        
+        while not plan.is_complete():
+            # Get ready tasks (dependencies met)
+            ready = plan.get_ready_tasks()
+            
+            # Limit parallel execution
+            running = plan.get_running_tasks()
+            available_slots = max_parallel - len(running)
+            
+            if available_slots <= 0:
+                await asyncio.sleep(0.5)
+                continue
+            
+            # Execute ready tasks
+            for task in ready[:available_slots]:
+                task.status = TaskStatus.RUNNING
+                task.started_at = datetime.utcnow()
+                
+                # Find appropriate agent for this task
+                agent = self._find_agent_for_task(task)
+                if not agent:
+                    task.status = TaskStatus.FAILED
+                    task.error = f"No agent available for role: {task.agent_role}"
+                    plan.failed_task_ids.add(task.id)
+                    results["tasks_failed"] += 1
+                    continue
+                
+                try:
+                    # Build context from completed dependencies
+                    context = self._build_task_context(plan, task)
+                    
+                    # Execute task with agent
+                    result = await agent.run(
+                        f"{task.description}\n\nContext:\n{context}",
+                        max_steps=5
+                    )
+                    
+                    task.result = result
+                    task.status = TaskStatus.COMPLETED
+                    task.completed_at = datetime.utcnow()
+                    plan.completed_task_ids.add(task.id)
+                    results["tasks_executed"] += 1
+                    results["task_results"].append({
+                        "task_id": task.id,
+                        "task_name": task.name,
+                        "agent": agent.name,
+                        "result": str(result)[:500],
+                    })
+                except Exception as e:
+                    task.error = str(e)
+                    task.status = TaskStatus.FAILED
+                    task.completed_at = datetime.utcnow()
+                    plan.failed_task_ids.add(task.id)
+                    results["tasks_failed"] += 1
+            
+            await asyncio.sleep(0.2)
+        
+        plan.status = PlanStatus.COMPLETED if not plan.has_failures() else PlanStatus.FAILED
+        plan.completed_at = datetime.utcnow()
+        
+        return results
+    
+    def _find_agent_for_task(self, task) -> AgentWorker | None:
+        """Find the best agent for a task based on role."""
+        role_map = {
+            "coordinator": "coordinator",
+            "architect": "architect",
+            "coder": "coder",
+            "reviewer": "reviewer",
+            "researcher": "researcher",
+            "general": "coordinator",  # Default to coordinator
+        }
+        
+        target_role = role_map.get(task.agent_role, "coordinator")
+        
+        # Find agent with matching role
+        for agent in self.agents.values():
+            if agent.role.value == target_role:
+                return agent
+        
+        # Fallback to any available agent
+        return next(iter(self.agents.values()), None)
+    
+    def _build_task_context(self, plan, task) -> str:
+        """Build context from completed dependency tasks."""
+        context_parts = []
+        for dep_id in task.dependencies:
+            dep_task = plan.get_task(dep_id)
+            if dep_task and dep_task.status.value == "completed" and dep_task.result:
+                context_parts.append(f"[{dep_task.name}]: {str(dep_task.result)[:300]}")
+        
+        return "\n".join(context_parts) if context_parts else "(no prior context)"
 
     def to_dict(self) -> dict:
         return {
