@@ -96,6 +96,12 @@ async def execute_workflow_endpoint(request: WorkflowExecuteRequest):
     
     # Execute
     result = await execute_workflow(workflow_def, request.input_data or {})
+    try:
+        from magoco_core.growth import get_growth_engine
+        from magoco_core.growth.models import UsageEvent
+        get_growth_engine().record(UsageEvent(agent_id="default", action="workflow", target=request.workflow_id, params={}))
+    except Exception:
+        pass
     
     return ExecutionResponse(
         execution_id=result["execution_id"],

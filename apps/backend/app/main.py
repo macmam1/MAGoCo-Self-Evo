@@ -13,6 +13,16 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
+def _track_growth(action: str, target: str, params: dict | None = None, session_id: str | None = None):
+    try:
+        from magoco_core.growth import get_growth_engine
+        from magoco_core.growth.models import UsageEvent
+        eng = get_growth_engine()
+        eng.record(UsageEvent(agent_id="default", action=action, target=target, params=params or {}, session_id=session_id))
+    except Exception as e:
+        logger.debug(f"growth track skip: {e}")
+
 from magoco_core.agents.react_agent import ReActAgent
 from magoco_core.agents.orchestrator import MultiAgentOrchestrator
 from magoco_core.memory.three_layer import ThreeLayerMemory
@@ -115,6 +125,7 @@ async def websocket_chat_endpoint(websocket: WebSocket):
 
             result = await agent.run(user_input)
             memory.add_turn("assistant", result.content)
+            _track_growth("chat", "send", {"len": len(user_input)})
 
             await websocket.send_json({
                 "type": "message",
@@ -155,6 +166,7 @@ async def websocket_browser_endpoint(websocket: WebSocket):
                 session = browser_service.sessions.get(session_id)
                 if session:
                     success = await browser_service.navigate(session, url)
+                    _track_growth("browser", "navigate", {"url": (url or "")[:120]}, session_id)
                     await websocket.send_json({
                         "type": "session_updated",
                         "sessionId": session_id,
@@ -168,6 +180,7 @@ async def websocket_browser_endpoint(websocket: WebSocket):
                 session = browser_service.sessions.get(session_id)
                 if session:
                     await browser_service.click(session, x, y)
+                    _track_growth("browser", "click", {}, session_id)
                     await websocket.send_json({
                         "type": "session_updated",
                         "sessionId": session_id,
@@ -180,6 +193,7 @@ async def websocket_browser_endpoint(websocket: WebSocket):
                 session = browser_service.sessions.get(session_id)
                 if session:
                     await browser_service.type(session, text)
+                    _track_growth("browser", "type", {"len": len(text or "")}, session_id)
                     await websocket.send_json({
                         "type": "session_updated",
                         "sessionId": session_id,
