@@ -52,7 +52,7 @@ export function ChatConsole() {
   };
 
   const MODELS = [
-    { id: "9router-auto", name: "9Router · Auto", icon: Zap, desc: "Auto-select best model" },
+    { id: "auto", name: "Auto", icon: Zap, desc: "Auto-select best configured provider" },
     { id: "gpt-4o", name: "GPT-4o", icon: Brain, desc: "OpenAI GPT-4o" },
     { id: "gpt-4o-mini", name: "GPT-4o Mini", icon: Brain, desc: "Fast, cost-effective" },
     { id: "claude-3.5-sonnet", name: "Claude 3.5 Sonnet", icon: Sparkles, desc: "Anthropic flagship" },
