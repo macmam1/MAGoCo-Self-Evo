@@ -9,8 +9,18 @@
 ```bash
 cd apps/backend && python -m app.main &   # یا: uvicorn app.main:app
 BASE_URL=http://localhost:8000 bash tests/e2e_growth_loop.sh
-# انتظار: 10/10 PASS — record→mine→suggest→approval→409 gate→approve→apply→skill→dedup
+# انتظار: 8/8 PASS — record→mine→suggest→approval→409 gate→approve→apply→skill→dedup
 ```
+**نتیجه تست زنده Daytona (۵ سپتامبر ۲۰۲۶): PASS=8 FAIL=0 ✅**
+باگ‌های واقعی که تست زنده پیدا و فیکس کرد:
+- `memory/store.py` IndentationError در get_stats
+- `skills/executor.py` پرانتز بسته‌نشده env.update
+- `integrations/models.py` readme_template بدون default
+- Route shadowing در growth.py (`/{action}` روی `/apply` سایه انداخته بود + status نامعتبر 'apply')
+- ستون تکراری `type` در جدول skills + ناهماهنگی INSERT/UPDATE
+- `compute_hash` به attr ناموجود `content` ارجاع می‌داد
+- `from_dict` ستون‌های JSON رشته‌ای DB را parse نمی‌کرد
+- پیشوند دوباره `/api/v1` در ۴ router (کل skills/memory/features/workflows APIها ۴۰۴ بودند)
 ### تست دستی
 1. `POST /api/v1/integrations-registry/seed` → تب Integrations → Marketplace باید ۸ آیتم نشان دهد.
 2. تب Growth → Demo pattern → Suggest → suggestion + approval خودکار (تب Approvals).
