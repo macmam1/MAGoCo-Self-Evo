@@ -73,8 +73,9 @@ class GrowthEngine:
         return sorted(out, key=lambda x: x.count, reverse=True)
 
     def _suggested_signatures(self) -> set:
+        # Any non-rejected suggestion blocks re-suggestion (robust against unknown statuses).
         with self._cur() as cur:
-            cur.execute("SELECT draft FROM suggestions WHERE status IN ('pending','approved','applied')")
+            cur.execute("SELECT draft FROM suggestions WHERE status != 'rejected'")
             sigs = set()
             for r in cur.fetchall():
                 try:
@@ -123,7 +124,11 @@ class GrowthEngine:
                 cur.execute("SELECT * FROM suggestions ORDER BY created_at DESC LIMIT 50")
             return [dict(r) for r in cur.fetchall()]
 
+    _VALID_STATUSES = ("pending", "approved", "rejected", "applied")
+
     def set_suggestion_status(self, sid: str, status: str) -> bool:
+        if status not in self._VALID_STATUSES:
+            raise ValueError(f"invalid suggestion status: {status}")
         with self._cur() as cur:
             cur.execute("UPDATE suggestions SET status=? WHERE id=?", (status, sid))
             return cur.rowcount > 0

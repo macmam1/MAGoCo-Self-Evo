@@ -53,7 +53,7 @@ async def list_suggestions(status: Optional[str] = None):
     return eng.list_suggestions(status=status)
 
 
-@router.post("/suggestions/{sid}/{action}")
+@router.post("/suggestions/{sid}/{action:approved|rejected}")
 async def suggestion_action(sid: str, action: str):
     """Direct approve is disabled - human approval lives in Approvals tab (real gate)."""
     eng = get_growth_engine()
