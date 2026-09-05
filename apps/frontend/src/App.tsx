@@ -82,6 +82,24 @@ export default function App() {
 
   const navigate = useCallback((id: string) => setActiveTab(id), []);
 
+  // Cross-tab navigation events (e.g. Growth "Apply" -> open Skills tab)
+  useEffect(() => {
+    const onOpenSkill = (e: Event) => {
+      setActiveTab("skills");
+      try {
+        const detail = (e as CustomEvent).detail;
+        if (detail?.skill_id) localStorage.setItem("magoco:open-skill", JSON.stringify(detail));
+      } catch {}
+    };
+    const onOpenApprovals = () => setActiveTab("approvals");
+    window.addEventListener("magoco:open-skill", onOpenSkill);
+    window.addEventListener("magoco:open-approvals", onOpenApprovals);
+    return () => {
+      window.removeEventListener("magoco:open-skill", onOpenSkill);
+      window.removeEventListener("magoco:open-approvals", onOpenApprovals);
+    };
+  }, []);
+
   return (
     <div className="h-screen flex text-gray-100" style={{ background: "var(--app-bg)" }}>
       <Sidebar tabs={tabs} activeTab={activeTab} onTabChange={navigate} />

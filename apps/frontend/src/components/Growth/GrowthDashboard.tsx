@@ -100,18 +100,26 @@ export function GrowthDashboard() {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {applied && (
-          <div className="p-3 rounded-xl border flex items-center justify-between" style={{ background: "rgba(52,211,153,.08)", borderColor: "#34d399" }}>
-            <span className="text-sm">Draft skill created: <b>{applied.skill_id}@{applied.version}</b> — open the Skills tab to review, test and publish.</span>
-            <button onClick={() => setApplied(null)} className="text-xs px-2 py-1 rounded border border-white/10">Dismiss</button>
+          <div className="p-3 rounded-xl border flex items-center justify-between gap-2" style={{ background: "rgba(52,211,153,.08)", borderColor: "#34d399" }}>
+            <span className="text-sm">Draft skill created: <b>{applied.skill_id}@{applied.version}</b> — review, test and publish it.</span>
+            <div className="flex gap-2 shrink-0">
+              <button onClick={() => window.dispatchEvent(new CustomEvent("magoco:open-skill", { detail: applied }))} className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300">Open Skills</button>
+              <button onClick={() => setApplied(null)} className="text-xs px-2 py-1 rounded border border-white/10">Dismiss</button>
+            </div>
           </div>
         )}
         {notice && (
-          <div className="p-3 rounded-xl border flex items-center justify-between"
+          <div className="p-3 rounded-xl border flex items-center justify-between gap-2"
             style={notice.kind === "ok"
               ? { background: "rgba(52,211,153,.08)", borderColor: "#34d399" }
               : { background: "rgba(248,113,113,.08)", borderColor: "#f87171" }}>
             <span className="text-sm">{notice.text}</span>
-            <button onClick={() => setNotice(null)} className="text-xs px-2 py-1 rounded border border-white/10">Dismiss</button>
+            <div className="flex gap-2 shrink-0">
+              {notice.kind === "err" && (
+                <button onClick={() => window.dispatchEvent(new Event("magoco:open-approvals"))} className="text-xs px-2 py-1 rounded bg-yellow-500/20 text-yellow-300">Open Approvals</button>
+              )}
+              <button onClick={() => setNotice(null)} className="text-xs px-2 py-1 rounded border border-white/10">Dismiss</button>
+            </div>
           </div>
         )}
         {stats && (
