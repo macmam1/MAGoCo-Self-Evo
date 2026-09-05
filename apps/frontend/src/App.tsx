@@ -20,7 +20,7 @@ import { ChatConsole } from "@/components/Chat/ChatConsole";
 import { CodingIDE } from "@/components/Coding/CodingIDE";
 import { WorkflowDesigner } from "@/components/Workflow/WorkflowDesigner";
 import { ApprovalGates } from "@/components/Approvals/ApprovalGates";
-import { IntegrationsPanel } from "@/components/Integrations/IntegrationsPanel";
+import { IntegrationsDashboard } from "@/components/Integrations/IntegrationsDashboard";
 import { ExecutionHistory } from "@/components/History/ExecutionHistory";
 import { SettingsDashboard } from "@/components/Settings/SettingsDashboard";
 import { AgentBrowser } from "@/components/Browser/AgentBrowser";
@@ -92,7 +92,7 @@ export default function App() {
           {activeTab === "browser" && <AgentBrowser />}
           {activeTab === "skills" && <SkillsDashboard />}
           {activeTab === "approvals" && <ApprovalGates />}
-          {activeTab === "integrations" && <IntegrationsPanel />}
+          {activeTab === "integrations" && <IntegrationsDashboard />}
           {activeTab === "history" && <ExecutionHistory />}
           {activeTab === "settings" && <SettingsDashboard />}
         </main>
