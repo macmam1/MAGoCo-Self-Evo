@@ -4,11 +4,18 @@
 - آخرین کامیت‌ها: growth harden (dedup/decay/share/codegen/banner) + README + ARCHITECTURE_V2.
 - Session قبلی با ریت‌لیمیت مواجه می‌شد؛ راه‌حل: تسک‌های ≤۱۵ دقیقه + کامیت جدا + sleep 3 بین اقدام‌ها.
 
-## چه چیزی کار می‌کند (تست دستی لازم)
-1. `POST /api/v1/integrations-registry/seed` → سپس تب Integrations → Marketplace باید ۸ آیتم نشان دهد.
-2. تب Growth → Demo pattern → Suggest → باید suggestion بسازد (دفعه دوم نباید duplicate بسازد).
-3. Apply → باید بنر سبز + draft skill در تب Skills (status draft) بسازد.
-4. تب Memory → Stats باید لود شود (بدون LanceDB هم باید کار کند).
+## چه چیزی کار می‌کند (تست خودکار + دستی)
+### تست خودکار حلقه رشد (نیازمند backend زنده)
+```bash
+cd apps/backend && python -m app.main &   # یا: uvicorn app.main:app
+BASE_URL=http://localhost:8000 bash tests/e2e_growth_loop.sh
+# انتظار: 10/10 PASS — record→mine→suggest→approval→409 gate→approve→apply→skill→dedup
+```
+### تست دستی
+1. `POST /api/v1/integrations-registry/seed` → تب Integrations → Marketplace باید ۸ آیتم نشان دهد.
+2. تب Growth → Demo pattern → Suggest → suggestion + approval خودکار (تب Approvals).
+3. Apply بدون تأیید → بنر قرمز ۴۰۹ + دکمه Open Approvals؛ بعد از تأیید → بنر سبز + دکمه Open Skills.
+4. تب Memory → Stats باید لود شود (بدون LanceDB هم کار می‌کند).
 5. تب Workflows → Canvas + تمپلیت‌ها؛ `POST /workflows/execute` با `agent-chain`.
 
 ## ریز کارهای انجام‌شده (برای ادامه)
