@@ -426,7 +426,7 @@ except Exception as e:
             "PYTHONPATH": str(context.working_dir / "skill"),
             "SKILL_INPUT": json.dumps(context.input_data),
             "SKILL_CONFIG": json.dumps(context.config),
-        }
+        })
         
         # Add secrets to environment (prefixed)
         for key, value in context.secrets.items():
