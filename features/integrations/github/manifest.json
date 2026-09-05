@@ -1,0 +1,17 @@
+{
+  "id": "github",
+  "name": "github",
+  "display_name": "GitHub",
+  "description": "Manage repositories, issues, pull requests, and workflows",
+  "version": "1.0.0",
+  "category": "development",
+  "tags": ["git", "ci-cd", "repository"],
+  "author": "MAGoCo Team",
+  "base_url": "https://api.github.com",
+  "status": "published",
+  "is_public": true,
+  "featured": true,
+  "price": 0.0,
+  "rating": 4.9,
+  "downloads": 0
+}

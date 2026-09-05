@@ -1,0 +1,17 @@
+{
+  "id": "slack",
+  "name": "slack",
+  "display_name": "Slack",
+  "description": "Send messages, manage channels, and respond to events in Slack",
+  "version": "1.0.0",
+  "category": "communication",
+  "tags": ["chat", "notifications", "team"],
+  "author": "MAGoCo Team",
+  "base_url": "https://slack.com/api",
+  "status": "published",
+  "is_public": true,
+  "featured": true,
+  "price": 0.0,
+  "rating": 4.8,
+  "downloads": 0
+}

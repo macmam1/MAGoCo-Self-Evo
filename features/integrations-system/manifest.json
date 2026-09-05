@@ -1,0 +1,11 @@
+{
+  "id": "integrations-system",
+  "name": "Integrations System",
+  "display_name": "Integrations System",
+  "description": "OAuth, webhooks, MCP, and 1500+ connectors marketplace",
+  "version": "1.0.0",
+  "category": "integrations",
+  "author": "MAGoCo Team",
+  "priority": 85,
+  "enabledByDefault": true
+}
