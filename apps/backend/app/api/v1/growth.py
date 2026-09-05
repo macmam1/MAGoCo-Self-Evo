@@ -55,17 +55,42 @@ async def list_suggestions(status: Optional[str] = None):
 
 @router.post("/suggestions/{sid}/{action}")
 async def suggestion_action(sid: str, action: str):
+    """Direct approve is disabled - human approval lives in Approvals tab (real gate)."""
     eng = get_growth_engine()
-    ok = eng.set_suggestion_status(sid, action)
+    if action == "rejected":
+        ok = eng.set_suggestion_status(sid, "rejected")
+        try:
+            from magoco_core.evolution.approvals_store import get_approvals_store
+            for a in get_approvals_store().find_by_ref("suggestion_id", sid):
+                if a["status"] == "pending":
+                    get_approvals_store().resolve(a["request_id"], "rejected", "rejected from Growth tab")
+        except Exception:
+            pass
+        return {"success": ok}
     if action == "approved":
-        from magoco_core.growth.models import GrowthEventType
-        eng.log(GrowthEventType.SKILL_CREATED, f"suggestion {sid} approved", ref_id=sid)
-    return {"success": ok}
+        # Ensure an approval exists; human must resolve it in Approvals tab.
+        from magoco_core.evolution.approvals_store import get_approvals_store
+        store = get_approvals_store()
+        existing = [a for a in store.find_by_ref("suggestion_id", sid) if a["status"] == "pending"]
+        if existing:
+            return {"success": True, "needs_approval": True, "approval_id": existing[0]["request_id"]}
+        rows = eng.list_suggestions()
+        row = next((r for r in rows if r["id"] == sid), None)
+        title = (row or {}).get("title", sid)
+        created = store.create("growth-engine", f"Create draft skill: {title}", {"suggestion_id": sid})
+        return {"success": True, "needs_approval": True, "approval_id": created["request_id"]}
+    eng.set_suggestion_status(sid, action)
+    return {"success": True}
 
 
 @router.post("/suggestions/{sid}/apply")
 async def apply_suggestion(sid: str):
-    """Approve suggestion AND create a draft skill in Skills Registry."""
+    """Create a draft skill - GATED on human approval in Approvals tab."""
+    from fastapi import HTTPException as _HTTP
+    from magoco_core.evolution.approvals_store import get_approvals_store
+    approvals = [a for a in get_approvals_store().find_by_ref("suggestion_id", sid) if a["status"] == "approved"]
+    if not approvals:
+        raise _HTTP(status_code=409, detail="Human approval required: approve in Approvals tab first")
     from magoco_core.skills import get_skills_registry
     from magoco_core.skills.models import (
         SkillManifest, SkillCategory, SkillType, SkillStatus,

@@ -103,6 +103,15 @@ class GrowthEngine:
                             (s.id, s.kind, s.title, s.description, s.pattern_id,
                              json.dumps(s.draft), s.status.value, s.created_at.isoformat()))
             self.log(GrowthEventType.PATTERN_FOUND, title, s.description, ref_id=s.id)
+            try:
+                from magoco_core.evolution.approvals_store import get_approvals_store
+                get_approvals_store().create(
+                    agent_name="growth-engine",
+                    action_description=f"Create draft skill: {s.title}",
+                    proposed_input={"suggestion_id": s.id, "kind": s.kind, "draft": s.draft},
+                )
+            except Exception as e:
+                logger.warning(f"approval create skip: {e}")
             suggestions.append(s)
         return suggestions
 
