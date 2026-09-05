@@ -16,6 +16,8 @@ const resources = {
         ide: "Coding IDE",
         workflows: "Workflows",
         browser: "Agent Browser",
+        skills: "Skills",
+        growth: "Growth",
         approvals: "Approvals",
         integrations: "Integrations",
         history: "History",
@@ -446,6 +448,10 @@ hero: {
         kg_edges: "KG Edges",
         document_chunks: "Document Chunks",
       },
+      growth: {
+        title: "Agent Growth",
+        subtitle: "Patterns, auto-skills, timeline",
+      },
       integrations: {
         title: "Integrations",
         subtitle: "OAuth, webhooks, MCP & connectors",
@@ -493,6 +499,8 @@ hero: {
         ide: "محیط کدنویسی",
         workflows: "ورک‌فلوها",
         browser: "مرورگر ایجنت",
+        skills: "اسکیل‌ها",
+        growth: "رشد",
         approvals: "تأییدها",
         integrations: "اتصال‌ها",
         history: "تاریخچه",
@@ -821,6 +829,10 @@ hero: {
         kg_nodes: "نودهای گراف",
         kg_edges: "لبه‌های گراف",
         document_chunks: "قطعات اسناد",
+      },
+      growth: {
+        title: "رشد ایجنت",
+        subtitle: "الگوها، اسکیل خودکار، تایم‌لاین",
       },
       integrations: {
         title: "اتصال‌ها",

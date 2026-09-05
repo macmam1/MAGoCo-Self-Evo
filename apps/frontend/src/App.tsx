@@ -10,6 +10,7 @@ import {
   Settings,
   Globe,
   Package,
+  TrendingUp,
   type LucideIcon,
 } from "lucide-react";
 import { Sidebar } from "@/components/Layout/Sidebar";
@@ -25,6 +26,7 @@ import { ExecutionHistory } from "@/components/History/ExecutionHistory";
 import { SettingsDashboard } from "@/components/Settings/SettingsDashboard";
 import { AgentBrowser } from "@/components/Browser/AgentBrowser";
 import { SkillsDashboard } from "@/components/Skills/SkillsDashboard";
+import { GrowthDashboard } from "@/components/Growth/GrowthDashboard";
 import { KeyboardShortcutsModal, useKeyboardShortcuts } from "@/components/ui/KeyboardShortcuts";
 import { applyAllPreferences, watchSystemTheme, applyLang, getLang } from "@/theme/theme";
 import { useTranslation } from "react-i18next";
@@ -43,6 +45,7 @@ const TABS: AppTab[] = [
   { id: "workflows", label: "nav.workflows", group: "groups.general", icon: Workflow },
   { id: "browser", label: "nav.browser", group: "groups.general", icon: Globe },
   { id: "skills", label: "nav.skills", group: "groups.general", icon: Package },
+  { id: "growth", label: "nav.growth", group: "groups.general", icon: TrendingUp },
   { id: "approvals", label: "nav.approvals", group: "groups.operations", icon: CheckSquare },
   { id: "integrations", label: "nav.integrations", group: "groups.operations", icon: Link },
   { id: "history", label: "nav.history", group: "groups.operations", icon: Clock },
@@ -91,6 +94,7 @@ export default function App() {
           {activeTab === "workflows" && <WorkflowDesigner />}
           {activeTab === "browser" && <AgentBrowser />}
           {activeTab === "skills" && <SkillsDashboard />}
+          {activeTab === "growth" && <GrowthDashboard />}
           {activeTab === "approvals" && <ApprovalGates />}
           {activeTab === "integrations" && <IntegrationsDashboard />}
           {activeTab === "history" && <ExecutionHistory />}
