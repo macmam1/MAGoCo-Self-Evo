@@ -11,6 +11,7 @@ import {
   Globe,
   Package,
   TrendingUp,
+  Target,
   type LucideIcon,
 } from "lucide-react";
 import { Sidebar } from "@/components/Layout/Sidebar";
@@ -27,6 +28,7 @@ import { SettingsDashboard } from "@/components/Settings/SettingsDashboard";
 import { AgentBrowser } from "@/components/Browser/AgentBrowser";
 import { SkillsDashboard } from "@/components/Skills/SkillsDashboard";
 import { GrowthDashboard } from "@/components/Growth/GrowthDashboard";
+import { PlanningPanel } from "@/components/Planning/PlanningPanel";
 import { KeyboardShortcutsModal, useKeyboardShortcuts } from "@/components/ui/KeyboardShortcuts";
 import { applyAllPreferences, watchSystemTheme, applyLang, getLang } from "@/theme/theme";
 import { useTranslation } from "react-i18next";
@@ -41,6 +43,7 @@ export interface AppTab {
 const TABS: AppTab[] = [
   { id: "dashboard", label: "nav.dashboard", group: "groups.general", icon: LayoutDashboard },
   { id: "chat", label: "nav.chat", group: "groups.general", icon: MessageSquare },
+  { id: "planning", label: "nav.planning", group: "groups.general", icon: Target },
   { id: "ide", label: "nav.ide", group: "groups.general", icon: Code },
   { id: "workflows", label: "nav.workflows", group: "groups.general", icon: Workflow },
   { id: "browser", label: "nav.browser", group: "groups.general", icon: Globe },
@@ -108,6 +111,7 @@ export default function App() {
         <main className="flex-1 overflow-hidden">
           {activeTab === "dashboard" && <CommandCenter onNavigate={navigate} />}
           {activeTab === "chat" && <ChatConsole />}
+          {activeTab === "planning" && <PlanningPanel />}
           {activeTab === "ide" && <CodingIDE />}
           {activeTab === "workflows" && <WorkflowDesigner />}
           {activeTab === "browser" && <AgentBrowser />}
