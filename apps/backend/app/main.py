@@ -122,12 +122,15 @@ async def websocket_chat_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
-            user_input = json.loads(data).get("message", "")
+            payload = json.loads(data)
+            user_input = payload.get("message", "")
+            provider_id = payload.get("provider_id")
+            model = payload.get("model")
 
             memory.add_turn("user", user_input)
             await websocket.send_json({"type": "status", "content": "thinking"})
 
-            result = await agent.run(user_input)
+            result = await agent.run(user_input, provider_id=provider_id, model=model)
             memory.add_turn("assistant", result.content)
             _track_growth("chat", "send", {"len": len(user_input)})
 

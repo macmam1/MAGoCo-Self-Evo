@@ -1,0 +1,11 @@
+{
+  "id": "providers-system",
+  "name": "providers-system",
+  "display_name": "Providers System",
+  "description": "BYOM providers: ollama-local + openai-compatible, encrypted keys, fetch/test, fallback",
+  "version": "1.0.0",
+  "category": "core",
+  "author": "MAGoCo Team",
+  "priority": 100,
+  "enabledByDefault": true
+}

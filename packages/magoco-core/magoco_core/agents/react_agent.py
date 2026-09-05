@@ -40,15 +40,39 @@ class ReActAgent:
     def _get_tool_names(self) -> str:
         return ", ".join(t.name for t in tool_registry.list_tools())
 
-    async def _call_llm(self, user_input: str) -> str:
-        """Try to call LLM. If not available, use rule-based fallback."""
+    async def _call_llm(self, user_input: str, provider_id: Optional[str] = None,
+                          model: Optional[str] = None) -> str:
+        """Try user-configured providers first, then env gateway, then rules."""
         if self.llm:
             try:
                 return await self.llm(user_input)
             except Exception:
                 pass
 
-        # Try global LLM gateway
+        # 1. User-configured providers (Settings -> Providers, encrypted keys)
+        try:
+            from magoco_core.llm.registry import get_provider_registry
+            from magoco_core.llm import LLMMessage
+            reg = get_provider_registry()
+            configs = reg.list(enabled_only=True)
+            if provider_id:
+                configs = [c for c in configs if c.id == provider_id] or configs
+            for cfg in configs:
+                try:
+                    runtime = reg.to_runtime(cfg)
+                    if not await runtime.is_available():
+                        continue
+                    resp = await runtime.complete(
+                        [LLMMessage(role="user", content=user_input)],
+                        model=model or cfg.default_model or (cfg.models[0] if cfg.models else ""),
+                    )
+                    return resp.content
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+        # 2. Legacy env-based gateway (OPENAI_API_KEY / Ollama env)
         try:
             from magoco_core.llm import llm_gateway, LLMMessage
             messages = [LLMMessage(role="user", content=user_input)]
@@ -66,12 +90,13 @@ class ReActAgent:
             return f"I received the input: '{user_input}'. I'll process it with available tools."
         return "No input provided."
 
-    async def run(self, user_input: str, max_steps: int = 3) -> ToolResult:
+    async def run(self, user_input: str, max_steps: int = 3,
+                    provider_id: Optional[str] = None, model: Optional[str] = None) -> ToolResult:
         """Run the ReAct loop on user input."""
         self.memory.append({"role": "user", "content": user_input})
 
         # Step 1: Think
-        thought = await self._call_llm(user_input)
+        thought = await self._call_llm(user_input, provider_id=provider_id, model=model)
         self.memory.append({"role": "assistant", "content": thought})
 
         # Step 2: Parse and Act
