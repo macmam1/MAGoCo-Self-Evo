@@ -34,6 +34,15 @@ export function GrowthDashboard() {
     load();
   };
 
+  const applySuggestion = async (id: string) => {
+    const r = await fetch(`${API_URL}/api/v1/growth/suggestions/${id}/apply`, { method: "POST" });
+    if (r.ok) {
+      const data = await r.json();
+      alert(`Draft skill created: ${data.skill_id}@${data.version} — check Skills tab`);
+    }
+    load();
+  };
+
   const runDemo = async () => {
     const seq = ["chat:send", "browser:navigate", "browser:screenshot"];
     for (let i = 0; i < 4; i++) {
@@ -92,8 +101,12 @@ export function GrowthDashboard() {
                     {s.status === "pending" && (
                       <>
                         <button onClick={() => act(s.id, "approved")} className="text-xs px-2 py-1 rounded bg-emerald-500/20 text-emerald-300 flex items-center gap-1"><Check className="h-3 w-3" />Approve</button>
+                        <button onClick={() => applySuggestion(s.id)} className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-300 flex items-center gap-1">Apply → skill</button>
                         <button onClick={() => act(s.id, "rejected")} className="text-xs px-2 py-1 rounded bg-red-500/10 text-red-300 flex items-center gap-1"><X className="h-3 w-3" />Reject</button>
                       </>
+                    )}
+                    {s.status === "approved" && (
+                      <button onClick={() => applySuggestion(s.id)} className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-300">Apply → skill</button>
                     )}
                   </div>
                 </div>
