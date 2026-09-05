@@ -3,11 +3,28 @@ Skills System Core Models
 Professional skill registry with versioning, dependencies, security, marketplace
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict, is_dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional, Set
 import uuid
+
+
+def _to_dict(obj: Any) -> Any:
+    """Recursively convert dataclasses/Enums/datetimes/sets to plain JSON-safe values."""
+    if is_dataclass(obj):
+        return {k: _to_dict(v) for k, v in asdict(obj).items()}
+    if isinstance(obj, Enum):
+        return obj.value
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    if isinstance(obj, set):
+        return sorted(obj)
+    if isinstance(obj, dict):
+        return {k: _to_dict(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_to_dict(v) for v in obj]
+    return obj
 
 
 class SkillCategory(str, Enum):
@@ -85,6 +102,9 @@ class SkillParameter:
     properties: Optional[Dict[str, 'SkillParameter']] = None  # for objects
     sensitive: bool = False            # Hide in logs/UI (passwords, tokens)
 
+    def to_dict(self) -> Dict[str, Any]:
+        return _to_dict(self)
+
 
 @dataclass
 class SkillReturn:
@@ -94,6 +114,9 @@ class SkillReturn:
     properties: Optional[Dict[str, SkillParameter]] = None
     items: Optional[SkillParameter] = None
     examples: List[Any] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return _to_dict(self)
 
 
 @dataclass
@@ -105,6 +128,9 @@ class SkillDependency:
     required: bool = True
     reason: str = ""
 
+    def to_dict(self) -> Dict[str, Any]:
+        return _to_dict(self)
+
 
 @dataclass
 class SkillExample:
@@ -114,6 +140,9 @@ class SkillExample:
     input_data: Dict[str, Any]
     expected_output: Optional[Any] = None
     tags: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return _to_dict(self)
 
 
 @dataclass
@@ -126,6 +155,9 @@ class SkillTest:
     expected_error: Optional[str] = None
     timeout: float = 30.0
     tags: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return _to_dict(self)
 
 
 @dataclass
@@ -142,6 +174,9 @@ class SkillReview:
     updated_at: datetime = field(default_factory=datetime.utcnow)
     verified: bool = False              # Verified purchaser/user
 
+    def to_dict(self) -> Dict[str, Any]:
+        return _to_dict(self)
+
 
 @dataclass
 class SkillAnalytics:
@@ -155,6 +190,9 @@ class SkillAnalytics:
     last_executed: Optional[datetime] = None
     error_rate: float = 0.0
     popularity_score: float = 0.0       # Calculated metric
+
+    def to_dict(self) -> Dict[str, Any]:
+        return _to_dict(self)
 
 
 @dataclass
