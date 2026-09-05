@@ -53,6 +53,12 @@ async def list_templates():
     ]
 
 
+@router.post("/seed")
+async def seed_integrations():
+    from app.services.integrations.seed import seed_registry
+    return seed_registry()
+
+
 @router.get("/{integration_id}")
 async def get_integration(integration_id: str):
     reg = get_integrations_registry()
