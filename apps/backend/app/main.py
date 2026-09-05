@@ -44,6 +44,7 @@ from app.api.v1.approvals import router as approvals_router
 from app.api.v1.providers import router as providers_router
 from app.api.v1.planning import router as planning_router
 from app.api.v1.provider_groups import router as provider_groups_router
+from app.api.v1.telegram import router as telegram_router
 from app.core.config import settings
 from app.db import init_db
 from app.services.browser_service import browser_service
@@ -64,10 +65,23 @@ async def lifespan(app: FastAPI):
     await browser_service.start()
     print("[MAGoCo] Browser service started ✓")
 
+    # Register agent executor with Telegram gateway
+    from magoco_core.integrations.telegram import telegram_gateway
+    from magoco_core.agents.react_agent import ReActAgent
+
+    async def telegram_agent_executor(chat_id: str, message: str, provider_id=None, model=None, history=None):
+        agent = ReActAgent()
+        result = await agent.run(message, provider_id=provider_id, model=model)
+        return result.content
+
+    telegram_gateway.register_agent_executor(telegram_agent_executor)
+    print("[MAGoCo] Telegram gateway ready (bots can be added via API) ✓")
+
     yield
 
     # Cleanup
     await browser_service.stop()
+    await telegram_gateway.stop()
     print("[MAGoCo] Shutdown complete")
 
 
@@ -102,6 +116,7 @@ app.include_router(approvals_router, prefix="/api/v1")
 app.include_router(providers_router, prefix="/api/v1")
 app.include_router(planning_router, prefix="/api/v1")
 app.include_router(provider_groups_router, prefix="/api/v1")
+app.include_router(telegram_router, prefix="/api/v1")
 
 
 @app.get("/health")
