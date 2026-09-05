@@ -32,25 +32,27 @@ Full 120-feature inventory: `docs/FEATURES.md`.
 
 ## ⚡️ Project status (branch `feat/v2-unified-ui` — this is where all work happens)
 
+Legend: ✅ = verified live on real backend · 🟡 = implemented, not yet live-tested · ❌ = mock · 📋 = roadmap.
+
 | Module | Status | Notes |
 |---|---|---|
-| Chat Core | ✅ Working | Streaming thinking, Artifacts, fork/edit, model switcher, fa/en + RTL |
-| Provider System (BYOM) | 🔨 **In progress** | `ollama-local` + `openai-compatible` types, encrypted keys, `/models` fetch, fallback chain |
-| Agent Browser | ✅ Working (e2e ✅) | Playwright + `/ws/browser` screenshot streaming + confirm modals |
-| Workflow Engine | ✅ Working | Custom canvas DAG (not ReactFlow) + executor (parallel/conditional/retry) + 5 templates |
-| Memory System | ✅ Working | LanceDB + SQLite + JSONL; vector/keyword/hybrid search, KG, episodic, RAG + 5-tab UI |
-| Skills System | ✅ Working | Registry + semver + sandboxed executor + marketplace + builder |
-| Integrations | ✅ Working | Registry + `/integrations-registry` API + seed + dashboard (marketplace/webhooks/OAuth helper) |
-| Agent Growth (closed loop) | ✅ Working (e2e 8/8 ✅) | Auto-track → pattern mining → suggestion → human approval → draft skill |
-| Approvals (HITL) | ✅ Working | Persistent SQLite + API matching the Approvals tab; gates Growth apply |
-| Feature Registry | ✅ Working | Manifest + enable/disable + deps + `/api/v1/features/*` |
-| UI Shell | ✅ Working | Barrel exports, 5 themes, fonts, density, ⌘K, shortcuts, Modal |
-| Vibe-Coding IDE | ❌ Mock | Tab renders, zero backend calls — backend file/exec/vibe endpoints pending |
+| Backend boot + health | ✅ | Proven on Daytona (Python 3.14, SQLite); needs `PYTHONPATH` (see quickstart) |
+| Agent Growth (closed loop) | ✅ e2e 8/8 | Auto-track → mine → suggest → approval → Apply→draft skill; dedup + 409 gate verified live |
+| Chat Core | 🟡 | Artifacts, fork/edit, model switcher, fa/en + RTL real; **thinking stream is currently simulated** (real token streaming pending) |
+| Provider System (BYOM) | 🔨 In progress | Backend done (vault, registry, API, ReActAgent wiring); Settings UI done; live test pending |
+| Agent Browser | 🟡 | Playwright service + WS + confirm modals implemented; **not covered by e2e yet** |
+| Workflow Engine | 🟡 | Canvas DAG + executor + 5 templates implemented; execution API not live-tested |
+| Memory System | 🟡 | Store + search + KG + episodic + RAG UI implemented; only stats/search touched live |
+| Skills System | 🟡 | Registry + sandbox + marketplace + builder implemented; execute path not live-tested |
+| Integrations | 🟡 | Registry + seed + dashboard implemented; OAuth flows not live-tested |
+| Approvals (HITL) | ✅ | Persistent SQLite + API; verified live via growth e2e (approve/resolve/409) |
+| Feature Registry | 🟡 | Manifest + API implemented; not live-tested |
+| UI Shell | ✅ | Renders; barrel exports, themes, ⌘K, shortcuts, Modal (visual, no backend needed) |
+| Vibe-Coding IDE | ❌ Mock | Tab renders, zero backend calls — file/exec/vibe endpoints pending |
 | Command Center / History stats | ❌ Mock | Static numbers — wire to existing stats APIs (small task) |
 | Multi-agent teams / Auto-builder | 📋 Roadmap | See open EPIC issues (M2) |
-| LLM live connection | ⚠️ Needs user key | Gateway + providers exist; ReActAgent falls back to rules until a provider is configured in UI |
 
-Live e2e result (Daytona, Sept 2026): **8/8 PASS** — `BASE_URL=... bash tests/e2e_growth_loop.sh`. The test found and fixed 8 real backend bugs.
+Live e2e scope (Daytona, Sept 2026): growth loop only — `BASE_URL=... bash tests/e2e_growth_loop.sh` → **8/8 PASS**. It found and fixed 8 real backend bugs. Other modules await their own e2e.
 
 ---
 
@@ -84,7 +86,7 @@ cd MAGoCo-Self-Evo
 # Backend (needs Python 3.11+)
 cd apps/backend
 pip install fastapi 'uvicorn[standard]' pydantic pydantic-settings sqlalchemy aiosqlite httpx \
-  'passlib[bcrypt]' 'python-jose[cryptography]' email-validator python-multipart structlog tenacity pyjwt semver playwright
+  'passlib[bcrypt]' 'python-jose[cryptography]' email-validator python-multipart structlog tenacity pyjwt semver playwright cryptography
 pip install -e ../../packages/magoco-core --no-deps
 python -m playwright install chromium   # only for Agent Browser
 PYTHONPATH=../../packages/magoco-core:../../packages/magoco-workflows:. \
