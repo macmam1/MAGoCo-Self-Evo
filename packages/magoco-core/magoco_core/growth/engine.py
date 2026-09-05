@@ -51,9 +51,11 @@ class GrowthEngine:
                          json.dumps(event.params), event.timestamp.isoformat(), event.session_id))
         return event.id
 
-    def mine_patterns(self, min_count: int = 3, seq_len: int = 3) -> List[Pattern]:
+    def mine_patterns(self, min_count: int = 3, seq_len: int = 3, days: int = 30) -> List[Pattern]:
+        from datetime import timedelta
+        cutoff = (datetime.utcnow() - timedelta(days=days)).isoformat()
         with self._cur() as cur:
-            cur.execute("SELECT action,target,params,timestamp FROM usage_events ORDER BY timestamp LIMIT 2000")
+            cur.execute("SELECT action,target,params,timestamp FROM usage_events WHERE timestamp >= ? ORDER BY timestamp LIMIT 2000", (cutoff,))
             rows = cur.fetchall()
         seqs = [f"{r['action']}:{r['target']}" for r in rows]
         counts = Counter(tuple(seqs[i:i + seq_len]) for i in range(len(seqs) - seq_len + 1))
@@ -65,20 +67,34 @@ class GrowthEngine:
             p = Pattern(sequence=list(seq), count=cnt, confidence=conf)
             out.append(p)
             with self._cur() as cur:
-                cur.execute("INSERT OR REPLACE INTO patterns VALUES (?,?,?,?,?,?)",
+                cur.execute("DELETE FROM patterns WHERE sequence=?", (json.dumps(p.sequence),))
+                cur.execute("INSERT INTO patterns VALUES (?,?,?,?,?,?)",
                             (p.id, json.dumps(p.sequence), p.count, p.last_seen.isoformat(), p.confidence, "{}"))
         return sorted(out, key=lambda x: x.count, reverse=True)
 
+    def _suggested_signatures(self) -> set:
+        with self._cur() as cur:
+            cur.execute("SELECT draft FROM suggestions WHERE status IN ('pending','approved','applied')")
+            sigs = set()
+            for r in cur.fetchall():
+                try:
+                    d = json.loads(r["draft"]) if isinstance(r["draft"], str) else (r["draft"] or {})
+                    steps = d.get("steps", [])
+                    sigs.add(json.dumps(steps, sort_keys=True))
+                except Exception:
+                    pass
+            return sigs
+
     def suggest_from_patterns(self) -> List[GrowthSuggestion]:
         patterns = self.mine_patterns()
+        seen = self._suggested_signatures()
         suggestions = []
         for p in patterns[:5]:
+            steps = [{"action": s.split(':')[0], "target": s.split(':')[1] if ':' in s else ""} for s in p.sequence]
+            if json.dumps(steps, sort_keys=True) in seen:
+                continue
             title = f"Automate: {' → '.join(p.sequence)} (×{p.count})"
-            draft = {
-                "name": f"auto-skill-{p.id[:8]}",
-                "steps": [{"action": s.split(':')[0], "target": s.split(':')[1] if ':' in s else ""} for s in p.sequence],
-                "trigger_count": p.count,
-            }
+            draft = {"name": f"auto-skill-{p.id[:8]}", "steps": steps, "trigger_count": p.count}
             s = GrowthSuggestion(kind="auto_skill", title=title,
                                  description=f"Seen {p.count} times, confidence {p.confidence:.0%}. Approve to draft a skill.",
                                  pattern_id=p.id, draft=draft)

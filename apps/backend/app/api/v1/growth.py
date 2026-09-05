@@ -131,26 +131,45 @@ async def learning_rate():
 
 @router.post("/share")
 async def share_memory(req: ShareRequest):
-    """Cross-agent memory sharing: copy entries from one agent scope to another."""
+    """Cross-agent memory sharing: copy explicit IDs, or tagged ones as fallback."""
     from magoco_core.memory import get_memory_store
     store = get_memory_store()
-    shared = 0
-    # Simplified: search by agent tag then re-add with new scope tag
-    from magoco_core.memory.models import MemoryQuery, MemoryScope
-    q = MemoryQuery(query="", scopes=[MemoryScope.USER], top_k=200)
-    for r in store.search(q):
-        tags = set(r.entry.tags)
-        if f"agent:{req.from_agent}" in tags or req.from_agent == "default":
-            from magoco_core.memory.models import MemoryEntry, MemoryType
-            e = r.entry
-            e.id = __import__("uuid").uuid4().hex[:8]
-            e.tags = tags | {f"agent:{req.to_agent}", "shared"}
+    shared, skipped = 0, 0
+    ids = list(dict.fromkeys(req.memory_ids or []))[:50]
+    if ids:
+        for mid in ids:
+            e = store.get(mid)
+            if not e:
+                skipped += 1
+                continue
+            tags = set(e.tags)
+            if f"agent:{req.to_agent}" in tags:
+                skipped += 1
+                continue
+            import uuid as _uuid
+            e.id = _uuid.uuid4().hex[:8]
+            e.tags = (tags - {f"agent:{req.from_agent}"}) | {f"agent:{req.to_agent}", "shared", f"shared-from:{req.from_agent}"}
             e.source = "shared"
             store.add(e)
             shared += 1
-            if shared >= 50:
-                break
+    else:
+        from magoco_core.memory.models import MemoryQuery, MemoryScope
+        q = MemoryQuery(query="", scopes=[MemoryScope.USER], top_k=200)
+        for r in store.search(q):
+            tags = set(r.entry.tags)
+            if f"agent:{req.from_agent}" in tags or req.from_agent == "default":
+                if f"agent:{req.to_agent}" in tags:
+                    continue
+                import uuid as _uuid
+                e = r.entry
+                e.id = _uuid.uuid4().hex[:8]
+                e.tags = tags | {f"agent:{req.to_agent}", "shared"}
+                e.source = "shared"
+                store.add(e)
+                shared += 1
+                if shared >= 50:
+                    break
     eng = get_growth_engine()
     from magoco_core.growth.models import GrowthEventType
-    eng.log(GrowthEventType.MEMORY_CONSOLIDATED, f"shared {shared} memories {req.from_agent}->{req.to_agent}")
-    return {"success": True, "shared": shared}
+    eng.log(GrowthEventType.MEMORY_CONSOLIDATED, f"shared {shared} memories {req.from_agent}->{req.to_agent} (skipped {skipped})")
+    return {"success": True, "shared": shared, "skipped": skipped}
