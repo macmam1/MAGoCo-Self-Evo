@@ -81,22 +81,43 @@ async def apply_suggestion(sid: str):
     draft = _json.loads(row["draft"]) if isinstance(row["draft"], str) else (row["draft"] or {})
     steps = draft.get("steps", [])
     skill_name = (draft.get("name") or f"auto-skill-{sid[:6]}").lower().replace(" ", "-")
-    code_lines = ["def main(input_data):", '    """Auto-generated from usage pattern."""', "    log = []"]
+    needs = sorted({(s.get("target") or "value") for s in steps if isinstance(s, dict)})
+    params = []
+    for n in needs:
+        if n.startswith("http") or n in ("navigate",):
+            params.append({"name": "url", "type": "string", "description": "Target URL", "required": True})
+            break
+    if any((s.get("action") == "type" for s in steps if isinstance(s, dict))):
+        params.append({"name": "text", "type": "string", "description": "Text to type", "required": False, "default": ""})
+    if any((s.get("action") == "workflow" for s in steps if isinstance(s, dict))):
+        params.append({"name": "workflow_id", "type": "string", "description": "Workflow to run", "required": True})
+    code_lines = [
+        "def main(input_data):",
+        '    """Auto-generated from usage pattern. Review before publishing."""',
+        "    url = input_data.get('url', '')",
+        "    text = input_data.get('text', '')",
+        "    results = []",
+    ]
     for st in steps:
-        code_lines.append(f"    log.append({repr(st)})  # TODO: wire real call")
-    code_lines.append('    return {"steps": log}')
+        a = (st.get("action") if isinstance(st, dict) else "")
+        code_lines.append(f"    results.append({{'action': {a!r}, 'url': url, 'text': text}})")
+    code_lines.append('    return {"ok": True, "steps": results}')
+    from magoco_core.skills.models import SkillParameter, SkillTest, SkillExample
     manifest = SkillManifest(
         id=skill_name, name=skill_name,
         display_name=draft.get("name") or skill_name,
-        description=f"Auto-generated from pattern (suggestion {sid})",
+        description=f"Auto-generated from pattern (suggestion {sid}, seen ×{draft.get('trigger_count', '?')})",
         version="0.1.0",
         category=SkillCategory.AUTOMATION, type=SkillType.CHAIN,
-        tags={"auto-generated", "growth"},
+        tags={"auto-generated", "growth", "needs-review"},
         author="growth-engine",
         entry_point="main", code_path="skill.py",
         execution_mode=ExecutionMode.SYNC,
         security_level=SecurityLevel.RESTRICTED,
         status=SkillStatus.DRAFT,
+        parameters=[SkillParameter(**p) for p in params],
+        tests=[SkillTest(name="smoke", description="Auto smoke test", input_data={p["name"]: ("https://example.com" if p["type"] == "string" else "") for p in params}, expected_output={"ok": True})],
+        examples=[SkillExample(name="basic", description="Basic run", input_data={p["name"]: ("https://example.com" if p["type"] == "string" else "") for p in params})],
     )
     reg = get_skills_registry()
     try:
