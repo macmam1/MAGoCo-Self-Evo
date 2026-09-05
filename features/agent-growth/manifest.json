@@ -1,0 +1,11 @@
+{
+  "id": "agent-growth",
+  "name": "agent-growth",
+  "display_name": "Agent Growth",
+  "description": "Pattern mining, auto-skill drafts, growth timeline and learning rate",
+  "version": "1.0.0",
+  "category": "core",
+  "author": "MAGoCo Team",
+  "priority": 90,
+  "enabledByDefault": true
+}
