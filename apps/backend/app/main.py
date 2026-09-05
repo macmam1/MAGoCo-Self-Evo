@@ -40,6 +40,7 @@ from app.api.v1.workflow_executions import router as workflow_executions_router
 from app.api.v1.memory import router as memory_router
 from app.api.v1.integrations_registry import router as integrations_registry_router
 from app.api.v1.growth import router as growth_router
+from app.api.v1.approvals import router as approvals_router
 from app.core.config import settings
 from app.db import init_db
 from app.services.browser_service import browser_service
@@ -94,6 +95,7 @@ app.include_router(workflow_executions_router, prefix="/api/v1")
 app.include_router(memory_router, prefix="/api/v1")
 app.include_router(integrations_registry_router, prefix="/api/v1")
 app.include_router(growth_router, prefix="/api/v1")
+app.include_router(approvals_router, prefix="/api/v1")
 
 
 @app.get("/health")
