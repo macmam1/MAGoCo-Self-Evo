@@ -398,7 +398,7 @@ class ConnectorTemplate:
     category: IntegrationCategory
     manifest_template: Dict[str, Any]
     code_template: str
-    readme_template: str
+    readme_template: str = ""
     requirements_template: str = ""
     difficulty: str = "beginner"  # beginner, intermediate, advanced
     estimated_time_minutes: int = 30
