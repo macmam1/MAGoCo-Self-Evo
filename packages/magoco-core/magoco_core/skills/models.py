@@ -289,7 +289,7 @@ class SkillManifest:
     def compute_hash(self) -> str:
         """Compute content hash for integrity verification"""
         import hashlib
-        content = f"{self.id}{self.version}{self.code_path}{self.content}"
+        content = f"{self.id}{self.version}{self.entry_point}{self.code_path}{self.description}"
         return hashlib.sha256(content.encode()).hexdigest()[:16]
 
 
