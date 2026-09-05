@@ -1,6 +1,7 @@
 """Providers API - BYOM: user adds Ollama-local or OpenAI-compatible endpoints."""
 
-from fastapi import APIRouter, HTTPException
+from datetime import datetime
+from fastapi import APIRouter, HTTPException, File, UploadFile
 from pydantic import BaseModel
 from typing import Dict, List, Optional, Any
 
@@ -33,9 +34,21 @@ class ProviderUpdate(BaseModel):
     extra_headers: Optional[Dict[str, str]] = None
 
 
+class ProviderImport(BaseModel):
+    """Bulk import providers from JSON."""
+    providers: List[ProviderCreate]
+    overwrite: bool = False  # if true, delete existing providers with same ID
+
+
 def _public(cfg) -> Dict[str, Any]:
     d = cfg.to_dict()
     d.pop("api_key_encrypted", None)  # NEVER leak ciphertext to clients
+    return d
+
+
+def _exportable(cfg) -> Dict[str, Any]:
+    """Exportable format including encrypted key for backup/migration."""
+    d = cfg.to_dict(include_secret=True)
     return d
 
 
@@ -111,3 +124,66 @@ async def autodetect_ollama():
     if not cfg:
         return {"success": False, "message": "no reachable Ollama, or already configured"}
     return {"success": True, "provider": _public(cfg)}
+
+
+# ===== Import/Export Endpoints =====
+
+@router.get("/export")
+async def export_providers(include_secrets: bool = False):
+    """Export all providers as JSON (for backup/migration)."""
+    reg = get_provider_registry()
+    providers = reg.list(enabled_only=False)
+    if include_secrets:
+        data = [_exportable(c) for c in providers]
+    else:
+        data = [_public(c) for c in providers]
+    return {
+        "version": "1.0",
+        "exported_at": datetime.utcnow().isoformat(),
+        "count": len(data),
+        "providers": data
+    }
+
+
+@router.post("/import")
+async def import_providers(req: ProviderImport):
+    """Bulk import providers from JSON."""
+    reg = get_provider_registry()
+    results = {"created": 0, "updated": 0, "skipped": 0, "errors": []}
+    
+    for p in req.providers:
+        try:
+            # Check if provider with same ID exists
+            existing = reg.get(p.name.lower().strip().replace(" ", "-") or "")
+            if existing:
+                if req.overwrite:
+                    reg.delete(existing.id)
+                    cfg = reg.create(p.name, p.kind, p.base_url, p.api_key, p.models,
+                                     p.default_model, p.enabled, p.timeout, p.extra_headers)
+                    results["updated"] += 1
+                else:
+                    results["skipped"] += 1
+                    results["errors"].append(f"Provider '{p.name}' already exists (use overwrite=true)")
+                    continue
+            else:
+                cfg = reg.create(p.name, p.kind, p.base_url, p.api_key, p.models,
+                                 p.default_model, p.enabled, p.timeout, p.extra_headers)
+                results["created"] += 1
+        except Exception as e:
+            results["errors"].append(f"{p.name}: {str(e)}")
+    
+    return results
+
+
+@router.post("/import-file")
+async def import_providers_file(file: UploadFile = File(...), overwrite: bool = False):
+    """Import providers from uploaded JSON file."""
+    import json
+    content = await file.read()
+    try:
+        data = json.loads(content)
+        providers = data.get("providers", [])
+        req = ProviderImport(providers=providers, overwrite=overwrite)
+        return await import_providers(req)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON file")

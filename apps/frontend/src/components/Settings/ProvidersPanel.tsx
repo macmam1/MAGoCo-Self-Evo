@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, Trash2, RefreshCw, CheckCircle, XCircle, KeyRound, Server } from "lucide-react";
+import { Plus, Trash2, RefreshCw, CheckCircle, XCircle, KeyRound, Server, Download, Upload, FileJson } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button, Badge } from "@/components/ui";
@@ -17,13 +17,25 @@ interface Provider {
   enabled: boolean;
 }
 
+interface ExportData {
+  version: string;
+  exported_at: string;
+  count: number;
+  providers: Provider[];
+}
+
 export function ProvidersPanel() {
   const { t } = useTranslation();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [testing, setTesting] = useState<string | null>(null);
   const [testResults, setTestResults] = useState<Record<string, { ok: boolean; msg: string }>>({});
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importOverwrite, setImportOverwrite] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{created: number; updated: number; skipped: number; errors: string[]} | null>(null);
 
   const fetchProviders = async () => {
     setLoading(true);
@@ -46,6 +58,48 @@ export function ProvidersPanel() {
       await fetchProviders();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const exportProviders = async (includeSecrets: boolean) => {
+    try {
+      const r = await fetch(`${API_URL}/api/v1/providers/export?include_secrets=${includeSecrets}`);
+      if (r.ok) {
+        const data: ExportData = await r.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `magoco-providers-${new Date().toISOString().split("T")[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", importFile);
+      formData.append("overwrite", importOverwrite.toString());
+      const r = await fetch(`${API_URL}/api/v1/providers/import-file`, {
+        method: "POST",
+        body: formData,
+      });
+      const result = await r.json();
+      setImportResult(result);
+      if (result.created > 0 || result.updated > 0) {
+        await fetchProviders();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setImporting(false);
     }
   };
 
@@ -88,7 +142,7 @@ export function ProvidersPanel() {
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button variant="primary" size="sm" onClick={() => setShowAdd(true)}>
           <Plus className="h-4 w-4 mr-1" />{t("providers.add")}
         </Button>
@@ -97,6 +151,15 @@ export function ProvidersPanel() {
         </Button>
         <Button variant="ghost" size="sm" onClick={fetchProviders} disabled={loading}>
           <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => exportProviders(false)}>
+          <Download className="h-4 w-4 mr-1" />{t("providers.export")}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => exportProviders(true)}>
+          <FileJson className="h-4 w-4 mr-1" />{t("providers.export_with_secrets")}
+        </Button>
+        <Button variant="secondary" size="sm" onClick={() => setShowImport(true)}>
+          <Upload className="h-4 w-4 mr-1" />{t("providers.import")}
         </Button>
       </div>
 
@@ -148,7 +211,84 @@ export function ProvidersPanel() {
       ))}
 
       <AddProviderModal open={showAdd} onClose={() => setShowAdd(false)} onDone={fetchProviders} />
+      <ImportProviderModal open={showImport} onClose={() => setShowImport(false)} onDone={fetchProviders} />
     </div>
+  );
+}
+
+function ImportProviderModal({ open, onClose, onDone }: { open: boolean; onClose: () => void; onDone: () => void }) {
+  const { t } = useTranslation();
+  const [file, setFile] = useState<File | null>(null);
+  const [overwrite, setOverwrite] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [result, setResult] = useState<{created: number; updated: number; skipped: number; errors: string[]} | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!file) return;
+    setImporting(true);
+    setResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("overwrite", overwrite.toString());
+      const r = await fetch(`${API_URL}/api/v1/providers/import-file`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await r.json();
+      setResult(data);
+      if (data.created > 0 || data.updated > 0) {
+        onDone();
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={open} onClose={onClose} title={t("providers.import_title")} size="md">
+      <div className="space-y-3">
+        <p className="text-sm text-text-1">{t("providers.import_desc")}</p>
+        <div>
+          <label className="block text-xs font-medium mb-1">{t("providers.import_file")}</label>
+          <input type="file" accept=".json" onChange={handleFileChange}
+            className="w-full bg-gray-800/50 border border-white/10 rounded-lg px-3 py-2 text-sm" />
+          <p className="text-[10px] text-text-2 mt-1">{t("providers.import_file_hint")}</p>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={overwrite} onChange={(e) => setOverwrite(e.target.checked)}
+            className="w-4 h-4 accent-primary" />
+          {t("providers.import_overwrite")}
+        </label>
+        {result && (
+          <div className="p-3 rounded-lg text-sm" style={{ background: result.errors.length > 0 ? "rgba(239, 68, 68, 0.1)" : "rgba(16, 185, 129, 0.1)" }}>
+            <div>{t("providers.import_created")}: {result.created}</div>
+            <div>{t("providers.import_updated")}: {result.updated}</div>
+            <div>{t("providers.import_skipped")}: {result.skipped}</div>
+            {result.errors.length > 0 && (
+              <div className="mt-2 text-red-400">
+                <div className="font-medium">{t("providers.import_errors")}:</div>
+                <ul className="list-disc list-inside mt-1">
+                  {result.errors.map((e, i) => <li key={i}>{e}</li>)}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose} disabled={importing}>{t("cancel")}</Button>
+          <Button variant="primary" onClick={handleImport} disabled={importing || !file}>{t("providers.import")}</Button>
+        </div>
+      </div>
+    </Modal>
   );
 }
 

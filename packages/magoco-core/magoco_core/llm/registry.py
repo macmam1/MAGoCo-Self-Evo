@@ -1,4 +1,4 @@
-"""Provider registry — SQLite CRUD, encrypted keys, fetch/test, Ollama autodetect."""
+"""Provider registry — SQLite CRUD, encrypted keys, fetch/test, Ollama autodetect, config file import."""
 
 import json
 import logging
@@ -13,6 +13,7 @@ from magoco_core.llm.providers import (
     ProviderConfig, ProviderKind, CompatibleProvider, fetch_models, detect_ollama,
 )
 from magoco_core.llm.vault import encrypt_secret, decrypt_secret
+from magoco_core.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -164,11 +165,82 @@ class ProviderRegistry:
             logger.warning("ollama fetch failed: %s", e)
         return self.get(cfg.id)
 
+    def load_from_config_file(self, config_path: str = "./data/providers/providers.json") -> int:
+        """Load providers from a JSON config file.
+        
+        File format:
+        {
+            "version": "1.0",
+            "providers": [
+                {
+                    "name": "OpenAI",
+                    "kind": "openai-compatible",
+                    "base_url": "https://api.openai.com/v1",
+                    "api_key": "sk-xxx",
+                    "models": ["gpt-4o"],
+                    "default_model": "gpt-4o",
+                    "enabled": true,
+                    ...
+                }
+            ]
+        }
+        """
+        path = Path(config_path)
+        if not path.exists():
+            logger.info(f"Config file not found: {config_path}")
+            return 0
+        
+        try:
+            data = json.loads(path.read_text())
+            providers_data = data.get("providers", [])
+            if not providers_data:
+                logger.info("No providers in config file")
+                return 0
+            
+            loaded = 0
+            for p_data in providers_data:
+                try:
+                    # Skip if already exists
+                    pid = p_data.get("id", p_data.get("name", "").lower().strip().replace(" ", "-"))
+                    if self.get(pid):
+                        logger.debug(f"Provider already exists, skipping: {pid}")
+                        continue
+                    
+                    # api_key in config file is plain text (will be encrypted on create)
+                    api_key = p_data.get("api_key", "")
+                    
+                    self.create(
+                        name=p_data["name"],
+                        kind=ProviderKind(p_data["kind"]),
+                        base_url=p_data.get("base_url", ""),
+                        api_key=api_key,
+                        models=p_data.get("models", []),
+                        default_model=p_data.get("default_model", ""),
+                        enabled=p_data.get("enabled", True),
+                        timeout=p_data.get("timeout", 120.0),
+                        extra_headers=p_data.get("extra_headers", {}),
+                    )
+                    loaded += 1
+                    logger.info(f"Loaded provider from config: {p_data['name']}")
+                except Exception as e:
+                    logger.warning(f"Failed to load provider {p_data.get('name', 'unknown')}: {e}")
+            
+            return loaded
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in config file {config_path}: {e}")
+            return 0
+        except Exception as e:
+            logger.error(f"Error loading config file {config_path}: {e}")
+            return 0
+
 
 _registry = None
+
 
 def get_provider_registry(db_path: Optional[str] = None, data_dir: Optional[str] = None):
     global _registry
     if _registry is None:
         _registry = ProviderRegistry(db_path or "./data/providers/registry.db", data_dir or "./data")
+        # Auto-load from config file if exists
+        _registry.load_from_config_file()
     return _registry
