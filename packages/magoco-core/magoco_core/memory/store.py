@@ -701,23 +701,23 @@ class MemoryStore:
             
             cursor.execute("SELECT COUNT(*) FROM document_chunks")
             chunks = cursor.fetchone()[0]
-        
-episodic_count = 0
-            try:
-                with open(self.episodic_log, "r") as f:
-                    episodic_count = sum(1 for _ in f)
-            except:
-                pass
-            
-            return {
-                "total_memories": total,
-                "by_type": type_counts,
-                "episodic_count": episodic_count,
-                "kg_nodes": kg_nodes,
-                "kg_edges": kg_edges,
-                "document_chunks": chunks,
-                "vector_store": "lancedb" if self.vector_table else "disabled",
-            }
+
+        episodic_count = 0
+        try:
+            with open(self.episodic_log, "r") as f:
+                episodic_count = sum(1 for _ in f)
+        except Exception:
+            pass
+
+        return {
+            "total_memories": total,
+            "by_type": type_counts,
+            "episodic_count": episodic_count,
+            "kg_nodes": kg_nodes,
+            "kg_edges": kg_edges,
+            "document_chunks": chunks,
+            "vector_store": "lancedb" if self.vector_table else "disabled",
+        }
     
     # ============ Auto-Extraction & Consolidation ============
     
