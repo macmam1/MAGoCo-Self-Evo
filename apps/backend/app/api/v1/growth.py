@@ -63,6 +63,60 @@ async def suggestion_action(sid: str, action: str):
     return {"success": ok}
 
 
+@router.post("/suggestions/{sid}/apply")
+async def apply_suggestion(sid: str):
+    """Approve suggestion AND create a draft skill in Skills Registry."""
+    from magoco_core.skills import get_skills_registry
+    from magoco_core.skills.models import (
+        SkillManifest, SkillCategory, SkillType, SkillStatus,
+        SecurityLevel, ExecutionMode,
+    )
+    eng = get_growth_engine()
+    rows = eng.list_suggestions()
+    row = next((r for r in rows if r["id"] == sid), None)
+    if not row:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="suggestion not found")
+    import json as _json
+    draft = _json.loads(row["draft"]) if isinstance(row["draft"], str) else (row["draft"] or {})
+    steps = draft.get("steps", [])
+    skill_name = (draft.get("name") or f"auto-skill-{sid[:6]}").lower().replace(" ", "-")
+    code_lines = ["def main(input_data):", '    """Auto-generated from usage pattern."""', "    log = []"]
+    for st in steps:
+        code_lines.append(f"    log.append({repr(st)})  # TODO: wire real call")
+    code_lines.append('    return {"steps": log}')
+    manifest = SkillManifest(
+        id=skill_name, name=skill_name,
+        display_name=draft.get("name") or skill_name,
+        description=f"Auto-generated from pattern (suggestion {sid})",
+        version="0.1.0",
+        category=SkillCategory.AUTOMATION, type=SkillType.CHAIN,
+        tags={"auto-generated", "growth"},
+        author="growth-engine",
+        entry_point="main", code_path="skill.py",
+        execution_mode=ExecutionMode.SYNC,
+        security_level=SecurityLevel.RESTRICTED,
+        status=SkillStatus.DRAFT,
+    )
+    reg = get_skills_registry()
+    try:
+        reg.create(manifest)
+    except ValueError:
+        pass  # already exists -> treat as idempotent
+    # write generated code file
+    try:
+        from pathlib import Path
+        p = reg.registry_dir / manifest.id / manifest.version
+        p.mkdir(parents=True, exist_ok=True)
+        (p / "skill.py").write_text("\n".join(code_lines), encoding="utf-8")
+    except Exception:
+        pass
+    eng.set_suggestion_status(sid, "applied")
+    from magoco_core.growth.models import GrowthEventType
+    eng.log(GrowthEventType.SKILL_CREATED, f"draft skill {skill_name} created from {sid}", ref_id=skill_name)
+    return {"success": True, "skill_id": skill_name, "version": "0.1.0"}
+
+
 @router.get("/timeline")
 async def timeline(limit: int = 50):
     eng = get_growth_engine()
