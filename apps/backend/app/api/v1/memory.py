@@ -10,7 +10,7 @@ from datetime import datetime
 
 from magoco_core.memory import get_memory_store, MemoryEntry, MemoryType, MemoryScope, MemoryQuery
 
-router = APIRouter(prefix="/api/v1/memory", tags=["memory"])
+router = APIRouter(prefix="/memory", tags=["memory"])
 
 
 class MemoryCreateRequest(BaseModel):

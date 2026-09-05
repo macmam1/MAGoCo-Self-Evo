@@ -20,7 +20,7 @@ from magoco_core.skills import (
     SkillType, SkillStatus, SecurityLevel, ExecutionMode
 )
 
-router = APIRouter(prefix="/api/v1/skills", tags=["skills"])
+router = APIRouter(prefix="/skills", tags=["skills"])
 
 
 # ============ Request/Response Models ============

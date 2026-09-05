@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Any
 
 from magoco_core.features import get_registry, init_registry, FeatureConfig
 
-router = APIRouter(prefix="/api/v1/features", tags=["features"])
+router = APIRouter(prefix="/features", tags=["features"])
 
 
 class FeatureEnableRequest(BaseModel):

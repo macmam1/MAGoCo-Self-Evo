@@ -17,7 +17,7 @@ from app.services.workflow_executor import (
     WORKFLOW_TEMPLATES,
 )
 
-router = APIRouter(prefix="/api/v1/workflows", tags=["workflows"])
+router = APIRouter(prefix="/workflows", tags=["workflows"])
 
 
 class WorkflowExecuteRequest(BaseModel):
