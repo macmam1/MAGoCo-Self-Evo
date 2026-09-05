@@ -24,6 +24,12 @@ __all__ = [
     "detect_ollama",
     "encrypt_secret",
     "decrypt_secret",
+    "ModelTier",
+    "ModelCapability",
+    "ModelPricing",
+    "get_model_pricing",
+    "find_models_by_capability",
+    "get_best_model_for_task",
 ]
 
 

@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
 from magoco_core.core.config import settings
-from magoco_core.llm.models import ModelPricing, ModelTier, get_model_pricing
+from magoco_core.llm.models import ModelPricing, ModelTier, ModelCapability, get_model_pricing, find_models_by_capability, get_best_model_for_task
 
 logger = logging.getLogger(__name__)
 
@@ -181,6 +181,54 @@ class LLMGateway:
 
     def get_current_costs(self) -> Dict[str, float]:
         return self.usage_costs
+
+    # Smart Routing Methods
+    def select_model_for_task(self, task_type: str, max_tier: ModelTier = ModelTier.PREMIUM) -> Optional[str]:
+        """Select the best model for a specific task type across all registered providers."""
+        # First check predefined models
+        best = get_best_model_for_task(task_type, max_tier)
+        if best:
+            # Verify this model is available in registered providers
+            for provider in self.providers.values():
+                if best in provider.models:
+                    return best
+        
+        # Fallback: find any model with matching capability in registered providers
+        capability_map = {
+            "coding": ModelCapability.CODING,
+            "reasoning": ModelCapability.REASONING,
+            "fast": ModelCapability.FAST,
+            "vision": ModelCapability.VISION,
+            "long_context": ModelCapability.LONG_CONTEXT,
+            "analysis": ModelCapability.ANALYSIS,
+            "creative": ModelCapability.CREATIVE,
+            "multilingual": ModelCapability.MULTILINGUAL,
+        }
+        cap = capability_map.get(task_type.lower())
+        if not cap:
+            return None
+        
+        # Check registered providers for models with this capability
+        for provider in self.providers.values():
+            for model in provider.models:
+                pricing = get_model_pricing(model)
+                if pricing and cap in pricing.capabilities and pricing.tier <= max_tier:
+                    return model
+        return None
+
+    async def complete_with_smart_routing(self, messages: List[LLMMessage], 
+                                           task_type: str = "general",
+                                           max_tier: ModelTier = ModelTier.PREMIUM,
+                                           **kwargs) -> LLMResponse:
+        """Complete with automatic model selection based on task type."""
+        # If model not explicitly specified, select best one for task
+        if "model" not in kwargs or not kwargs["model"]:
+            selected_model = self.select_model_for_task(task_type, max_tier)
+            if selected_model:
+                kwargs["model"] = selected_model
+                logger.info(f"[Smart Gateway] Auto-selected model '{selected_model}' for task '{task_type}'")
+        
+        return await self.complete(messages, **kwargs)
 
 
 # Global gateway instance
