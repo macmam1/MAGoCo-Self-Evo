@@ -36,3 +36,16 @@
 - LanceDB اختیاری است؛ بدون آن vector search غیرفعال می‌شود.
 - Playwright/Chromium در این sandbox نصب نیست؛ روی ماشین کاربر نصب شود.
 - i18n ممکن است duplicate key داشته باشد (تمیزکاری بعدی).
+
+## Provider System (BYOM) — وضعیت
+**کد کامل (۵ سپتامبر ۲۰۲۶):**
+- Vault (Fernet), Registry (SQLite CRUD + autodetect + fetch/test), API (`/api/v1/providers/*`), UI (ProvidersPanel.tsx), Agent integration
+- دو kind: `ollama-local` + `openai-compatible`
+- e2e test: `tests/e2e_providers.sh` (۱۰ مرحله)
+
+**محدودیت تست در sandbox فعلی:**
+- Python3 نصب نیست → backend down
+- SSL/TLS handshake fail → Ollama download blocked
+- 9Router URL = frontend only
+
+**برای تست کامل:** Backend MAGoCo را در محیط با Python3 + network کامل deploy کنید، سپس `BASE_URL=http://localhost:8000 TEST_BASE_URL=... TEST_API_KEY=... bash tests/e2e_providers.sh`

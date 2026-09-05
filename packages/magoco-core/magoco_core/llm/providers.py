@@ -138,6 +138,7 @@ class CompatibleProvider(LLMProvider):
         usage = data.get("usage") or {}
         return LLMResponse(
             content=msg.get("content") or "",
+            model=model or (self.models[0] if self.models else ""),
             tool_calls=tool_calls,
             usage={"prompt_tokens": usage.get("prompt_tokens", 0),
                    "completion_tokens": usage.get("completion_tokens", 0),

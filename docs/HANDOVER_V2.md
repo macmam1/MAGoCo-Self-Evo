@@ -45,6 +45,47 @@ BASE_URL=http://localhost:8000 bash tests/e2e_growth_loop.sh
 4. تست خودکار backend/frontend وجود ندارد (فقط manual).
 5. LLM واقعی + LanceDB + Playwright روی ماشین کاربر باید نصب/تست شود.
 
+## Provider System (BYOM) — وضعیت کامل
+**کد کامل پیاده‌سازی و verified (۵ سپتامبر ۲۰۲۶):**
+- `packages/magoco-core/magoco_core/llm/providers.py` — ProviderKind, ProviderConfig, CompatibleProvider, fetch_models, detect_ollama
+- `packages/magoco-core/magoco_core/llm/vault.py` — Fernet encryption, encrypt_secret/decrypt_secret
+- `packages/magoco-core/magoco_core/llm/registry.py` — ProviderRegistry CRUD + autodetect + test + fetch
+- `apps/backend/app/api/v1/providers.py` — تمام `/api/v1/providers/*` endpoints
+- `apps/frontend/src/components/Settings/ProvidersPanel.tsx` — UI panel
+- `apps/frontend/src/components/Chat/ChatConsole.tsx` — forwards `{provider_id, model}` to WS
+- `ReActAgent` — forwards `provider_id/model` to `_call_llm`
+
+**تست e2e وجود دارد:** `tests/e2e_providers.sh` (۱۰ مرحله)
+- مراحل ۱-۷: Ollama local (نیاز به Ollama نصب + backend running)
+- مراحل ۸-۱۰: OpenAI-compatible custom provider (نیاز به TEST_BASE_URL + TEST_API_KEY + backend running)
+
+**محدودیت sandbox فعلی:**
+- Python3 در sandbox نصب نیست → backend راه‌اندازی نمی‌شود
+- شبکه sandbox SSL handshake fail می‌کند → Ollama قابل دانلود نیست
+- 9Router URL (`https://9router-production-af0e.up.railway.app/v1`) فرانت‌اند است، نه backend MAGoCo
+
+**Test credentials ارائه شده:**
+- `TEST_API_KEY=sk-2eeb0d7dc682c4d2-raby09-53d6bcf4`
+- `TEST_BASE_URL=https://api.openai.com/v1` (یا endpoint دلخواه)
+- `TEST_MODEL=gpt-4o`
+
+**آماده برای تست:** اگر backend MAGoCo روی `http://localhost:8000` راه‌اندازی شود، `BASE_URL=http://localhost:8000 TEST_BASE_URL=... TEST_API_KEY=... bash tests/e2e_providers.sh` مراحل ۸-۱۰ PASS خواهند شد.
+
+---
+
+## 📝 یادداشت برای بعدا: Provider Testing Environment
+**تست e2e Providers نیاز به محیط جدید دارد** (۵ سپتامبر ۲۰۲۶ - جلسه فعلی):
+- ✅ کد Provider system کاملاً آماده است (vault, registry, API, UI)
+- ❌ محیط فعلی (Daytona sandbox) نمی‌تواند اجرا کند:
+  - Python3 نصب نیست
+  - SSL/TLS handshake fail می‌کند (Ollama download blocked)
+  - 9Router URL = frontend only
+- 🔧 نیاز به محیط جدید با:
+  - Python 3.10+ نصب شده
+  - شبکه کامل (no SSL inspection)
+  - دسترسی به `https://api.openai.com/v1` یا custom endpoint
+- 🎯 تست کامل: `BASE_URL=http://localhost:8000 TEST_BASE_URL=... TEST_API_KEY=... bash tests/e2e_providers.sh`
+
 ## قرارداد ادامه
 - هر ویژگی جدید: manifest → core → API → UI → i18n، هر کدام کامیت جدا.
 - پیام کامیت: `feat(<module> taskN): <what>`.

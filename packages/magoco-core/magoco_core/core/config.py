@@ -1,0 +1,22 @@
+"""Core configuration for MAGoCo."""
+from pydantic_settings import BaseSettings
+from typing import Optional
+
+
+class Settings(BaseSettings):
+    # LLM Gateway settings
+    LLM_CACHE_ENABLED: bool = True
+    LLM_CACHE_TTL_SECONDS: int = 3600  # 1 hour
+
+    # Database
+    DATABASE_URL: str = "sqlite+aiosqlite:///./magoco.db"
+
+    # Security
+    VAULT_MASTER_KEY: Optional[str] = None
+
+    class Config:
+        env_file = ".env"
+        extra = "ignore"
+
+
+settings = Settings()

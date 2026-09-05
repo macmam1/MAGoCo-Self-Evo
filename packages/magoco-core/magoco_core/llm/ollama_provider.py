@@ -67,6 +67,7 @@ class OllamaProvider(LLMProvider):
             
             return LLMResponse(
                 content=data.get("message", {}).get("content", ""),
+                model=model,
                 tool_calls=None,  # Ollama native tool calling needs special format
                 usage=None,
                 finish_reason="stop",

@@ -61,6 +61,7 @@ class OpenAIProvider(LLMProvider):
             choice = response.choices[0]
             return LLMResponse(
                 content=choice.message.content or "",
+                model=model,
                 tool_calls=[
                     {"id": tc.id, "type": "function", "function": {"name": tc.function.name, "arguments": tc.function.arguments}}
                     for tc in choice.message.tool_calls or []

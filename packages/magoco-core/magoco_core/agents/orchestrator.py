@@ -158,13 +158,22 @@ class AgentWorker:
 
 
 class MultiAgentOrchestrator:
-    """Coordinates multiple AgentWorkers through a pipeline."""
+    """Coordinates multiple AgentWorkers through a pipeline.
+
+    Supports:
+    - Classic software-team pipeline (Coordinator → Architect → Coder → Reviewer → Coord)
+    - Parallel specialist execution (Architect, Coder, Researcher run concurrently)
+    - Background agents (run while user works on other things)
+    - Scheduled agents (cron-triggered tasks)
+    """
 
     def __init__(self, registry: ToolRegistry | None = None):
         self.registry = registry or tool_registry
         self.agents: dict[str, AgentWorker] = {}
         self.messages: list[AgentMessage] = []
         self.llm: Callable[..., Coroutine[Any, Any, str]] | None = None
+        self.background_tasks: dict[str, asyncio.Task] = {}
+        self.scheduler_interval: float | None = None
 
     def set_llm(self, llm: Callable[..., Coroutine[Any, Any, str]]) -> None:
         self.llm = llm
@@ -219,21 +228,26 @@ class MultiAgentOrchestrator:
         self.send("coordinator_1", "architect_1", f"Goal: {user_goal}\nPlan: {plan}")
         steps.append({"agent": "coordinator_1", "role": "coordinator", "output": plan})
 
-        # 2. Architect designs
-        design = await architect.run(
-            f"Produce a design for: {user_goal}\nContext:\n{plan}"
-        )
-        self.send("architect_1", "coder_1", f"Design:\n{design}")
-        steps.append({"agent": "architect_1", "role": "architect", "output": design})
-
-        # 3. (optional) Researcher gathers info
+        # 2. Architect designs (parallel with researcher)
         research = ""
         if researcher:
-            research = await researcher.run(
-                f"Gather background info for: {user_goal}\nDesign:\n{design}"
+            research_task = asyncio.create_task(
+                researcher.run(
+                    f"Gather background info for: {user_goal}\nDesign:\n{plan}"
+                )
             )
+            design = await architect.run(
+                f"Produce a design for: {user_goal}\nContext:\n{plan}"
+            )
+            research = await research_task
             self.send("researcher_1", "coder_1", f"Research:\n{research}")
             steps.append({"agent": "researcher_1", "role": "researcher", "output": research})
+        else:
+            design = await architect.run(
+                f"Produce a design for: {user_goal}\nContext:\n{plan}"
+            )
+
+        steps.append({"agent": "architect_1", "role": "architect", "output": design})
 
         # 4. Coder implements
         code = await coder.run(
@@ -259,6 +273,76 @@ class MultiAgentOrchestrator:
             "final": final,
             "messages": [m.to_dict() for m in self.messages],
         }
+
+    async def run_background(self, agent_name: str, task: str, timeout: int = 30) -> str:
+        """Run an agent task in background while user continues.
+
+        Returns immediately with task ID; user can check status later.
+        """
+        if agent_name not in self.agents:
+            raise ValueError(f"Agent {agent_name} not found")
+
+        agent = self.agents[agent_name]
+
+        async def _run():
+            try:
+                result = await agent.run(task, max_steps=5)
+                return result
+            except Exception as e:
+                return f"ERROR: {e}"
+
+        task = asyncio.create_task(_run())
+        self.background_tasks[task.get_name() if task.get_name() else task.get_id()] = task
+        return f"background_task_{len(self.background_tasks)}"
+
+    async def check_background(self, task_id: str) -> dict:
+        """Check status of a background task."""
+        task = self.background_tasks.get(task_id)
+        if not task:
+            return {"status": "not_found", "result": None}
+
+        if task.done():
+            result = task.result()
+            del self.background_tasks[task_id]
+            return {"status": "completed", "result": result}
+        return {"status": "running", "result": None}
+
+    async def schedule_agent(self, agent_name: str, task: str, cron_expr: str = "*/5 * * * *") -> str:
+        """Schedule an agent to run on a cron-like interval.
+
+        In production: use APScheduler or cron. Simulated here with interval.
+        """
+        if agent_name not in self.agents:
+            raise ValueError(f"Agent {agent_name} not found")
+
+        agent = self.agents[agent_name]
+
+        async def _scheduled_run():
+            while True:
+                try:
+                    await asyncio.sleep(30)  # Simulate cron interval
+                    result = await agent.run(task, max_steps=3)
+                    # Log result somewhere (db, file, etc.)
+                    print(f"[SCHEDULED] {agent_name}: {result[:100]}")
+                except asyncio.CancelledError:
+                    break
+                except Exception as e:
+                    print(f"[SCHEDULED ERROR] {agent_name}: {e}")
+
+        task = asyncio.create_task(_scheduled_run(), name=f"scheduled_{agent_name}")
+        self.background_tasks[task.get_name()] = task
+        return f"scheduled_{agent_name}"
+
+    async def stop_scheduled(self, agent_name: str) -> None:
+        """Stop a scheduled agent task."""
+        task = self.background_tasks.get(agent_name)
+        if task and not task.done():
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+            del self.background_tasks[agent_name]
 
     def to_dict(self) -> dict:
         return {

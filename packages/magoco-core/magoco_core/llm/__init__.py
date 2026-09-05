@@ -7,6 +7,7 @@ from magoco_core.llm.providers import (
     ProviderKind, ProviderConfig, CompatibleProvider, fetch_models, detect_ollama,
 )
 from magoco_core.llm.vault import encrypt_secret, decrypt_secret
+from magoco_core.llm.registry import get_provider_registry
 
 __all__ = [
     "LLMGateway",
@@ -25,6 +26,7 @@ __all__ = [
     "decrypt_secret",
 ]
 
+
 def init_llm():
     """Initialize LLM gateway with available providers."""
     if OpenAIProvider().is_available():
@@ -32,3 +34,24 @@ def init_llm():
     if OllamaProvider().is_available():
         llm_gateway.register(OllamaProvider())
     return llm_gateway
+
+
+async def register_user_providers():
+    """Register user-configured providers from the registry."""
+    try:
+        reg = get_provider_registry()
+        configs = reg.list(enabled_only=True)
+        for cfg in configs:
+            if cfg.kind == ProviderKind.OPENAI_COMPATIBLE:
+                provider = CompatibleProvider(
+                    base_url=cfg.base_url,
+                    api_key=reg.decrypt_key(cfg),
+                    name=cfg.id,
+                    models=cfg.models,
+                    timeout=cfg.timeout,
+                    extra_headers=cfg.extra_headers,
+                )
+                llm_gateway.register(provider)
+    except Exception as e:
+        # Registry might not be initialized yet
+        pass
