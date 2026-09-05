@@ -78,7 +78,6 @@ class SkillsRegistry:
                 homepage TEXT DEFAULT '',
                 repository TEXT DEFAULT '',
                 
-                type TEXT NOT NULL,
                 entry_point TEXT DEFAULT 'main',
                 code_path TEXT DEFAULT '',
                 requirements TEXT DEFAULT '[]',
@@ -230,21 +229,21 @@ class SkillsRegistry:
                 INSERT INTO skills (
                     id, name, display_name, description, version, category, type, tags,
                     author, author_email, organization, license, homepage, repository,
-                    type, entry_point, code_path, requirements, system_requirements,
+                    entry_point, code_path, requirements, system_requirements,
                     execution_mode, timeout, max_memory_mb, max_cpu_percent, security_level,
                     allowed_domains, allowed_commands, parameters, returns, dependencies,
                     status, tests, examples, min_core_version, compatible_platforms,
                     price, currency, is_public, featured,
                     created_at, updated_at, published_at, downloads, rating, review_count,
                     analytics, content_hash
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 manifest.id, manifest.name, manifest.display_name, manifest.description,
                 manifest.version, manifest.category.value, manifest.type.value,
                 json.dumps(list(manifest.tags)),
                 manifest.author, manifest.author_email, manifest.organization,
                 manifest.license, manifest.homepage, manifest.repository,
-                manifest.type.value, manifest.entry_point, manifest.code_path,
+                manifest.entry_point, manifest.code_path,
                 json.dumps(manifest.requirements), json.dumps(manifest.system_requirements),
                 manifest.execution_mode.value, manifest.timeout, manifest.max_memory_mb,
                 manifest.max_cpu_percent, manifest.security_level.value,
@@ -323,7 +322,7 @@ class SkillsRegistry:
                 UPDATE skills SET
                     name=?, display_name=?, description=?, category=?, type=?, tags=?,
                     author=?, author_email=?, organization=?, license=?, homepage=?, repository=?,
-                    type=?, entry_point=?, code_path=?, requirements=?, system_requirements=?,
+                    entry_point=?, code_path=?, requirements=?, system_requirements=?,
                     execution_mode=?, timeout=?, max_memory_mb=?, max_cpu_percent=?, security_level=?,
                     allowed_domains=?, allowed_commands=?, parameters=?, returns=?, dependencies=?,
                     status=?, tests=?, examples=?, min_core_version=?, compatible_platforms=?,
@@ -335,7 +334,7 @@ class SkillsRegistry:
                 manifest.category.value, manifest.type.value, json.dumps(list(manifest.tags)),
                 manifest.author, manifest.author_email, manifest.organization,
                 manifest.license, manifest.homepage, manifest.repository,
-                manifest.type.value, manifest.entry_point, manifest.code_path,
+                manifest.entry_point, manifest.code_path,
                 json.dumps(manifest.requirements), json.dumps(manifest.system_requirements),
                 manifest.execution_mode.value, manifest.timeout, manifest.max_memory_mb,
                 manifest.max_cpu_percent, manifest.security_level.value,
