@@ -287,6 +287,16 @@ class SkillManifest:
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SkillManifest":
+        # DB rows store JSON columns as strings - parse them first.
+        for key in ("tags", "requirements", "system_requirements", "allowed_domains",
+                    "allowed_commands", "parameters", "returns", "dependencies",
+                    "tests", "examples", "compatible_platforms", "analytics"):
+            if key in data and isinstance(data[key], str):
+                try:
+                    import json as _json
+                    data[key] = _json.loads(data[key])
+                except Exception:
+                    pass
         # Convert enums
         for key in ["category", "type", "execution_mode", "status", "security_level"]:
             if key in data and isinstance(data[key], str):
