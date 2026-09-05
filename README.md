@@ -5,20 +5,21 @@
 
 ---
 
-## ⚡️ وضعیت فعلی پروژه
+## ⚡️ وضعیت فعلی پروژه (شاخه `feat/v2-unified-ui`)
 
 | بخش | وضعیت | توضیح |
 |------|--------|--------|
-| **Core Engine** | ✅ Skeleton | ReAct, Orchestrator, Memory, Skills، LLM Gateway کد نوشته شده اما بدون LLM واقعی متصل |
-| **Backend API** | ✅ Skeleton | FastAPI راه‌اندازی شده، ۵ Router موجود ولی mock دیتا |
-| **Frontend UI** | ✅ Rendered | ۸ تب ساخته شده در React، اما به Backend وصل نیستند |
-| **Docker** | ✅ Configured | فایل‌ها نوشته شده، اما تست نهایی انجام نشده |
-| **Self-Evolution** | ✅ Skeleton | کلاس‌ها موجود، منطق واقعی پیاده نشده |
-| **HITL Approvals** | ✅ Skeleton | UI و API موجود،لگیک واقعی API نداره |
-| **Integrations** | ✅ Skeleton | UI و API موجود،لگیک واقعی API نداره |
-| **Execution History** | ✅ Skeleton | UI و API موجود،لگیک واقعی API نداره |
-| **Telegram Gateway** | ✅ Skeleton | فقط کلاس پایه |
-| **LLM Integration** | ❌ **Blocked** | باید ۹ROUTER را به `llm/gateway.py` وصل کنید |
+| **Chat Core** | ✅ Working | Streaming thinking، Artifacts، fork/edit، model switcher، i18n fa/en |
+| **Agent Browser** | ✅ Working | Playwright + `/ws/browser` screenshot streaming + confirm modals |
+| **Workflow Engine** | ✅ Working | Canvas DAG builder + executor (parallel/conditional/retry) + ۵ تمپلیت + API |
+| **Memory System** | ✅ Working | LanceDB+SQLite+JSONL، vector/keyword/hybrid search، KG، episodic، RAG + UI ۵ تب |
+| **Skills System** | ✅ Working | Registry + versioning + sandboxed executor + marketplace + builder + API |
+| **Integrations** | ✅ Working | Registry سبک + `/integrations-registry` API + seed + dashboard (marketplace/webhooks/OAuth) |
+| **Agent Growth (حلقه بسته)** | ✅ Working | Auto-track chat/browser/workflow → pattern mining → suggestion → Apply→draft skill |
+| **Feature Registry** | ✅ Working | Manifest + enable/disable + dependency + `/api/v1/features/*` |
+| **UI Shell** | ✅ Working | ۱۳ barrel export، تم/فونت/چگالی/زبان، ⌘K، shortcuts، Modal |
+| **Backend API** | ✅ Working | FastAPI + WebSocket chat/browser + ده‌ها router |
+| **LLM Integration** | ⚠️ Partial | Gateway موجود؛ اتصال واقعی 9Router/OpenAI نیازمند کلید و تست زنده است |
 
 ---
 
