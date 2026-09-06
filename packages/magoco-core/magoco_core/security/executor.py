@@ -1,7 +1,16 @@
-"""Guarded executor: permission check + Pre/Post hooks + audit around any tool call."""
+"""Guarded executor: permission check + Pre/Post hooks + audit around any tool call.
+
+Two modes:
+- run(): legacy, non-blocking (ASK auto-approves unless strict). Unchanged behavior.
+- run_gated(): professional HITL — ASK pauses, creates a reviewable approval
+  (with tool args + risk score + expiry), waits for human decision, then
+  proceeds or aborts. Nothing executes while pending.
+"""
 
 from __future__ import annotations
 
+import asyncio
+import time
 from typing import Any
 
 from magoco_core.security.audit import AuditLog
@@ -87,6 +96,69 @@ class GuardedExecutor:
         eff = decision.effect.value + ("+auto" if decision.effect == Effect.ASK and self.auto_approve_ask else "")
         self.audit.log(self.actor, action, resource, eff, f"tool={tool_name} ok={result.success}")
         return result
+
+    async def run_gated(self, tool_name: str, args: dict[str, Any] | None = None,
+                        session_id: str = "", timeout: float = 600.0,
+                        poll_interval: float = 2.0, ttl_seconds: int = 600) -> ToolResult:
+        """Blocking HITL execution: ASK waits for human approval, then proceeds.
+
+        - DENY (policy or risk auto-deny) -> blocked immediately, audited.
+        - ALLOW -> executes directly (still audited + hooked).
+        - ASK -> approval created (tool+args+risk+expiry), polls store until
+          approved / rejected / expired / timeout. Approved resumes execution;
+          anything else aborts WITHOUT running the tool.
+        """
+        from magoco_core.security.risk import assess
+        args = args or {}
+        action, resource = tool_to_action_resource(tool_name, args)
+        decision = self.permissions.check(action, resource)
+        risk = assess(action, resource, args)
+
+        if decision.effect == Effect.DENY or risk.auto_deny:
+            reason = f"risk:{risk.level} {','.join(risk.reasons)}" if risk.auto_deny else decision.message
+            self.audit.log(self.actor, action, resource, "deny", f"tool={tool_name} {reason}")
+            return ToolResult(success=False, content="",
+                              error=f"Denied ({risk.level}): {reason}",
+                              metadata={"risk": risk.level, "score": risk.score})
+
+        if decision.effect == Effect.ALLOW and risk.level == "low":
+            return await self.run(tool_name, args)
+
+        # ASK path (or ALLOW+elevated risk): create reviewable approval and wait
+        from magoco_core.evolution.approvals_store import get_approvals_store
+        store = get_approvals_store()
+        req = store.create(
+            agent_name=self.actor,
+            action_description=f"{tool_name} {action}:{resource} [risk:{risk.level} {risk.score}]",
+            proposed_input={"tool": tool_name, "args": args, "session_id": session_id},
+            tool_name=tool_name, args=args, action=action, resource=resource,
+            session_id=session_id, risk=risk.level, risk_score=risk.score,
+            ttl_seconds=ttl_seconds,
+        )
+        self.audit.log(self.actor, action, resource, "ask-wait",
+                       f"tool={tool_name} approval={req['request_id']} risk={risk.level}")
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            await asyncio.sleep(poll_interval)
+            current = store.get(req["request_id"])
+            if not current:
+                return ToolResult(success=False, content="", error="Approval vanished; aborted")
+            status = current.get("status")
+            if status == "approved":
+                self.audit.log(self.actor, action, resource, "ask-approved",
+                               f"tool={tool_name} approval={req['request_id']}")
+                return await self.run(tool_name, args)
+            if status in ("rejected", "skipped", "expired"):
+                self.audit.log(self.actor, action, resource, f"ask-{status}",
+                               f"tool={tool_name} approval={req['request_id']}")
+                return ToolResult(success=False, content="",
+                                  error=f"Blocked by human ({status}): {current.get('comment') or 'no comment'}",
+                                  metadata={"approval_id": req["request_id"], "status": status})
+        store.resolve(req["request_id"], "expired", comment="gated wait timed out")
+        self.audit.log(self.actor, action, resource, "ask-timeout",
+                       f"tool={tool_name} approval={req['request_id']}")
+        return ToolResult(success=False, content="", error="Approval timed out; aborted without executing",
+                          metadata={"approval_id": req["request_id"], "status": "expired"})
 
 
 # Shared default executor (backward-compatible: audits, enforces denies+hooks)
