@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Brain, Search, Plus, Database, Network, Clock, RefreshCw, TrendingUp } from "lucide-react";
+import { Brain, Search, Plus, Database, Network, Clock, RefreshCw, TrendingUp, StickyNote } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button, Badge, Card, CardHeader, CardTitle, CardContent } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
@@ -19,7 +19,7 @@ export function MemoryDashboard() {
   const { t } = useTranslation();
   const [stats, setStats] = useState<MemoryStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"overview" | "search" | "graph" | "episodic" | "rag">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "search" | "graph" | "episodic" | "rag" | "blocks">("overview");
 
   const fetchStats = async () => {
     try {
@@ -44,6 +44,7 @@ export function MemoryDashboard() {
   const tabs = [
     { id: "overview", label: t("memory.overview"), icon: TrendingUp },
     { id: "search", label: t("memory.search"), icon: Search },
+    { id: "blocks", label: t("memory.core_blocks", "Core Blocks"), icon: StickyNote },
     { id: "graph", label: t("memory.knowledge_graph"), icon: Network },
     { id: "episodic", label: t("memory.episodic"), icon: Clock },
     { id: "rag", label: t("memory.rag"), icon: Database },
@@ -111,6 +112,7 @@ export function MemoryDashboard() {
       <div className="flex-1 overflow-hidden">
         {activeTab === "overview" && <OverviewTab stats={stats} />}
         {activeTab === "search" && <SearchTab />}
+        {activeTab === "blocks" && <BlocksTab />}
         {activeTab === "graph" && <GraphTab />}
         {activeTab === "episodic" && <EpisodicTab />}
         {activeTab === "rag" && <RAGTab />}
@@ -544,6 +546,82 @@ function MemoryResultCard({ result, index }: { result: any; index: number }) {
           <span>💬 {entry.session_id.slice(0, 8)}</span>
         )}
       </div>
+    </div>
+  );
+}
+
+function BlocksTab() {
+  const { t } = useTranslation();
+  const [blocks, setBlocks] = useState<any[]>([]);
+  const [label, setLabel] = useState("human");
+  const [content, setContent] = useState("");
+  const [appendText, setAppendText] = useState<Record<string, string>>({});
+
+  const fetchBlocks = async () => {
+    try {
+      const r = await fetch("/api/v1/memory/core-blocks");
+      if (r.ok) setBlocks(await r.json());
+    } catch {}
+  };
+
+  useEffect(() => { fetchBlocks(); }, []);
+
+  const save = async () => {
+    if (!label.trim()) return;
+    await fetch("/api/v1/memory/core-blocks", {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ label: label.trim(), content }),
+    });
+    setContent("");
+    fetchBlocks();
+  };
+
+  const append = async (lbl: string) => {
+    const text = (appendText[lbl] || "").trim();
+    if (!text) return;
+    await fetch(`/api/v1/memory/core-blocks/${encodeURIComponent(lbl)}/append`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: text }),
+    });
+    setAppendText((p) => ({ ...p, [lbl]: "" }));
+    fetchBlocks();
+  };
+
+  return (
+    <div className="h-full overflow-y-auto p-4 space-y-3">
+      <div className="p-3 rounded-xl border" style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}>
+        <div className="text-xs font-medium mb-2" style={{ color: "var(--text-0)" }}>
+          {t("memory.core_blocks_upsert", "Create / replace core block (white-box)")}
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="human"
+            className="text-xs rounded-lg px-2 py-1.5 border w-32"
+            style={{ background: "var(--bg-2)", borderColor: "var(--border-glass)", color: "var(--text-0)" }} />
+          <input value={content} onChange={(e) => setContent(e.target.value)} placeholder="fact to store..."
+            className="text-xs rounded-lg px-2 py-1.5 border flex-1 min-w-[200px]"
+            style={{ background: "var(--bg-2)", borderColor: "var(--border-glass)", color: "var(--text-0)" }} />
+          <Button size="sm" onClick={save}><Plus className="h-3.5 w-3.5 mr-1" />{t("memory.save", "Save")}</Button>
+        </div>
+      </div>
+      {blocks.map((b) => (
+        <div key={b.id} className="p-3 rounded-xl border" style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}>
+          <div className="flex items-center justify-between">
+            <div className="font-medium text-sm" style={{ color: "var(--text-0)" }}>
+              [{b.label}] <span className="text-[10px] text-text-2">v{b.version}{b.shared ? " · shared" : ""}</span>
+            </div>
+            <Badge variant="outline" className="text-[10px]">{b.scope}</Badge>
+          </div>
+          <p className="text-xs mt-1 whitespace-pre-wrap" style={{ color: "var(--text-1)" }}>{b.content}</p>
+          <div className="flex gap-2 mt-2">
+            <input value={appendText[b.label] || ""} onChange={(e) => setAppendText((p) => ({ ...p, [b.label]: e.target.value }))}
+              placeholder="append (safe for shared)..."
+              className="text-xs rounded-lg px-2 py-1.5 border flex-1"
+              style={{ background: "var(--bg-2)", borderColor: "var(--border-glass)", color: "var(--text-0)" }} />
+            <Button size="sm" variant="outline" onClick={() => append(b.label)}>Append</Button>
+          </div>
+        </div>
+      ))}
+      {blocks.length === 0 && <p className="text-xs text-text-2 text-center py-6">No core blocks yet — create persona/human/project_brief.</p>}
     </div>
   );
 }
