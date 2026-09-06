@@ -78,6 +78,13 @@ hero: {
         blocked: "Blocked",
         skipped: "Skipped",
       },
+      approvals: {
+        what_is_this: "What is this?",
+        reversible: "Reversible — safe to approve.",
+        irreversible: "Not automatically reversible — approve only if you understand it.",
+        agent_why: "Agent's reason:",
+        raw_details: "Raw details",
+      },
       artifacts: {
         title: "Artifacts",
         empty: "No artifacts yet",
@@ -489,6 +496,13 @@ hero: {
         failed: "ناموفق",
         blocked: "مسدود",
         skipped: "رد شده",
+      },
+      approvals: {
+        what_is_this: "این چیست؟",
+        reversible: "قابل بازگشت است — تایید امن است.",
+        irreversible: "به‌صورت خودکار برنمی‌گردد — فقط اگر می‌فهمید تایید کنید.",
+        agent_why: "دلیل ایجنت:",
+        raw_details: "جزئیات فنی",
       },
       artifacts: {
         title: "آرتیفکت‌ها",

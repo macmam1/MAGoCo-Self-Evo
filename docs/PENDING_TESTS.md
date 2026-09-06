@@ -51,7 +51,7 @@
 | T13 | Escalation + JSON guard + overrides | `POST /memory/escalation/advise {"model":"...","error":"json parse failed",...}` + `task_needs` در compensate | حداقل | ⏳ ساخته‌شده، تست‌نشده |
 | T14 | Capability gate + deferred queue | `POST /memory/gate-check` با تسک پیچیده روی مدل ضعیف → queued → `GET /memory/deferred` → resolve؛ + تست kill-switch (`enabled=false`) | حداقل | ⏳ ساخته‌شده، تست‌نشده |
 | T15 | **سیم‌کشی دروازه به چت زنده (بعداً + با تست کامل)** | فقط بعد از PASS شدن T14: وصل opt-in به WS چت (پیش‌فرض خاموش) → تست پیام ساده (assign) + پیام پیچیده روی مدل ضعیف (defer شفاف) + تست خاموش بودن flag → بعد روشن کردن پیش‌فرض | حداقل | ⏳ عمداً وصل نشده — خطر تغییر رفتار زنده بدون تست |
-| T16 | Gated HITL end-to-end (approval واقعی) | ابزار `run_gated` با policy ASK → درخواست در تب Approvals با بج ریسک → approve → اجرا می‌شود؛ reject/timeout → اجرا نمی‌شود؛ `rm -rf /` → auto-deny؛ `POST /approvals/sweep-expired` | حداقل (بک‌اند) | ⏳ ساخته‌شده، تست‌نشده |
+| T16 | Gated HITL end-to-end (approval واقعی) | ابزار `run_gated` با policy ASK → درخواست در تب Approvals با بج ریسک + کادر «این چیست؟» (fa/en) + دلیل ایجنت → approve → اجرا می‌شود؛ reject/timeout → اجرا نمی‌شود؛ `rm -rf /` → auto-deny؛ `POST /approvals/sweep-expired` | حداقل (بک‌اند) | ⏳ ساخته‌شده، تست‌نشده |
 
 ## 3) قرارداد
 - هر فیچر جدید که نیاز به بک‌اند زنده دارد → یک ردیف جدید به جدول بالا اضافه کن.

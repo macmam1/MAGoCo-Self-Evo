@@ -99,16 +99,19 @@ class GuardedExecutor:
 
     async def run_gated(self, tool_name: str, args: dict[str, Any] | None = None,
                         session_id: str = "", timeout: float = 600.0,
-                        poll_interval: float = 2.0, ttl_seconds: int = 600) -> ToolResult:
+                        poll_interval: float = 2.0, ttl_seconds: int = 600,
+                        purpose: str = "", lang: str = "en") -> ToolResult:
         """Blocking HITL execution: ASK waits for human approval, then proceeds.
 
         - DENY (policy or risk auto-deny) -> blocked immediately, audited.
         - ALLOW -> executes directly (still audited + hooked).
-        - ASK -> approval created (tool+args+risk+expiry), polls store until
-          approved / rejected / expired / timeout. Approved resumes execution;
-          anything else aborts WITHOUT running the tool.
+        - ASK -> approval created (tool+args+risk+expiry+plain-language
+          explanation in en+fa + the model's own purpose statement), polls
+          store until approved / rejected / expired / timeout. Approved resumes
+          execution; anything else aborts WITHOUT running the tool.
         """
         from magoco_core.security.risk import assess
+        from magoco_core.security.explain import explain_tool_call
         args = args or {}
         action, resource = tool_to_action_resource(tool_name, args)
         decision = self.permissions.check(action, resource)
@@ -124,13 +127,21 @@ class GuardedExecutor:
         if decision.effect == Effect.ALLOW and risk.level == "low":
             return await self.run(tool_name, args)
 
-        # ASK path (or ALLOW+elevated risk): create reviewable approval and wait
+        # ASK path (or ALLOW+elevated risk): create reviewable approval and wait.
+        # The card always carries a plain-language explanation (en+fa) so that
+        # beginners understand the command, plus the model's own purpose statement.
         from magoco_core.evolution.approvals_store import get_approvals_store
         store = get_approvals_store()
+        explanation = {
+            "en": explain_tool_call(tool_name, args, "en"),
+            "fa": explain_tool_call(tool_name, args, "fa"),
+            "model_purpose": purpose or "",
+        }
         req = store.create(
             agent_name=self.actor,
             action_description=f"{tool_name} {action}:{resource} [risk:{risk.level} {risk.score}]",
-            proposed_input={"tool": tool_name, "args": args, "session_id": session_id},
+            proposed_input={"tool": tool_name, "args": args, "session_id": session_id,
+                            "explanation": explanation},
             tool_name=tool_name, args=args, action=action, resource=resource,
             session_id=session_id, risk=risk.level, risk_score=risk.score,
             ttl_seconds=ttl_seconds,

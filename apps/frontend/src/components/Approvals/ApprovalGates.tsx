@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { CheckCircle, XCircle, Clock } from "lucide-react";
+import { CheckCircle, XCircle, Clock, BookOpen } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +28,8 @@ const RISK_STYLES: Record<string, string> = {
 };
 
 export function ApprovalGates() {
+  const { i18n, t } = useTranslation();
+  const lang = (i18n.language || "en").startsWith("fa") ? "fa" : "en";
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -139,9 +142,41 @@ export function ApprovalGates() {
             </div>
           </div>
 
-          <div className="bg-black/30 rounded-lg p-3 text-xs font-mono text-gray-300">
-            <pre>{JSON.stringify(req.proposed_input, null, 2)}</pre>
-          </div>
+          {(() => {
+            const expl = (req.proposed_input as any)?.explanation;
+            const e = expl?.[lang] || expl?.en;
+            const purpose = expl?.model_purpose;
+            if (!e && !purpose) return null;
+            return (
+              <div className="rounded-lg p-3 text-xs space-y-1 border border-sky-500/20 bg-sky-500/5">
+                <div className="flex items-center gap-1.5 text-sky-300 font-medium">
+                  <BookOpen className="w-3.5 h-3.5" />
+                  {t("approvals.what_is_this", "What is this?")}
+                </div>
+                {e && (
+                  <>
+                    <p className="text-white">{e.summary}</p>
+                    <p className="text-gray-400">{e.details}</p>
+                    <p className={e.reversible ? "text-emerald-300" : "text-orange-300"}>
+                      {e.reversible
+                        ? t("approvals.reversible", "Reversible — safe to approve.")
+                        : t("approvals.irreversible", "Not automatically reversible — approve only if you understand it.")}
+                    </p>
+                  </>
+                )}
+                {purpose && (
+                  <p className="text-gray-300 italic">
+                    {t("approvals.agent_why", "Agent's reason:")} {purpose}
+                  </p>
+                )}
+              </div>
+            );
+          })()}
+
+          <details className="bg-black/30 rounded-lg p-3 text-xs font-mono text-gray-300">
+            <summary className="cursor-pointer text-gray-500">{t("approvals.raw_details", "Raw details")}</summary>
+            <pre className="mt-2">{JSON.stringify(req.proposed_input, null, 2)}</pre>
+          </details>
 
           <div className="flex gap-3">
             <Button
