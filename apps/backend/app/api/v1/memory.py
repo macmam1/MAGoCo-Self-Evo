@@ -124,46 +124,9 @@ async def create_memory(request: MemoryCreateRequest, store=Depends(get_store)):
     return {"success": True, "id": entry.id, "entry": entry.to_dict()}
 
 
-@router.get("/{memory_id}")
-async def get_memory(memory_id: str, store=Depends(get_store)):
-    """Get a memory entry by ID"""
-    entry = store.get(memory_id)
-    if not entry:
-        raise HTTPException(status_code=404, detail="Memory not found")
-    return entry.to_dict()
-
-
-@router.patch("/{memory_id}")
-async def update_memory(memory_id: str, request: MemoryUpdateRequest, store=Depends(get_store)):
-    """Update a memory entry"""
-    entry = store.get(memory_id)
-    if not entry:
-        raise HTTPException(status_code=404, detail="Memory not found")
-    
-    if request.content is not None:
-        entry.content = request.content
-    if request.metadata is not None:
-        entry.metadata = request.metadata
-    if request.importance is not None:
-        entry.importance = request.importance
-    if request.tags is not None:
-        entry.tags = set(request.tags)
-    if request.confidence is not None:
-        entry.confidence = request.confidence
-    
-    store.update(entry)
-    return {"success": True, "entry": entry.to_dict()}
-
-
-@router.delete("/{memory_id}")
-async def delete_memory(memory_id: str, hard: bool = False, store=Depends(get_store)):
-    """Delete a memory entry"""
-    entry = store.get(memory_id)
-    if not entry:
-        raise HTTPException(status_code=404, detail="Memory not found")
-    
-    store.delete(memory_id, hard=hard)
-    return {"success": True}
+# NOTE: /{memory_id} handlers live at the END of this file.
+# FastAPI matches routes in order — a GET /{memory_id} placed here would
+# shadow every static GET below (/episodic/log, /core-blocks, /gate-status...).
 
 
 @router.post("/search", response_model=List[Dict[str, Any]])
@@ -738,3 +701,46 @@ async def list_sessions(limit: int = 50, store=Depends(get_store)):
     # Sort by last_seen descending
     session_list = sorted(sessions.values(), key=lambda x: x["last_seen"], reverse=True)
     return session_list[:limit]
+
+# ===== /{memory_id} handlers LAST (route-order shadowing guard) =====
+
+@router.get("/{memory_id}")
+async def get_memory(memory_id: str, store=Depends(get_store)):
+    """Get a memory entry by ID"""
+    entry = store.get(memory_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    return entry.to_dict()
+
+
+@router.patch("/{memory_id}")
+async def update_memory(memory_id: str, request: MemoryUpdateRequest, store=Depends(get_store)):
+    """Update a memory entry"""
+    entry = store.get(memory_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Memory not found")
+
+    if request.content is not None:
+        entry.content = request.content
+    if request.metadata is not None:
+        entry.metadata = request.metadata
+    if request.importance is not None:
+        entry.importance = request.importance
+    if request.tags is not None:
+        entry.tags = set(request.tags)
+    if request.confidence is not None:
+        entry.confidence = request.confidence
+
+    store.update(entry)
+    return {"success": True, "entry": entry.to_dict()}
+
+
+@router.delete("/{memory_id}")
+async def delete_memory(memory_id: str, hard: bool = False, store=Depends(get_store)):
+    """Delete a memory entry"""
+    entry = store.get(memory_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Memory not found")
+
+    store.delete(memory_id, hard=hard)
+    return {"success": True}

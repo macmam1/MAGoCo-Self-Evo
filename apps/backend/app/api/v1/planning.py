@@ -110,6 +110,23 @@ async def list_plans(layer: Optional[str] = None, project_id: Optional[str] = No
     return [_plan_to_dict(p) for p in plans]
 
 
+# NOTE: static GETs (/projects/..., /os/active) must stay ABOVE /{plan_id}.
+
+@router.get("/projects/{project_id}/plans", response_model=List[Dict[str, Any]])
+async def get_project_plans(project_id: str):
+    """Get all plans for a specific project."""
+    plans = planning_engine.list_plans(layer=PlanLayer.PROJECT, project_id=project_id)
+    return [_plan_to_dict(p) for p in plans]
+
+
+@router.get("/os/active", response_model=List[Dict[str, Any]])
+async def get_active_os_plans():
+    """Get all active OS-level plans (system-wide)."""
+    plans = planning_engine.list_plans(layer=PlanLayer.OS)
+    active = [p for p in plans if p.status in (PlanStatus.ACTIVE, PlanStatus.DRAFT)]
+    return [_plan_to_dict(p) for p in active]
+
+
 @router.get("/{plan_id}", response_model=Dict[str, Any])
 async def get_plan(plan_id: str):
     """Get a specific plan with all tasks."""
@@ -293,14 +310,7 @@ async def execute_plan_orchestrated(plan_id: str, req: OrchestratedExecuteReques
     }
 
 
-# ===== Project-Level Planning Helpers =====
-
-@router.get("/projects/{project_id}/plans", response_model=List[Dict[str, Any]])
-async def get_project_plans(project_id: str):
-    """Get all plans for a specific project."""
-    plans = planning_engine.list_plans(layer=PlanLayer.PROJECT, project_id=project_id)
-    return [_plan_to_dict(p) for p in plans]
-
+# ===== Project-Level Planning Helpers (POST only — GETs moved above /{plan_id}) =====
 
 @router.post("/projects/{project_id}/plans", response_model=Dict[str, Any])
 async def create_project_plan(project_id: str, req: PlanCreate):
@@ -308,11 +318,3 @@ async def create_project_plan(project_id: str, req: PlanCreate):
     req.layer = "project"
     req.project_id = project_id
     return await create_plan(req)
-
-
-@router.get("/os/active", response_model=List[Dict[str, Any]])
-async def get_active_os_plans():
-    """Get all active OS-level plans (system-wide)."""
-    plans = planning_engine.list_plans(layer=PlanLayer.OS)
-    active = [p for p in plans if p.status in (PlanStatus.ACTIVE, PlanStatus.DRAFT)]
-    return [_plan_to_dict(p) for p in active]

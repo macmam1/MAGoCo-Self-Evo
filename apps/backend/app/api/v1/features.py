@@ -68,6 +68,15 @@ async def list_features(
     ]
 
 
+# NOTE: static GET /load-order must stay ABOVE /{feature_id} (route-order shadowing).
+
+@router.get("/load-order")
+async def get_load_order(registry=Depends(get_feature_registry)):
+    """دریافت ترتیب بارگذاری ویژگی‌ها"""
+    order = registry.get_load_order()
+    return {"load_order": order}
+
+
 @router.get("/{feature_id}", response_model=FeatureResponse)
 async def get_feature(
     feature_id: str,
@@ -129,13 +138,6 @@ async def update_feature_config(
         raise HTTPException(status_code=404, detail="Feature not found")
     
     return {"success": True, "feature_id": feature_id}
-
-
-@router.get("/load-order")
-async def get_load_order(registry=Depends(get_feature_registry)):
-    """دریافت ترتیب بارگذاری ویژگی‌ها"""
-    order = registry.get_load_order()
-    return {"load_order": order}
 
 
 @router.post("/initialize")
