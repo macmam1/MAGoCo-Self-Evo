@@ -381,6 +381,7 @@ class BlueprintRequest(BaseModel):
     goal: str
     project_type: str = "auto"  # auto | web_app | game | saas | api_service | generic
     project_id: Optional[str] = None
+    suggest_skills: Optional[bool] = None  # None = follow SKILL_AUTO_SUGGEST setting
 
 
 @router.post("/blueprint", response_model=Dict[str, Any])
@@ -389,6 +390,7 @@ async def create_blueprint(req: BlueprintRequest):
     parallel stack tracks (frontend/backend/database/...) -> integrate -> verify -> ship."""
     from magoco_core.planning.blueprint import build_blueprint, detect_project_type
     from magoco_core.planning import PlanLayer as _Layer
+    from magoco_core.core.config import settings as _settings
     try:
         plan = build_blueprint(req.goal, project_type=req.project_type,
                                layer=_Layer.PROJECT, project_id=req.project_id)
@@ -399,6 +401,24 @@ async def create_blueprint(req: BlueprintRequest):
     d = _plan_to_dict(plan)
     d["project_type"] = plan.metadata.get("project_type")
     d["tracks"] = [t.metadata.get("track") for t in plan.tasks if t.metadata.get("track")]
+    # Project-start skill bootstrap (advisory list stored on the plan; kill-switchable)
+    want_suggest = _settings.SKILL_AUTO_SUGGEST if req.suggest_skills is None else req.suggest_skills
+    d["suggested_skills"] = []
+    if want_suggest:
+        try:
+            from magoco_core.skills.detect import suggest_for_project
+            from magoco_core.skills import get_skills_registry
+            suggs = suggest_for_project(plan.metadata.get("project_type", "generic"),
+                                        req.goal, top_k=8, registry=get_skills_registry())
+            d["suggested_skills"] = [
+                {"skill_id": s.skill_id, "display_name": s.display_name,
+                 "category": s.category, "score": s.score, "reason": s.reason}
+                for s in suggs]
+            plan.metadata["suggested_skills"] = [s.skill_id for s in suggs]
+            planning_engine.save(plan, "skills_suggested",
+                                 f"{len(suggs)} skills for {plan.metadata.get('project_type')}")
+        except Exception:
+            pass
     return d
 
 

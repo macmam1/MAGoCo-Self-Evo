@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     # Only defer when gap >= this (conservative: 2 tiers). 1 = aggressive.
     DEFERRED_QUEUE_MIN_GAP: int = 2
 
+    # Skill auto-suggest at project start (kill-switch: set false to disable)
+    SKILL_AUTO_SUGGEST: bool = True
+
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./magoco.db"
 

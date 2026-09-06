@@ -255,6 +255,83 @@ async def list_types():
     return [t.value for t in SkillType]
 
 
+# ===== Curated bank + importer + auto-detection (static routes stay above /{skill_id}) =====
+
+class SkillImportUrlRequest(BaseModel):
+    url: str
+    category: str = "custom"
+    author: str = "imported"
+
+
+class SkillSuggestRequest(BaseModel):
+    text: str = ""
+    top_k: int = 5
+
+
+class SkillSuggestProjectRequest(BaseModel):
+    project_type: str = "generic"
+    goal: str = ""
+    top_k: int = 8
+
+
+def _suggestion_to_dict(s) -> Dict[str, Any]:
+    return {"skill_id": s.skill_id, "display_name": s.display_name,
+            "category": s.category, "score": s.score,
+            "matched": s.matched, "reason": s.reason}
+
+
+@router.post("/seed-catalog", response_model=Dict[str, Any])
+async def seed_catalog(overwrite: bool = False, registry=Depends(get_registry)):
+    """Register the curated BEST-OF bank (idempotent unless overwrite)."""
+    from magoco_core.skills.seed_catalog import SEED_CATALOG
+    from magoco_core.skills.importer import manifest_from_catalog
+    results = {"created": 0, "skipped": 0, "errors": []}
+    for entry in SEED_CATALOG:
+        try:
+            if registry.get(entry["id"]):
+                if not overwrite:
+                    results["skipped"] += 1
+                    continue
+                registry.delete(entry["id"], hard=True)
+            registry.create(manifest_from_catalog(entry))
+            results["created"] += 1
+        except Exception as e:
+            results["errors"].append(f"{entry['id']}: {str(e)[:200]}")
+    results["total"] = len(SEED_CATALOG)
+    return results
+
+
+@router.post("/import-url", response_model=Dict[str, Any])
+async def import_skill_url(req: SkillImportUrlRequest, registry=Depends(get_registry)):
+    """Fetch any SKILL.md by URL (github blob auto-converted), validate, register as DRAFT."""
+    from magoco_core.skills.importer import import_from_url
+    try:
+        manifest = await import_from_url(req.url, category=req.category, author=req.author)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"fetch failed: {str(e)[:300]}")
+    try:
+        sid = registry.create(manifest)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)[:300])
+    return {"success": True, "skill_id": sid, "version": manifest.version}
+
+
+@router.post("/suggest", response_model=List[Dict[str, Any]])
+async def suggest_skills(req: SkillSuggestRequest, registry=Depends(get_registry)):
+    """Auto-detect skills for free text (task/message/goal). Deterministic scoring."""
+    from magoco_core.skills.detect import suggest_for_text
+    return [_suggestion_to_dict(s) for s in suggest_for_text(req.text, req.top_k, registry)]
+
+
+@router.post("/suggest-for-project", response_model=List[Dict[str, Any]])
+async def suggest_skills_for_project(req: SkillSuggestProjectRequest,
+                                     registry=Depends(get_registry)):
+    """Skills to pre-activate when a project of this type starts."""
+    from magoco_core.skills.detect import suggest_for_project
+    return [_suggestion_to_dict(s) for s in suggest_for_project(
+        req.project_type, req.goal, req.top_k, registry)]
+
+
 @router.get("/{skill_id}", response_model=Dict[str, Any])
 async def get_skill(skill_id: str, version: Optional[str] = None, registry=Depends(get_registry)):
     """Get a skill by ID"""
