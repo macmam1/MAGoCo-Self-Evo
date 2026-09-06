@@ -351,6 +351,40 @@ async def validate_plan(plan_id: str):
             "critical_path": plan.critical_path() if not errors else []}
 
 
+# ===== Project Blueprint (atoms.dev-style full-stack multi-track) =====
+
+class BlueprintRequest(BaseModel):
+    goal: str
+    project_type: str = "auto"  # auto | web_app | game | saas | api_service | generic
+    project_id: Optional[str] = None
+
+
+@router.post("/blueprint", response_model=Dict[str, Any])
+async def create_blueprint(req: BlueprintRequest):
+    """Generate a validated full-stack blueprint: spec -> architecture ->
+    parallel stack tracks (frontend/backend/database/...) -> integrate -> verify -> ship."""
+    from magoco_core.planning.blueprint import build_blueprint, detect_project_type
+    from magoco_core.planning import PlanLayer as _Layer
+    try:
+        plan = build_blueprint(req.goal, project_type=req.project_type,
+                               layer=_Layer.PROJECT, project_id=req.project_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    planning_engine.save(plan, "blueprint_created",
+                         f"{plan.metadata.get('project_type')} ({len(plan.tasks)} tasks)")
+    d = _plan_to_dict(plan)
+    d["project_type"] = plan.metadata.get("project_type")
+    d["tracks"] = [t.metadata.get("track") for t in plan.tasks if t.metadata.get("track")]
+    return d
+
+
+@router.get("/team", response_model=List[Dict[str, str]])
+async def get_team_roster():
+    """Named specialist team (stable identities for memory + trust)."""
+    from magoco_core.planning.team import roster_summary
+    return roster_summary()
+
+
 # ===== AI-Powered Decomposition =====
 
 @router.post("/decompose", response_model=Dict[str, Any])

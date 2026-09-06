@@ -201,6 +201,23 @@ class MultiAgentOrchestrator:
                 )
             )
 
+    def add_named_team(self) -> None:
+        """Add the persistent named specialist team (Mike/Emma/Bob/Alex/...).
+
+        Same roles as the default team, but stable identities with persona
+        prompts — so core-block memory and trust history accumulate per person.
+        """
+        from magoco_core.planning.team import SPECIALISTS
+        for spec in SPECIALISTS:
+            role = AgentRole(spec.role)
+            self.add_agent(
+                AgentConfig(
+                    name=spec.name,
+                    role=role,
+                    system_prompt=spec.persona,
+                )
+            )
+
     def send(self, sender: str, recipient: str, content: str, **meta: Any) -> AgentMessage:
         msg = AgentMessage(sender=sender, recipient=recipient, content=content, metadata=meta)
         self.messages.append(msg)
