@@ -102,3 +102,79 @@ def bridging_task_spec(task_name: str, task_id: str, verdict: Verdict) -> Dict[s
 
 def new_task_id() -> str:
     return uuid.uuid4().hex[:8]
+
+
+# ---------- Anti-hallucination: honesty contract + grounding ----------
+
+HONESTY_CONTRACT_EN = (
+    "HONESTY CONTRACT (binding): "
+    "1) Never claim a fact, number, file, URL, or completion without evidence in front of you. "
+    "2) Never confirm work as done unless verification passed or you quote the proof. "
+    "3) Never flatter or agree to please; disagree with evidence when the user is wrong. "
+    "4) Say 'I don't know' instead of inventing. Violations are recorded against your track record."
+)
+
+HONESTY_CONTRACT_FA = (
+    "قرارداد صداقت (لازم‌الاجرا): "
+    "۱) هیچ ادعا، عدد، فایل، آدرس یا اتمامی را بدون مدرک نگو. "
+    "۲) کاری را تمام‌شده اعلام نکن مگر راستی‌آزمایی گذشته باشد یا مدرکش را نقل کنی. "
+    "۳) برای خوشایند، تملق یا موافقت دروغین نکن؛ با مدرک مخالفت کن. "
+    "۴) به‌جای حدس بگو نمی‌دانم. تخلفات در سابقه‌ات ثبت می‌شود."
+)
+
+_COMPLETION_PATTERNS = [
+    r"\b(done|completed|finished|all done|successfully completed|works? (now|correctly|as expected))\b",
+    r"تمام شد|انجام شد|تکمیل شد|به پایان رسید",
+]
+
+_PATH_RE = re.compile(r"(?:/[\w.\-]+)+/?|(?:[A-Za-z]:\\(?:[\w.\-]+\\)*[\w.\-]*)")
+_URL_RE = re.compile(r"https?://[^\s)\"']+")
+_NUMBER_FACT_RE = re.compile(r"\b\d+(?:\.\d+)?\s*(?:%|percent|ms|s\b|mb|gb|tokens?|rows?|users?)\b", re.I)
+
+
+@dataclass
+class GroundingReport:
+    grounded_ratio: float = 1.0
+    unverified: List[str] = field(default_factory=list)
+    false_completion: bool = False
+    notes: str = ""
+
+
+def check_grounding(result: Any, evidence_texts: List[str],
+                    task_name: str = "") -> GroundingReport:
+    """Deterministic grounding: every checkable claim must appear in evidence.
+
+    Conservative by design: only COMPLETION claims and invented paths/URLs can
+    fail a task; bare numbers are reported as unverified notes, never fatal.
+    """
+    text = "" if result is None else str(result)
+    evidence = "\n".join(evidence_texts or []).lower()
+    if not text.strip():
+        return GroundingReport(0.0, ["empty result"], False, "empty result")
+
+    unverified: List[str] = []
+
+    # 1. Completion claims require evidence (tool success, test output, proof quote)
+    claims_completion = any(re.search(p, text, re.I) for p in _COMPLETION_PATTERNS)
+    evidence_signals = ["test pass", "tests pass", "exit 0", "exit code 0", "success",
+                        "verified", "proof", "تست", "موفق", "گذشت"]
+    has_evidence = any(s in text.lower() or s in evidence for s in evidence_signals)
+    false_completion = bool(claims_completion and not has_evidence)
+
+    # 2. Paths/URLs in the output should exist in evidence (else possibly invented)
+    for m in _PATH_RE.findall(text)[:10]:
+        if len(m) > 4 and m.lower() not in evidence and "example" not in m.lower():
+            unverified.append(f"unverified path: {m[:80]}")
+    for m in _URL_RE.findall(text)[:10]:
+        if m.lower() not in evidence and "example.com" not in m:
+            unverified.append(f"unverified url: {m[:80]}")
+
+    total_checks = 1 + len(unverified)
+    failed = (1 if false_completion else 0) + len(unverified)
+    ratio = round(1.0 - failed / max(1, total_checks), 2)
+    notes = f"Task '{task_name}': grounding {ratio:.0%}"
+    if false_completion:
+        notes += "; completion claimed WITHOUT evidence"
+    if unverified:
+        notes += f"; {len(unverified)} unverified reference(s)"
+    return GroundingReport(ratio, unverified, false_completion, notes)

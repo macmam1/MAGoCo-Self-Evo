@@ -450,8 +450,10 @@ class MultiAgentOrchestrator:
                     continue
 
                 try:
+                    from magoco_core.planning.quality import HONESTY_CONTRACT_EN
                     context = self._build_task_context(plan, task)
-                    prompt = f"{task.name}: {task.description}\n\nContext:\n{context}"
+                    prompt = (f"{HONESTY_CONTRACT_EN}\n\n"
+                              f"{task.name}: {task.description}\n\nContext:\n{context}")
                     if task.definition_of_done:
                         prompt += f"\n\nDefinition of done (must satisfy): {task.definition_of_done}"
                     result = await asyncio.wait_for(agent.run(prompt), timeout=task.timeout_seconds)
@@ -464,6 +466,7 @@ class MultiAgentOrchestrator:
                     try:
                         from magoco_core.planning.quality import (
                             check_dod, bridging_task_spec, new_task_id,
+                            check_grounding,
                         )
                         from magoco_core.planning import PlanTask as _PT
                         verdict = check_dod(task.name, task.definition_of_done, result)
@@ -482,6 +485,32 @@ class MultiAgentOrchestrator:
                                 metadata=spec["metadata"],
                                 definition_of_done=spec["definition_of_done"]))
                             plan.updated_at = datetime.utcnow()
+                        grounding = check_grounding(result, [context, task.description], task.name)
+                        task.metadata["grounding"] = {
+                            "ratio": grounding.grounded_ratio,
+                            "unverified": grounding.unverified,
+                            "false_completion": grounding.false_completion,
+                        }
+                        if grounding.false_completion:
+                            plan.tasks.append(_PT(
+                                id=new_task_id(),
+                                name=f"Prove it: {task.name}",
+                                description=("Completion was claimed without evidence. "
+                                             "Re-run verification and quote the proof. "
+                                             "Do NOT confirm until proof exists. "
+                                             + grounding.notes),
+                                agent_role=task.agent_role,
+                                dependencies=[task.id],
+                                metadata={"bridges": task.id, "auto_injected": True,
+                                          "gap_kind": "false_completion"},
+                                definition_of_done="Quoted proof of completion attached"))
+                            plan.updated_at = datetime.utcnow()
+                            try:
+                                from magoco_core.security.trust import get_trust_registry
+                                get_trust_registry().record("team-agent", task.agent_role,
+                                                            ok=False, verified=True)
+                            except Exception:
+                                pass
                     except Exception:
                         pass
                     results["tasks_executed"] += 1

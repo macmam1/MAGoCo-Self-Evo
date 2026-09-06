@@ -604,6 +604,7 @@ Return as JSON array of tasks.
                             agent_executor: Callable[[PlanTask], Coroutine[Any, Any, Any]]) -> None:
         from magoco_core.planning.quality import (
             check_dod, judge_with_llm, bridging_task_spec, new_task_id,
+            check_grounding,
         )
         task.status = TaskStatus.RUNNING
         task.started_at = datetime.utcnow()
@@ -635,6 +636,44 @@ Return as JSON array of tasks.
                     plan.updated_at = datetime.utcnow()
                     self.store.log_event(plan.id, "bridging_injected",
                                          f"{bridge.id} for {task.id}: {verdict.notes[:200]}")
+                # Anti-hallucination: grounding vs dependency evidence (conservative:
+                # only false completion claims are fatal; bare refs are notes).
+                evidence = [task.description, task.definition_of_done]
+                for dep_id in task.dependencies:
+                    dep = plan.get_task(dep_id)
+                    if dep and dep.result:
+                        evidence.append(str(dep.result)[:1000])
+                grounding = check_grounding(result, evidence, task.name)
+                task.metadata["grounding"] = {
+                    "ratio": grounding.grounded_ratio,
+                    "unverified": grounding.unverified,
+                    "false_completion": grounding.false_completion,
+                }
+                if grounding.false_completion:
+                    gap = PlanTask(
+                        id=new_task_id(),
+                        name=f"Prove it: {task.name}",
+                        description=("Completion was claimed without evidence. "
+                                     "Re-run verification and quote the proof (test output, "
+                                     "file content, or tool observation). "
+                                     "Do NOT confirm until proof exists. "
+                                     + grounding.notes),
+                        agent_role=task.agent_role,
+                        dependencies=[task.id],
+                        metadata={"bridges": task.id, "auto_injected": True,
+                                  "gap_kind": "false_completion"},
+                        definition_of_done="Quoted proof of completion attached",
+                    )
+                    plan.tasks.append(gap)
+                    plan.updated_at = datetime.utcnow()
+                    self.store.log_event(plan.id, "grounding_gap",
+                                         f"{gap.id} for {task.id}: {grounding.notes[:200]}")
+                    try:
+                        from magoco_core.security.trust import get_trust_registry
+                        get_trust_registry().record("team-agent", task.agent_role,
+                                                    ok=False, verified=True)
+                    except Exception:
+                        pass
             except Exception as qe:
                 self.store.log_event(plan.id, "quality_check_error", str(qe)[:200])
             self.store.log_event(plan.id, "task_completed", f"{task.id} {task.name}")

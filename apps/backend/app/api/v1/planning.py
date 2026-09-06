@@ -324,8 +324,8 @@ async def pivot_task(plan_id: str, task_id: str, req: PivotRequest):
 
 @router.post("/{plan_id}/tasks/{task_id}/verify", response_model=Dict[str, Any])
 async def verify_task(plan_id: str, task_id: str):
-    """Check a task's stored result against its definition-of-done."""
-    from magoco_core.planning.quality import check_dod
+    """Check a task's stored result: DoD coverage + grounding (anti-hallucination)."""
+    from magoco_core.planning.quality import check_dod, check_grounding
     plan = planning_engine.get_plan(plan_id)
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
@@ -333,8 +333,17 @@ async def verify_task(plan_id: str, task_id: str):
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     verdict = check_dod(task.name, task.definition_of_done, task.result)
+    evidence = [task.description, task.definition_of_done]
+    for dep_id in task.dependencies:
+        dep = plan.get_task(dep_id)
+        if dep and dep.result:
+            evidence.append(str(dep.result)[:1000])
+    grounding = check_grounding(task.result, evidence, task.name)
     return {"task_id": task_id, "passed": verdict.passed, "score": verdict.score,
-            "missing": verdict.missing, "notes": verdict.notes}
+            "missing": verdict.missing, "notes": verdict.notes,
+            "grounding": {"ratio": grounding.grounded_ratio,
+                          "unverified": grounding.unverified,
+                          "false_completion": grounding.false_completion}}
 
 
 @router.get("/{plan_id}/critical-path", response_model=List[str])
