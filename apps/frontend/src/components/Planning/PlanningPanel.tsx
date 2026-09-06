@@ -201,7 +201,7 @@ export function PlanningPanel() {
         </div>
       </div>
 
-      {/* Plans List */}
+      {/* Plans List - grouped by project (flexible project dashboard) */}
       <div className="flex-1 overflow-y-auto p-4">
         {plans.length === 0 ? (
           <div className="text-center py-8">
@@ -214,65 +214,80 @@ export function PlanningPanel() {
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {plans.map((plan) => (
-              <div
-                key={plan.id}
-                className="p-3 rounded-xl border"
-                style={{ background: "var(--bg-2)", borderColor: "var(--border-glass)" }}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium text-sm text-white">{plan.name}</h4>
-                    <p className="text-[10px] text-text-2 line-clamp-2">{plan.description}</p>
-                  </div>
-                  <div className="text-right">
-                    <Badge
-                      variant={plan.status === "active" ? "default" : "outline"}
-                      className="text-[10px]"
-                      style={{ background: plan.status === "active" ? "var(--accent)" : "transparent", borderColor: "var(--accent)" }}
-                    >
-                      {plan.status}
-                    </Badge>
-                  </div>
+          <div className="space-y-4">
+            {Object.entries(
+              plans.reduce((acc: Record<string, Plan[]>, p) => {
+                const k = p.project_id || (p.layer === "project" ? "project:unassigned" : "os-global");
+                acc[k] = [...(acc[k] || []), p];
+                return acc;
+              }, {})
+            ).map(([projectKey, groupPlans]) => (
+              <div key={projectKey}>
+                <div className="text-[11px] font-medium text-text-2 mb-2">
+                  📁 {projectKey} ({groupPlans.length})
                 </div>
-                
-                {/* Progress */}
-                <div className="mt-2">
-                  <div className="text-[10px] text-text-2 mb-1">
-                    {plan.progress.completed}/{plan.progress.total} {t("planning.completed") || "tasks"}
-                  </div>
-                  <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                <div className="space-y-3">
+                  {groupPlans.map((plan) => (
                     <div
-                      className="h-full rounded-full transition-all duration-300"
-                      style={{
-                        width: `${plan.progress.percent}%`,
-                        background: plan.progress.percent === 100 ? "#10b981" : "var(--accent)",
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-2 flex-wrap">
-                  <button
-                    onClick={() => viewPlan(plan.id)}
-                    className="px-2 py-1 rounded-lg border text-[11px]"
-                    style={{ borderColor: "var(--border-glass)", color: "var(--text-1)" }}
-                  >
-                    {t("planning.view_details") || "Details"}
-                  </button>
-                  <button
-                    onClick={() => executeOrchestrated(plan.id)}
-                    disabled={executing === plan.id}
-                    className="px-2 py-1 rounded-lg text-[11px] font-medium bg-emerald-600 text-white disabled:opacity-50"
-                  >
-                    {executing === plan.id ? "Running..." : (t("planning.execute") || "Execute (team)")}
-                  </button>
-                  <button
-                    onClick={() => deletePlan(plan.id)}
-                    className="px-2 py-1 rounded-lg text-[11px] text-red-400 border border-red-500/20"
-                  >
-                    {t("planning.delete") || "Delete"}
-                  </button>
+                      key={plan.id}
+                      className="p-3 rounded-xl border"
+                      style={{ background: "var(--bg-2)", borderColor: "var(--border-glass)" }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium text-sm text-white">{plan.name}</h4>
+                          <p className="text-[10px] text-text-2 line-clamp-2">{plan.description}</p>
+                          <div className="text-[10px] text-text-2 mt-0.5">layer: {plan.layer}{plan.project_id ? ` · project: ${plan.project_id}` : ""}</div>
+                        </div>
+                        <div className="text-right">
+                          <Badge
+                            variant={plan.status === "active" ? "default" : "outline"}
+                            className="text-[10px]"
+                            style={{ background: plan.status === "active" ? "var(--accent)" : "transparent", borderColor: "var(--accent)" }}
+                          >
+                            {plan.status}
+                          </Badge>
+                        </div>
+                      </div>
+                      {/* Progress */}
+                      <div className="mt-2">
+                        <div className="text-[10px] text-text-2 mb-1">
+                          {plan.progress.completed}/{plan.progress.total} {t("planning.completed") || "tasks"}
+                        </div>
+                        <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{
+                              width: `${plan.progress.percent}%`,
+                              background: plan.progress.percent === 100 ? "#10b981" : "var(--accent)",
+                            }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        <button
+                          onClick={() => viewPlan(plan.id)}
+                          className="px-2 py-1 rounded-lg border text-[11px]"
+                          style={{ borderColor: "var(--border-glass)", color: "var(--text-1)" }}
+                        >
+                          {t("planning.view_details") || "Details"}
+                        </button>
+                        <button
+                          onClick={() => executeOrchestrated(plan.id)}
+                          disabled={executing === plan.id}
+                          className="px-2 py-1 rounded-lg text-[11px] font-medium bg-emerald-600 text-white disabled:opacity-50"
+                        >
+                          {executing === plan.id ? "Running..." : (t("planning.execute") || "Execute (team)")}
+                        </button>
+                        <button
+                          onClick={() => deletePlan(plan.id)}
+                          className="px-2 py-1 rounded-lg text-[11px] text-red-400 border border-red-500/20"
+                        >
+                          {t("planning.delete") || "Delete"}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}
