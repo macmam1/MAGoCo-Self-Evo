@@ -530,6 +530,8 @@ class CompensateRequest(BaseModel):
     session_id: Optional[str] = None
     task_hint: str = ""
     top_k: int = 5
+    task_needs: List[str] = []
+    max_preamble_chars: Optional[int] = None
 
 
 @router.post("/guardian/add", response_model=Dict[str, Any])
@@ -590,7 +592,9 @@ async def compensate_context(req: CompensateRequest, store=Depends(get_store)):
     return build_augmented_context(req.model, core_blocks=blocks,
                                    distilled_facts=facts,
                                    rolling_summary=rolling,
-                                   task_hint=req.task_hint)
+                                   task_hint=req.task_hint,
+                                   task_needs=req.task_needs,
+                                   max_preamble_chars=req.max_preamble_chars)
 
 
 @router.get("/episodic/sessions", response_model=List[Dict[str, Any]])
