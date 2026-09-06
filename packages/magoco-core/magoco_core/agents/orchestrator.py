@@ -401,10 +401,9 @@ class MultiAgentOrchestrator:
                     # Build context from completed dependencies
                     context = self._build_task_context(plan, task)
                     
-                    # Execute task with agent
+                    # Execute task with agent (AgentWorker.run takes task + optional context)
                     result = await agent.run(
-                        f"{task.description}\n\nContext:\n{context}",
-                        max_steps=5
+                        f"{task.name}: {task.description}\n\nContext:\n{context}",
                     )
                     
                     task.result = result

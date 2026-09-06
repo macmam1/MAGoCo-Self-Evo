@@ -264,6 +264,35 @@ Dependencies Results: {plan.completed_task_ids}
     return _plan_to_dict(executed_plan)
 
 
+# ===== Orchestrator Execution (Planning → Multi-Agent Team) =====
+
+class OrchestratedExecuteRequest(BaseModel):
+    max_parallel: int = 3
+    ensure_team: bool = True
+
+
+@router.post("/{plan_id}/execute-orchestrated", response_model=Dict[str, Any])
+async def execute_plan_orchestrated(plan_id: str, req: OrchestratedExecuteRequest = OrchestratedExecuteRequest()):
+    """Execute a plan via MultiAgentOrchestrator (role-based team execution)."""
+    from magoco_core.agents.orchestrator import MultiAgentOrchestrator
+    plan = planning_engine.get_plan(plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    orch = MultiAgentOrchestrator()
+    if req.ensure_team:
+        orch.add_default_team()
+    try:
+        results = await orch.execute_plan(plan_id, max_parallel=req.max_parallel)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Orchestrated execution failed: {str(e)[:300]}")
+    return {
+        "plan": _plan_to_dict(plan),
+        "execution": results,
+    }
+
+
 # ===== Project-Level Planning Helpers =====
 
 @router.get("/projects/{project_id}/plans", response_model=List[Dict[str, Any]])

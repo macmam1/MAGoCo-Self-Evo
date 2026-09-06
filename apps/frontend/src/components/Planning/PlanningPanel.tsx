@@ -41,11 +41,19 @@ export function PlanningPanel() {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [newPlanName, setNewPlanName] = useState("");
   const [newPlanGoal, setNewPlanGoal] = useState("");
+  const [layerFilter, setLayerFilter] = useState<string>("all");
+  const [projectFilter, setProjectFilter] = useState<string>("");
+  const [executing, setExecuting] = useState<string | null>(null);
+  const [execResult, setExecResult] = useState<any>(null);
 
   const fetchPlans = async () => {
     setLoading(true);
     try {
-      const r = await fetch(`${API_URL}/api/v1/planning`);
+      const params = new URLSearchParams();
+      if (layerFilter !== "all") params.set("layer", layerFilter);
+      if (projectFilter.trim()) params.set("project_id", projectFilter.trim());
+      const qs = params.toString() ? `?${params.toString()}` : "";
+      const r = await fetch(`${API_URL}/api/v1/planning${qs}`);
       if (r.ok) setPlans(await r.json());
     } catch (e) {
       console.error(e);
@@ -56,7 +64,8 @@ export function PlanningPanel() {
 
   useEffect(() => {
     fetchPlans();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layerFilter]);
 
   const createPlan = async () => {
     if (!newPlanName || !newPlanGoal) return;
@@ -67,7 +76,8 @@ export function PlanningPanel() {
         body: JSON.stringify({
           name: newPlanName,
           description: newPlanGoal,
-          layer: "os",
+          layer: layerFilter === "project" ? "project" : "os",
+          project_id: projectFilter.trim() || undefined,
         }),
       });
       if (r.ok) {
@@ -89,6 +99,8 @@ export function PlanningPanel() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           goal: newPlanGoal,
+          layer: layerFilter === "project" ? "project" : "os",
+          project_id: projectFilter.trim() || undefined,
         }),
       });
       if (r.ok) {
@@ -96,6 +108,8 @@ export function PlanningPanel() {
         fetchPlans();
         setSelectedPlan(plan);
         setShowCreate(false);
+        setNewPlanName("");
+        setNewPlanGoal("");
       }
     } catch (e) {
       console.error(e);
@@ -105,9 +119,43 @@ export function PlanningPanel() {
   const deletePlan = async (id: string) => {
     try {
       await fetch(`${API_URL}/api/v1/planning/${id}`, { method: "DELETE" });
+      if (selectedPlan?.id === id) setSelectedPlan(null);
       fetchPlans();
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const viewPlan = async (id: string) => {
+    try {
+      const r = await fetch(`${API_URL}/api/v1/planning/${id}`);
+      if (r.ok) setSelectedPlan(await r.json());
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const executeOrchestrated = async (id: string) => {
+    setExecuting(id);
+    setExecResult(null);
+    try {
+      const r = await fetch(`${API_URL}/api/v1/planning/${id}/execute-orchestrated`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ max_parallel: 3, ensure_team: true }),
+      });
+      const data = await r.json();
+      if (r.ok) {
+        setExecResult(data.execution);
+        setSelectedPlan(data.plan);
+        fetchPlans();
+      } else {
+        setExecResult({ error: data.detail || "execution failed" });
+      }
+    } catch (e: any) {
+      setExecResult({ error: e?.message || "network error" });
+    } finally {
+      setExecuting(null);
     }
   };
 
@@ -121,10 +169,28 @@ export function PlanningPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/5">
+      {/* Header + filters (flexible: OS / Project layers) */}
+      <div className="flex items-center justify-between p-4 border-b border-white/5 gap-2 flex-wrap">
         <h3 className="font-medium text-sm text-white">{t("planning.title") || "Planning"}</h3>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center flex-wrap">
+          <select
+            value={layerFilter}
+            onChange={(e) => setLayerFilter(e.target.value)}
+            className="text-xs rounded-lg px-2 py-1.5 border"
+            style={{ background: "var(--bg-2)", borderColor: "var(--border-glass)", color: "var(--text-1)" }}
+          >
+            <option value="all">all layers</option>
+            <option value="os">os</option>
+            <option value="project">project</option>
+          </select>
+          <input
+            value={projectFilter}
+            onChange={(e) => setProjectFilter(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") fetchPlans(); }}
+            placeholder="project_id filter"
+            className="text-xs rounded-lg px-2 py-1.5 border w-32"
+            style={{ background: "var(--bg-2)", borderColor: "var(--border-glass)", color: "var(--text-0)" }}
+          />
           <button
             onClick={() => setShowCreate(true)}
             className="px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors hover:border-[var(--accent)]"
@@ -186,8 +252,53 @@ export function PlanningPanel() {
                     />
                   </div>
                 </div>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  <button
+                    onClick={() => viewPlan(plan.id)}
+                    className="px-2 py-1 rounded-lg border text-[11px]"
+                    style={{ borderColor: "var(--border-glass)", color: "var(--text-1)" }}
+                  >
+                    {t("planning.view_details") || "Details"}
+                  </button>
+                  <button
+                    onClick={() => executeOrchestrated(plan.id)}
+                    disabled={executing === plan.id}
+                    className="px-2 py-1 rounded-lg text-[11px] font-medium bg-emerald-600 text-white disabled:opacity-50"
+                  >
+                    {executing === plan.id ? "Running..." : (t("planning.execute") || "Execute (team)")}
+                  </button>
+                  <button
+                    onClick={() => deletePlan(plan.id)}
+                    className="px-2 py-1 rounded-lg text-[11px] text-red-400 border border-red-500/20"
+                  >
+                    {t("planning.delete") || "Delete"}
+                  </button>
+                </div>
               </div>
             ))}
+          </div>
+        )}
+        {execResult && (
+          <div className="mt-3 p-3 rounded-xl border text-xs" style={{ background: "var(--bg-2)", borderColor: "var(--border-glass)", color: "var(--text-1)" }}>
+            <div className="font-medium mb-1">Execution result</div>
+            <pre className="whitespace-pre-wrap break-words text-[11px]">{JSON.stringify(execResult, null, 2).slice(0, 2000)}</pre>
+            <button onClick={() => setExecResult(null)} className="mt-2 text-[11px] underline">dismiss</button>
+          </div>
+        )}
+        {selectedPlan && (
+          <div className="mt-3 p-3 rounded-xl border" style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}>
+            <div className="flex items-center justify-between mb-2">
+              <div className="font-medium text-sm text-white">{selectedPlan.name}</div>
+              <button onClick={() => setSelectedPlan(null)} className="text-[11px] text-text-2">close</button>
+            </div>
+            <div className="space-y-1">
+              {selectedPlan.tasks?.map((task: Task) => (
+                <div key={task.id} className="text-[11px] flex items-center justify-between gap-2 p-1.5 rounded bg-white/[0.03]">
+                  <span style={{ color: "var(--text-0)" }}>{task.name} <span className="text-text-2">({task.agent_role})</span></span>
+                  <span className="text-text-2">{task.status}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
