@@ -518,6 +518,81 @@ async def list_communities(level: Optional[int] = None, limit: int = 50,
     return [c.to_dict() for c in store.list_community_summaries(level, limit)]
 
 
+class GuardianAddRequest(BaseModel):
+    session_id: str
+    role: str = "user"
+    content: str
+    persist_snapshot: bool = True
+
+
+class CompensateRequest(BaseModel):
+    model: str = ""
+    session_id: Optional[str] = None
+    task_hint: str = ""
+    top_k: int = 5
+
+
+@router.post("/guardian/add", response_model=Dict[str, Any])
+async def guardian_add(req: GuardianAddRequest, store=Depends(get_store)):
+    """Add a turn to the Context Guardian (topics + snapshot + summary on overflow)."""
+    from magoco_core.memory.guardian import get_guardian
+    g = get_guardian(req.session_id)
+    events = await g.add(req.role, req.content)
+    snap_id = None
+    if events.get("snapshot") and req.persist_snapshot:
+        snap = events["snapshot"]
+        snap_id = store.save_snapshot(req.session_id, snap["window_len"] and g.window or [],
+                                      g.rolling_summary,
+                                      [t for t in g.state()["topics"]],
+                                      note=snap.get("note", ""))
+    return {"topic": events["topic"], "summarized": events["summarized"],
+            "snapshot_id": snap_id, "state": g.state()}
+
+
+@router.get("/guardian/{session_id}/state", response_model=Dict[str, Any])
+async def guardian_state(session_id: str):
+    from magoco_core.memory.guardian import get_guardian
+    return get_guardian(session_id).state()
+
+
+@router.get("/guardian/{session_id}/scoped", response_model=List[Dict[str, Any]])
+async def guardian_scoped(session_id: str, max_items: int = 12):
+    """Active-topic-scoped context (anti-interference) + summary header."""
+    from magoco_core.memory.guardian import get_guardian
+    return get_guardian(session_id).scoped_context(max_items)
+
+
+@router.get("/snapshots/{session_id}", response_model=List[Dict[str, Any]])
+async def list_snapshots(session_id: str, limit: int = 20, store=Depends(get_store)):
+    return store.list_snapshots(session_id, limit)
+
+
+@router.post("/compensate", response_model=Dict[str, Any])
+async def compensate_context(req: CompensateRequest, store=Depends(get_store)):
+    """Build model-strength-aware memory preamble (covers weak/medium models)."""
+    from magoco_core.memory.compensation import build_augmented_context
+    from magoco_core.memory.models import MemoryQuery, MemoryScope
+    blocks = [{"label": b.label, "content": b.content}
+              for b in store.list_core_blocks(None, include_shared=True)[:10]]
+    facts: List[str] = []
+    if req.session_id:
+        q = MemoryQuery(query=req.task_hint or "key facts decisions",
+                        scopes=[MemoryScope.USER, MemoryScope.GLOBAL],
+                        top_k=req.top_k, current_only=True,
+                        use_vector=False, use_keyword=True)
+        facts = [r.entry.content for r in store.search(q)]
+    rolling = ""
+    try:
+        from magoco_core.memory.guardian import get_guardian
+        rolling = get_guardian(req.session_id).rolling_summary if req.session_id else ""
+    except Exception:
+        pass
+    return build_augmented_context(req.model, core_blocks=blocks,
+                                   distilled_facts=facts,
+                                   rolling_summary=rolling,
+                                   task_hint=req.task_hint)
+
+
 @router.get("/episodic/sessions", response_model=List[Dict[str, Any]])
 async def list_sessions(limit: int = 50, store=Depends(get_store)):
     """List all sessions with episodic memories"""

@@ -46,6 +46,8 @@
 | T8 | Telegram gateway | `POST /telegram/test-token` + ثبت بات + `/start` در چت واقعی | حداکثری (دسترسی به api.telegram.org + توکن BotFather) | ⏳ ساخته‌شده، تست‌نشده |
 | T9 | Gateway rate-limit + fallback chains | `get_rate_limit_status` / `get_fallback_chains` زیر بار چند پروایدر | حداقل | ⏳ ساخته‌شده، تست‌نشده |
 | T10 | Frontend build + Planning/Memory/Telegram tabs | `cd apps/frontend && npm install && npm run build` + کلیک تب‌ها | حداقل | ⏳ ساخته‌شده، تست‌نشده |
+| T11 | Context Guardian: topics/snapshot/scoped recall | `POST /memory/guardian/add` چند پیام دوموضوعی → `GET /memory/guardian/{sid}/scoped` (فقط تاپیک فعال + سامری) → `GET /memory/snapshots/{sid}` | حداقل | ⏳ ساخته‌شده، تست‌نشده |
+| T12 | Model compensator: weak vs strong preamble | `POST /memory/compensate {"model":"llama3.1:8b",...}` در برابر `{"model":"gpt-4o",...}` (مقایسه طول/صراحت preamble) | حداقل | ⏳ ساخته‌شده، تست‌نشده |
 
 ## 3) قرارداد
 - هر فیچر جدید که نیاز به بک‌اند زنده دارد → یک ردیف جدید به جدول بالا اضافه کن.

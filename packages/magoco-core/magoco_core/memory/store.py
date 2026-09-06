@@ -177,6 +177,20 @@ class MemoryStore:
             )
         """)
 
+        # Context versions (Guardian snapshots — no history loss)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS context_snapshots (
+                id TEXT PRIMARY KEY,
+                session_id TEXT NOT NULL,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                window_json TEXT DEFAULT '[]',
+                rolling_summary TEXT DEFAULT '',
+                topics_json TEXT DEFAULT '[]',
+                note TEXT DEFAULT ''
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_snapshots_session ON context_snapshots(session_id)")
+
         # Create indexes
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(type)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_scope ON memories(scope)")
@@ -767,6 +781,32 @@ class MemoryStore:
                     created_at=datetime.fromisoformat(row["created_at"]) if row["created_at"] else datetime.utcnow(),
                 ))
             return out
+
+    # ============ Context Snapshots (Guardian) ============
+
+    def save_snapshot(self, session_id: str, window: list, rolling_summary: str,
+                      topics: list, note: str = "") -> str:
+        import uuid as _uuid
+        sid = _uuid.uuid4().hex[:8]
+        with self._get_cursor() as cursor:
+            cursor.execute("""INSERT INTO context_snapshots
+                (id, session_id, window_json, rolling_summary, topics_json, note)
+                VALUES (?,?,?,?,?,?)""",
+                (sid, session_id, json.dumps(window), rolling_summary,
+                 json.dumps(topics), note))
+        return sid
+
+    def list_snapshots(self, session_id: str, limit: int = 20) -> list:
+        with self._get_cursor() as cursor:
+            cursor.execute("SELECT * FROM context_snapshots WHERE session_id=? ORDER BY created_at DESC LIMIT ?",
+                           (session_id, limit))
+            return [dict(r) for r in cursor.fetchall()]
+
+    def get_snapshot(self, snapshot_id: str) -> Optional[dict]:
+        with self._get_cursor() as cursor:
+            cursor.execute("SELECT * FROM context_snapshots WHERE id=?", (snapshot_id,))
+            row = cursor.fetchone()
+            return dict(row) if row else None
 
     # ============ Knowledge Graph ============
     
