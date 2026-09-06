@@ -24,6 +24,12 @@ class ShareRequest(BaseModel):
     memory_ids: List[str] = []
 
 
+class DistillSessionRequest(BaseModel):
+    session_id: str
+    importance_threshold: float = 0.7
+    save_community_summary: bool = True
+
+
 @router.post("/record")
 async def record_usage(req: RecordRequest):
     eng = get_growth_engine()
@@ -160,7 +166,53 @@ async def apply_suggestion(sid: str):
     eng.set_suggestion_status(sid, "applied")
     from magoco_core.growth.models import GrowthEventType
     eng.log(GrowthEventType.SKILL_CREATED, f"draft skill {skill_name} created from {sid}", ref_id=skill_name)
-    return {"success": True, "skill_id": skill_name, "version": "0.1.0"}
+    # Procedural memory promotion: pattern -> reusable how-to knowledge (self-evolution closure)
+    procedural_id = None
+    try:
+        from magoco_core.memory import get_memory_store, MemoryEntry, MemoryType, MemoryScope
+        mstore = get_memory_store()
+        proc = MemoryEntry(
+            type=MemoryType.PROCEDURAL, scope=MemoryScope.GLOBAL,
+            content=f"Procedure '{skill_name}': {' -> '.join(s if isinstance(s, str) else str(s) for s in [st.get('action') + ':' + st.get('target', '') for st in steps if isinstance(st, dict)])}",
+            metadata={"skill_id": skill_name, "suggestion_id": sid, "trigger_count": draft.get("trigger_count")},
+            importance=0.8, source="growth-engine",
+            tags={"procedural", "auto-generated", "growth", skill_name},
+        )
+        procedural_id = mstore.add(proc)
+        eng.log(GrowthEventType.SKILL_CREATED, f"procedural memory {procedural_id} promoted for {skill_name}", ref_id=procedural_id)
+    except Exception:
+        pass
+    return {"success": True, "skill_id": skill_name, "version": "0.1.0", "procedural_memory_id": procedural_id}
+
+
+@router.post("/distill-session")
+async def distill_session(req: DistillSessionRequest):
+    """Full self-evolution pass for a session: extract facts -> consolidate -> community summary."""
+    from magoco_core.memory import get_memory_store
+    from magoco_core.memory.models import CommunitySummary
+    mstore = get_memory_store()
+    entries = mstore.get_episodic_log(session_id=req.session_id, limit=1000)
+    messages = [{"content": e.content, "role": e.metadata.get("role", "unknown")} for e in entries]
+    facts = mstore.extract_facts_from_conversation(messages, req.session_id)
+    consolidated = mstore.consolidate_working_to_longterm(req.session_id, req.importance_threshold)
+    summary_id = None
+    if req.save_community_summary:
+        from collections import Counter
+        ents: Counter = Counter()
+        for f in facts:
+            for en in (f.entities or []):
+                ents[en] += 1
+        top = [e for e, _ in ents.most_common(8)]
+        if top:
+            summary = CommunitySummary(
+                level=0, member_entities=top,
+                summary=f"Session {req.session_id}: distilled {len(facts)} facts, consolidated {consolidated}. Key entities: {', '.join(top[:5])}.",
+                source_memory_ids=[f.id for f in facts[:20]],
+            )
+            summary_id = mstore.save_community_summary(summary)
+    return {"success": True, "session_id": req.session_id,
+            "facts_extracted": len(facts), "consolidated": consolidated,
+            "community_summary_id": summary_id}
 
 
 @router.get("/timeline")
