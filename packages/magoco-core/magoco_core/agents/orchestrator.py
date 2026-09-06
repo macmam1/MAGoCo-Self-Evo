@@ -460,6 +460,30 @@ class MultiAgentOrchestrator:
                     task.status = TaskStatus.COMPLETED
                     task.completed_at = datetime.utcnow()
                     plan.completed_task_ids.add(task.id)
+                    # QualityGate (same as engine path): verify vs DoD, bridge on miss.
+                    try:
+                        from magoco_core.planning.quality import (
+                            check_dod, bridging_task_spec, new_task_id,
+                        )
+                        from magoco_core.planning import PlanTask as _PT
+                        verdict = check_dod(task.name, task.definition_of_done, result)
+                        task.metadata["quality"] = {
+                            "passed": verdict.passed, "score": verdict.score,
+                            "missing": verdict.missing, "method": verdict.method,
+                        }
+                        if not verdict.passed and task.metadata.get("auto_bridge", True):
+                            spec = bridging_task_spec(task.name, task.id, verdict)
+                            plan.tasks.append(_PT(
+                                id=new_task_id(), name=spec["name"],
+                                description=spec["description"],
+                                agent_role=spec["agent_role"],
+                                tool_requirements=spec["tool_requirements"],
+                                dependencies=spec["dependencies"],
+                                metadata=spec["metadata"],
+                                definition_of_done=spec["definition_of_done"]))
+                            plan.updated_at = datetime.utcnow()
+                    except Exception:
+                        pass
                     results["tasks_executed"] += 1
                     results["task_results"].append({
                         "task_id": task.id,
