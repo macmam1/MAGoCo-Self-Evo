@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Key, Shield, HardDrive, Cpu, RefreshCw, Save, Palette } from "lucide-react";
+import { Key, Shield, HardDrive, Cpu, RefreshCw, Save, Palette, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { ProvidersPanel } from "./ProvidersPanel";
+import { GatewayPanel } from "./GatewayPanel";
 import { API_URL } from "@/config";
 
 function MemoryStatsBlock() {
@@ -80,6 +81,15 @@ export function SettingsDashboard() {
           icon={Key}
         >
           <ProvidersPanel />
+        </SettingsCard>
+
+        {/* Gateway: live costs, rate limits, fallbacks */}
+        <SettingsCard
+          title="Gateway Monitor"
+          description="Live spend, per-provider rate limits, and recent fallback chains."
+          icon={Activity}
+        >
+          <GatewayPanel />
         </SettingsCard>
 
         {/* Dynamic Skills */}
