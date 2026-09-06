@@ -54,6 +54,7 @@
 | T16 | Gated HITL end-to-end (approval واقعی) | ابزار `run_gated` با policy ASK → درخواست در تب Approvals با بج ریسک + کادر «این چیست؟» (fa/en) + دلیل ایجنت → approve → اجرا می‌شود؛ reject/timeout → اجرا نمی‌شود؛ `rm -rf /` → auto-deny؛ `POST /approvals/sweep-expired` | حداقل (بک‌اند) | ⏳ ساخته‌شده، تست‌نشده |
 | T17 | Trust relaxation (earned autonomy) | ۱۰ اجرای موفق تاییدشده روی یک action → `GET /approvals/trust` باید relax=true بدهد؛ سپس خطا → fail_rate بالا → relax=false؛ `POST /approvals/trust/reset` | حداقل (بک‌اند) | ⏳ ساخته‌شده، تست‌نشده |
 | T19 | Anti-hallucination (grounding) در صف تسک‌ها | تسک با خروجی «done» بدون مدرک → باید `Prove it` bridging + رکورد trust-fail بسازد؛ خروجی با مدرک → بدون bridging؛ `verify` باید `false_completion` را نشان دهد | حداقل (بک‌اند) | ⏳ ساخته‌شده، تست‌نشده |
+| T20 | Skill bank + auto-detect + bootstrap | `POST /skills/seed-catalog` → ۲۵ اسکیل؛ `POST /skills/suggest {"text":"debug..."}` → diagnosing-bugs؛ `POST /planning/blueprint` → `suggested_skills` غیرخالی؛ ابزار `skill_search` در لیست تولز ایجنت | حداقل (بک‌اند) | ⏳ ساخته‌شده، تست‌نشده |
 | T18 | Project blueprint (atoms.dev-style) | `POST /planning/blueprint {"goal":"...","project_type":"auto"}` → بررسی tracks موازی + قراردادها + DoD + validate=true → اجرا تا Integration، توقف قبل از Ship برای approval | حداقل (بک‌اند) | ⏳ ساخته‌شده، تست‌نشده |
 
 ## 3) قرارداد
