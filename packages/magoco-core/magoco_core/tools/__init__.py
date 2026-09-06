@@ -8,6 +8,7 @@ from magoco_core.tools.file_tools import FileReadTool, FileWriteTool, FileListTo
 from magoco_core.tools.code_exec import CodeExecTool
 from magoco_core.tools.bash_tool import BashExecTool
 from magoco_core.tools.web_tool import WebSearchTool, WebFetchTool
+from magoco_core.tools import memory_tools as _memory_tools  # noqa: F401 (auto-registers)
 
 # Auto-register all tools on import
 __all__ = [
