@@ -3,12 +3,17 @@ Memory System API Routes
 REST API for memory operations
 """
 
+import json
+import logging
+
 from fastapi import APIRouter, HTTPException, Query, Depends
 from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Any
 from datetime import datetime
 
 from magoco_core.memory import get_memory_store, MemoryEntry, MemoryType, MemoryScope, MemoryQuery
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/memory", tags=["memory"])
 

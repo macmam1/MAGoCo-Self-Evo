@@ -13,7 +13,7 @@
 1. Chat: `ChatConsole --WS /ws/chat--> ReActAgent (+GuardedExecutor) --> streaming thinking + artifacts`.
 2. Browser: `AgentBrowser --WS /ws/browser--> Playwright service (screenshot JPEG) ` + confirm Modal + Sidebar badge via localStorage.
 3. Workflow: Canvas DAG (`WorkflowBuilder`) --> POST `/workflows/execute` --> `WorkflowExecutor` (parallel/conditional/retry).
-4. Memory: `MemoryDashboard` <--> `/api/v1/memory/*` <--> `MemoryStore` (LanceDB vectors + SQLite + JSONL episodic).
+4. Memory v2: `MemoryDashboard` <--> `/api/v1/memory/*` <--> `MemoryStore` (LanceDB + SQLite + JSONL) + CoreBlocks (Letta-style) + supersede/decay + community summaries + 8 self-editing tools. Growth closes the loop: usage → pattern → approval → skill → procedural memory (`POST /growth/distill-session`).
 5. Skills: `SkillsDashboard/Builder/Marketplace` <--> `/api/v1/skills/*` <--> `SkillsRegistry` + `SandboxExecutor`.
 6. Integrations: `IntegrationsDashboard` <--> `/api/v1/integrations-registry/*` <--> `IntegrationsRegistry` + seed.
 7. Growth closed-loop: chat/browser/workflow auto-track --> `GrowthEngine.mine_patterns` --> suggestion --> `POST /growth/suggestions/{id}/apply` --> draft skill in SkillsRegistry --> Skills tab.
