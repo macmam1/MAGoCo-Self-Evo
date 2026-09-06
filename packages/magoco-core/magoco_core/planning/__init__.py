@@ -279,6 +279,94 @@ class Plan:
             visit(tid, [])
         return errors
 
+    # ---------- Mid-flight editing (PlanDB/cuddlytoddly: living hypothesis) ----------
+    # All three preserve completed unrelated work; only the affected branch re-runs.
+
+    def split_task(self, task_id: str, subtasks: List["PlanTask"]) -> List["PlanTask"]:
+        """Replace one task with finer subtasks; dependents rewire to the LAST subtask.
+
+        The original becomes a skipped parent record (audit trail preserved).
+        """
+        task = self.get_task(task_id)
+        if not task:
+            raise ValueError(f"Task not found: {task_id}")
+        if self.frozen and task.status in (TaskStatus.RUNNING, TaskStatus.COMPLETED):
+            raise ValueError("Cannot split a running/completed task on a frozen plan")
+        if not subtasks:
+            raise ValueError("split requires at least one subtask")
+        # Chain subtasks sequentially, inheriting the original's dependencies
+        prev_id: Optional[str] = None
+        for sub in subtasks:
+            sub.dependencies = list(task.dependencies) if prev_id is None else [prev_id]
+            self.tasks.append(sub)
+            prev_id = sub.id
+        last_id = subtasks[-1].id
+        # Rewire dependents of the original to the last subtask
+        for t in self.tasks:
+            if t.id != task_id and task_id in t.dependencies:
+                t.dependencies = [last_id if d == task_id else d for d in t.dependencies]
+        task.status = TaskStatus.SKIPPED
+        task.metadata["split_into"] = [s.id for s in subtasks]
+        task.completed_at = datetime.utcnow()
+        self.updated_at = datetime.utcnow()
+        return subtasks
+
+    def insert_task_after(self, task_id: str, task: "PlanTask") -> "PlanTask":
+        """Insert a missed step between a task and its current dependents."""
+        anchor = self.get_task(task_id)
+        if not anchor:
+            raise ValueError(f"Task not found: {task_id}")
+        if self.frozen and anchor.status in (TaskStatus.RUNNING, TaskStatus.COMPLETED):
+            raise ValueError("Cannot insert after a running/completed task on a frozen plan")
+        task.dependencies = [task_id]
+        self.tasks.append(task)
+        for t in self.tasks:
+            if t.id not in (task_id, task.id) and task_id in t.dependencies:
+                # Only rewire PENDING dependents (running/completed history stays intact)
+                if t.status == TaskStatus.PENDING:
+                    t.dependencies = [task.id if d == task_id else d for d in t.dependencies]
+        self.updated_at = datetime.utcnow()
+        return task
+
+    def pivot_subtree(self, task_id: str, new_description: str = "") -> List[str]:
+        """Abandon an approach: reset the task + all downstream to pending.
+
+        Completed unrelated branches are preserved; only the affected
+        downstream re-runs (forgeplan causal-invalidation lesson).
+        """
+        root = self.get_task(task_id)
+        if not root:
+            raise ValueError(f"Task not found: {task_id}")
+        # Collect downstream closure
+        affected = {task_id}
+        changed = True
+        while changed:
+            changed = False
+            for t in self.tasks:
+                if t.id not in affected and any(d in affected for d in t.dependencies):
+                    affected.add(t.id)
+                    changed = True
+        reset: List[str] = []
+        for t in self.tasks:
+            if t.id in affected and t.status in (TaskStatus.COMPLETED, TaskStatus.FAILED,
+                                                 TaskStatus.BLOCKED, TaskStatus.SKIPPED,
+                                                 TaskStatus.READY):
+                t.status = TaskStatus.PENDING
+                t.result = None
+                t.error = None
+                t.completed_at = None
+                self.completed_task_ids.discard(t.id)
+                self.failed_task_ids.discard(t.id)
+                reset.append(t.id)
+        if new_description:
+            root.description = new_description
+        # Un-freeze for re-execution of the branch (version bump records the pivot)
+        self.version += 1
+        self.frozen = False
+        self.status = PlanStatus.DRAFT
+        self.updated_at = datetime.utcnow()
+        return reset
+
     def critical_path(self) -> List[str]:
         """Longest dependency chain (PlanDB lesson) — focus where it matters."""
         memo: Dict[str, List[str]] = {}
@@ -534,6 +622,36 @@ Return as JSON array of tasks.
     def save(self, plan: Plan, event: str = "", detail: str = "") -> None:
         """Persist a mutated plan (call after any direct mutation)."""
         self._persist(plan, event, detail)
+
+    def split(self, plan_id: str, task_id: str, subtasks: List[PlanTask]) -> Plan:
+        plan = self.get_plan(plan_id)
+        if not plan:
+            raise ValueError(f"Plan {plan_id} not found")
+        plan.split_task(task_id, subtasks)
+        errors = plan.validate()
+        if errors:
+            raise ValueError(f"Split broke the plan: {errors[0]}")
+        self._persist(plan, "task_split", f"{task_id} -> {[s.id for s in subtasks]}")
+        return plan
+
+    def insert_after(self, plan_id: str, task_id: str, task: PlanTask) -> Plan:
+        plan = self.get_plan(plan_id)
+        if not plan:
+            raise ValueError(f"Plan {plan_id} not found")
+        plan.insert_task_after(task_id, task)
+        errors = plan.validate()
+        if errors:
+            raise ValueError(f"Insert broke the plan: {errors[0]}")
+        self._persist(plan, "task_inserted", f"after {task_id}: {task.id}")
+        return plan
+
+    def pivot(self, plan_id: str, task_id: str, new_description: str = "") -> Plan:
+        plan = self.get_plan(plan_id)
+        if not plan:
+            raise ValueError(f"Plan {plan_id} not found")
+        reset = plan.pivot_subtree(task_id, new_description)
+        self._persist(plan, "subtree_pivot", f"{task_id} reset {len(reset)} tasks")
+        return plan
 
     def plan_events(self, plan_id: str, limit: int = 200) -> List[Dict[str, Any]]:
         return self.store.events(plan_id, limit)

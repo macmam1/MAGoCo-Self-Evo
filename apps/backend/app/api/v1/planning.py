@@ -282,6 +282,46 @@ async def pause_plan(plan_id: str):
     return _plan_to_dict(plan)
 
 
+class SplitRequest(BaseModel):
+    subtasks: List[TaskCreate]
+
+
+@router.post("/{plan_id}/tasks/{task_id}/split", response_model=Dict[str, Any])
+async def split_task(plan_id: str, task_id: str, req: SplitRequest):
+    """Split a task into finer subtasks mid-flight (dependents rewire to last)."""
+    if not req.subtasks:
+        raise HTTPException(status_code=400, detail="subtasks required")
+    try:
+        plan = planning_engine.split(plan_id, task_id, [_make_task(tc) for tc in req.subtasks])
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return _plan_to_dict(plan)
+
+
+@router.post("/{plan_id}/tasks/{task_id}/insert-after", response_model=Dict[str, Any])
+async def insert_task(plan_id: str, task_id: str, req: TaskCreate):
+    """Insert a missed step between a task and its dependents."""
+    try:
+        plan = planning_engine.insert_after(plan_id, task_id, _make_task(req))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return _plan_to_dict(plan)
+
+
+class PivotRequest(BaseModel):
+    new_description: str = ""
+
+
+@router.post("/{plan_id}/tasks/{task_id}/pivot", response_model=Dict[str, Any])
+async def pivot_task(plan_id: str, task_id: str, req: PivotRequest):
+    """Abandon an approach: reset task + downstream, preserve unrelated work."""
+    try:
+        plan = planning_engine.pivot(plan_id, task_id, req.new_description)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return _plan_to_dict(plan)
+
+
 @router.get("/{plan_id}/critical-path", response_model=List[str])
 async def plan_critical_path(plan_id: str):
     """Longest dependency chain — focus where it matters."""
