@@ -53,6 +53,7 @@
 | T15 | **سیم‌کشی دروازه به چت زنده (بعداً + با تست کامل)** | فقط بعد از PASS شدن T14: وصل opt-in به WS چت (پیش‌فرض خاموش) → تست پیام ساده (assign) + پیام پیچیده روی مدل ضعیف (defer شفاف) + تست خاموش بودن flag → بعد روشن کردن پیش‌فرض | حداقل | ⏳ عمداً وصل نشده — خطر تغییر رفتار زنده بدون تست |
 | T16 | Gated HITL end-to-end (approval واقعی) | ابزار `run_gated` با policy ASK → درخواست در تب Approvals با بج ریسک + کادر «این چیست؟» (fa/en) + دلیل ایجنت → approve → اجرا می‌شود؛ reject/timeout → اجرا نمی‌شود؛ `rm -rf /` → auto-deny؛ `POST /approvals/sweep-expired` | حداقل (بک‌اند) | ⏳ ساخته‌شده، تست‌نشده |
 | T17 | Trust relaxation (earned autonomy) | ۱۰ اجرای موفق تاییدشده روی یک action → `GET /approvals/trust` باید relax=true بدهد؛ سپس خطا → fail_rate بالا → relax=false؛ `POST /approvals/trust/reset` | حداقل (بک‌اند) | ⏳ ساخته‌شده، تست‌نشده |
+| T18 | Project blueprint (atoms.dev-style) | `POST /planning/blueprint {"goal":"...","project_type":"auto"}` → بررسی tracks موازی + قراردادها + DoD + validate=true → اجرا تا Integration، توقف قبل از Ship برای approval | حداقل (بک‌اند) | ⏳ ساخته‌شده، تست‌نشده |
 
 ## 3) قرارداد
 - هر فیچر جدید که نیاز به بک‌اند زنده دارد → یک ردیف جدید به جدول بالا اضافه کن.
