@@ -100,7 +100,8 @@ class GuardedExecutor:
     async def run_gated(self, tool_name: str, args: dict[str, Any] | None = None,
                         session_id: str = "", timeout: float = 600.0,
                         poll_interval: float = 2.0, ttl_seconds: int = 600,
-                        purpose: str = "", lang: str = "en") -> ToolResult:
+                        purpose: str = "", lang: str = "en",
+                        trust_relax: bool = False) -> ToolResult:
         """Blocking HITL execution: ASK waits for human approval, then proceeds.
 
         - DENY (policy or risk auto-deny) -> blocked immediately, audited.
@@ -126,6 +127,16 @@ class GuardedExecutor:
 
         if decision.effect == Effect.ALLOW and risk.level == "low":
             return await self.run(tool_name, args)
+
+        # Earned autonomy (opt-in): verified track record relaxes ASK -> allow.
+        # Never overrides DENY or critical auto-deny above. Audited either way.
+        if decision.effect == Effect.ASK and trust_relax and not risk.auto_deny:
+            from magoco_core.security.trust import get_trust_registry
+            verdict = get_trust_registry().should_relax(self.actor, action)
+            if verdict["relax"]:
+                self.audit.log(self.actor, action, resource, "allow-by-trust",
+                               f"tool={tool_name} ok={verdict['verified_ok']}/{verdict['verified_total']}")
+                return await self.run(tool_name, args)
 
         # ASK path (or ALLOW+elevated risk): create reviewable approval and wait.
         # The card always carries a plain-language explanation (en+fa) so that
@@ -158,7 +169,13 @@ class GuardedExecutor:
             if status == "approved":
                 self.audit.log(self.actor, action, resource, "ask-approved",
                                f"tool={tool_name} approval={req['request_id']}")
-                return await self.run(tool_name, args)
+                result = await self.run(tool_name, args)
+                try:
+                    from magoco_core.security.trust import get_trust_registry
+                    get_trust_registry().record(self.actor, action, ok=result.success, verified=True)
+                except Exception:
+                    pass
+                return result
             if status in ("rejected", "skipped", "expired"):
                 self.audit.log(self.actor, action, resource, f"ask-{status}",
                                f"tool={tool_name} approval={req['request_id']}")

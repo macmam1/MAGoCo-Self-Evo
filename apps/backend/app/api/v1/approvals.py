@@ -55,6 +55,28 @@ async def sweep_expired(limit: int = 100):
     return {"expired": store.sweep_expired(limit)}
 
 
+class TrustReset(BaseModel):
+    actor: str = ""
+    action: str = ""
+
+
+@router.get("/trust")
+async def trust_scores(actor: str = "", action: str = ""):
+    """Earned-autonomy scores (verified outcomes per actor+action)."""
+    from magoco_core.security.trust import get_trust_registry
+    reg = get_trust_registry()
+    if actor and action:
+        return reg.should_relax(actor, action)
+    return {"hint": "pass ?actor= & ?action= for a verdict"}
+
+
+@router.post("/trust/reset")
+async def trust_reset(req: TrustReset):
+    """Revoke earned trust (on regression or manually)."""
+    from magoco_core.security.trust import get_trust_registry
+    return {"cleared": get_trust_registry().reset(req.actor, req.action)}
+
+
 @router.post("/{request_id}/resolve")
 async def resolve_approval(request_id: str, req: ApprovalResolve):
     store = get_approvals_store()
