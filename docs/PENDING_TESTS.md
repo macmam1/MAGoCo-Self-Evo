@@ -42,7 +42,7 @@
 | T4 | Memory v2: supersede + current_only | `POST /memory/supersede` → `POST /memory/search {"current_only": true}` | حداقل | ⏳ ساخته‌شده، تست‌نشده |
 | T5 | Memory v2: decay + touch | `POST /memory/decay` → `POST /memory/{id}/touch` | حداقل | ⏳ ساخته‌شده، تست‌نشده |
 | T6 | Memory v2: self-editing tools (8 ابزار) | فراخوانی `core_memory_append`/`archival_memory_search`/`memory_supersede` از طریق ایجنت | حداقل | ⏳ ساخته‌شده، تست‌نشده |
-| T7 | Planning orchestrated execute | `POST /planning/{id}/execute-orchestrated` + دکمه Execute در UI | حداقل | ⏳ ساخته‌شده، تست‌نشده |
+| T7 | Planning orchestrated execute + persistence | `POST /planning/` → restart backend → `GET /planning/{id}` (باید بماند) → `GET /planning/{id}/validate` → `POST /planning/{id}/execute-orchestrated` + دکمه Execute/paus در UI + `critical-path` + `events` | حداقل | ⏳ ساخته‌شده، تست‌نشده |
 | T8 | Telegram gateway | `POST /telegram/test-token` + ثبت بات + `/start` در چت واقعی | حداکثری (دسترسی به api.telegram.org + توکن BotFather) | ⏳ ساخته‌شده، تست‌نشده |
 | T9 | Gateway rate-limit + fallback chains | `get_rate_limit_status` / `get_fallback_chains` زیر بار چند پروایدر | حداقل | ⏳ ساخته‌شده، تست‌نشده |
 | T10 | Frontend build + Planning/Memory/Telegram tabs | `cd apps/frontend && npm install && npm run build` + کلیک تب‌ها | حداقل | ⏳ ساخته‌شده، تست‌نشده |

@@ -21,6 +21,23 @@ class TaskCreate(BaseModel):
     tool_requirements: List[str] = []
     dependencies: List[str] = []  # Task IDs
     metadata: Dict[str, Any] = {}
+    definition_of_done: str = ""
+    timeout_seconds: float = 300.0
+    max_attempts: int = 2
+
+
+def _make_task(tc: TaskCreate) -> PlanTask:
+    return PlanTask(
+        name=tc.name,
+        description=tc.description,
+        agent_role=tc.agent_role,
+        tool_requirements=tc.tool_requirements,
+        dependencies=tc.dependencies,
+        metadata=tc.metadata,
+        definition_of_done=tc.definition_of_done,
+        timeout_seconds=tc.timeout_seconds,
+        max_attempts=tc.max_attempts,
+    )
 
 
 class PlanCreate(BaseModel):
@@ -29,6 +46,8 @@ class PlanCreate(BaseModel):
     layer: str = "os"  # "os" or "project"
     project_id: Optional[str] = None
     tasks: List[TaskCreate] = []
+    budget_tokens: int = 0
+    budget_seconds: float = 0.0
 
 
 class PlanUpdate(BaseModel):
@@ -36,6 +55,8 @@ class PlanUpdate(BaseModel):
     description: Optional[str] = None
     status: Optional[str] = None
     tasks: Optional[List[TaskCreate]] = None
+    budget_tokens: Optional[int] = None
+    budget_seconds: Optional[float] = None
 
 
 class DecomposeRequest(BaseModel):
@@ -68,6 +89,10 @@ def _task_to_dict(task: PlanTask) -> Dict[str, Any]:
         "result": str(task.result) if task.result else None,
         "error": task.error,
         "metadata": task.metadata,
+        "definition_of_done": task.definition_of_done,
+        "timeout_seconds": task.timeout_seconds,
+        "max_attempts": task.max_attempts,
+        "attempts": task.attempts,
     }
 
 
@@ -87,18 +112,19 @@ async def create_plan(req: PlanCreate):
         layer=layer,
         project_id=req.project_id
     )
-    
-    for tc in req.tasks:
-        task = PlanTask(
-            name=tc.name,
-            description=tc.description,
-            agent_role=tc.agent_role,
-            tool_requirements=tc.tool_requirements,
-            dependencies=tc.dependencies,
-            metadata=tc.metadata,
-        )
-        plan.add_task(task)
-    
+    plan.budget_tokens = req.budget_tokens
+    plan.budget_seconds = req.budget_seconds
+
+    try:
+        for tc in req.tasks:
+            plan.add_task(_make_task(tc))
+        errors = plan.validate()
+        if errors:
+            raise HTTPException(status_code=400, detail=f"Plan invalid: {errors[0]}")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    planning_engine.save(plan, "created", f"{len(req.tasks)} tasks")
+
     return _plan_to_dict(plan)
 
 
@@ -147,6 +173,10 @@ async def update_plan(plan_id: str, req: PlanUpdate):
         plan.name = req.name
     if req.description:
         plan.description = req.description
+    if req.budget_tokens is not None:
+        plan.budget_tokens = req.budget_tokens
+    if req.budget_seconds is not None:
+        plan.budget_seconds = req.budget_seconds
     if req.status:
         try:
             plan.status = PlanStatus(req.status)
@@ -154,27 +184,24 @@ async def update_plan(plan_id: str, req: PlanUpdate):
             raise HTTPException(status_code=400, detail="Invalid status")
     
     if req.tasks is not None:
+        if plan.frozen:
+            raise HTTPException(status_code=400, detail="Plan is frozen; create a new version to edit")
         plan.tasks = []
         for tc in req.tasks:
-            task = PlanTask(
-                name=tc.name,
-                description=tc.description,
-                agent_role=tc.agent_role,
-                tool_requirements=tc.tool_requirements,
-                dependencies=tc.dependencies,
-                metadata=tc.metadata,
-            )
-            plan.add_task(task)
-    
+            plan.add_task(_make_task(tc))
+        errors = plan.validate()
+        if errors:
+            raise HTTPException(status_code=400, detail=f"Plan invalid: {errors[0]}")
+
     plan.updated_at = datetime.utcnow()
+    planning_engine.save(plan, "updated", "")
     return _plan_to_dict(plan)
 
 
 @router.delete("/{plan_id}")
 async def delete_plan(plan_id: str):
     """Delete a plan."""
-    if plan_id in planning_engine.plans:
-        del planning_engine.plans[plan_id]
+    if planning_engine.delete_plan(plan_id):
         return {"success": True}
     raise HTTPException(status_code=404, detail="Plan not found")
 
@@ -183,20 +210,20 @@ async def delete_plan(plan_id: str):
 
 @router.post("/{plan_id}/tasks", response_model=Dict[str, Any])
 async def add_task(plan_id: str, req: TaskCreate):
-    """Add a task to a plan."""
+    """Add a task to a plan (rejected when frozen or invalid)."""
     plan = planning_engine.get_plan(plan_id)
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
-    
-    task = PlanTask(
-        name=req.name,
-        description=req.description,
-        agent_role=req.agent_role,
-        tool_requirements=req.tool_requirements,
-        dependencies=req.dependencies,
-        metadata=req.metadata,
-    )
-    plan.add_task(task)
+
+    try:
+        task = _make_task(req)
+        plan.add_task(task)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    errors = plan.validate()
+    if errors:
+        raise HTTPException(status_code=400, detail=f"Plan invalid: {errors[0]}")
+    planning_engine.save(plan, "task_added", task.id)
     return _task_to_dict(task)
 
 
@@ -211,14 +238,23 @@ async def update_task(plan_id: str, task_id: str, req: TaskCreate):
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     
+    if plan.frozen:
+        raise HTTPException(status_code=400, detail="Plan is frozen; create a new version to edit")
     task.name = req.name
     task.description = req.description
     task.agent_role = req.agent_role
     task.tool_requirements = req.tool_requirements
     task.dependencies = req.dependencies
     task.metadata = req.metadata
+    task.definition_of_done = req.definition_of_done
+    task.timeout_seconds = req.timeout_seconds
+    task.max_attempts = req.max_attempts
+    errors = plan.validate()
+    if errors:
+        raise HTTPException(status_code=400, detail=f"Plan invalid: {errors[0]}")
     plan.updated_at = datetime.utcnow()
-    
+    planning_engine.save(plan, "task_updated", task.id)
+
     return _task_to_dict(task)
 
 
@@ -228,10 +264,51 @@ async def delete_task(plan_id: str, task_id: str):
     plan = planning_engine.get_plan(plan_id)
     if not plan:
         raise HTTPException(status_code=404, detail="Plan not found")
-    
+    if plan.frozen:
+        raise HTTPException(status_code=400, detail="Plan is frozen; create a new version to edit")
+
     plan.tasks = [t for t in plan.tasks if t.id != task_id]
     plan.updated_at = datetime.utcnow()
+    planning_engine.save(plan, "task_deleted", task_id)
     return {"success": True}
+
+
+@router.post("/{plan_id}/pause")
+async def pause_plan(plan_id: str):
+    """Pause a running plan (resumable)."""
+    plan = planning_engine.pause(plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return _plan_to_dict(plan)
+
+
+@router.get("/{plan_id}/critical-path", response_model=List[str])
+async def plan_critical_path(plan_id: str):
+    """Longest dependency chain — focus where it matters."""
+    plan = planning_engine.get_plan(plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return plan.critical_path()
+
+
+@router.get("/{plan_id}/events", response_model=List[Dict[str, Any]])
+async def plan_events(plan_id: str, limit: int = 200):
+    """Execution receipts / event log (audit + replay)."""
+    plan = planning_engine.get_plan(plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    return planning_engine.plan_events(plan_id, limit)
+
+
+@router.get("/{plan_id}/validate", response_model=Dict[str, Any])
+async def validate_plan(plan_id: str):
+    """Verify the plan contract (acyclic, known deps) before execution."""
+    plan = planning_engine.get_plan(plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    errors = plan.validate()
+    return {"valid": not errors, "errors": errors,
+            "critical_path": plan.critical_path() if not errors else []}
 
 
 # ===== AI-Powered Decomposition =====

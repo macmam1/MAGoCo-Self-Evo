@@ -352,60 +352,71 @@ class MultiAgentOrchestrator:
 
     async def execute_plan(self, plan_id: str, max_parallel: int = 3) -> dict:
         """Execute a plan from the Planning Engine using the agent team.
-        
+
         This is the core OS integration: Planning → Orchestration → Execution.
+        Validates + freezes + persists every step (durable, resumable, pausable).
         """
         from magoco_core.planning import planning_engine, PlanStatus, TaskStatus
-        
+
         plan = planning_engine.get_plan(plan_id)
         if not plan:
             raise ValueError(f"Plan {plan_id} not found")
-        
+
+        errors = plan.validate()
+        if errors:
+            raise ValueError(f"Plan invalid: {errors[0]}")
+
+        plan.frozen = True
         plan.status = PlanStatus.ACTIVE
-        plan.started_at = datetime.utcnow()
-        
+        plan.started_at = plan.started_at or datetime.utcnow()
+        planning_engine.save(plan, "orchestrated_start", f"max_parallel={max_parallel}")
+
         results = {
             "plan_id": plan_id,
             "tasks_executed": 0,
             "tasks_failed": 0,
             "task_results": [],
         }
-        
-        while not plan.is_complete():
-            # Get ready tasks (dependencies met)
+
+        max_iterations = max(1, len(plan.tasks) * 4 + 10)
+        for _ in range(max_iterations):
+            if plan.status == PlanStatus.PAUSED:
+                planning_engine.save(plan, "orchestrated_paused", "")
+                break
+            if plan.is_complete():
+                break
             ready = plan.get_ready_tasks()
-            
-            # Limit parallel execution
-            running = plan.get_running_tasks()
-            available_slots = max_parallel - len(running)
-            
-            if available_slots <= 0:
-                await asyncio.sleep(0.5)
+            if not ready:
+                if not plan.get_running_tasks():
+                    for t in plan.tasks:
+                        if t.status == TaskStatus.PENDING and not t.is_ready(plan.completed_task_ids):
+                            t.status = TaskStatus.BLOCKED
+                    planning_engine.save(plan, "orchestrated_blocked", "")
+                    break
+                await asyncio.sleep(0.2)
                 continue
-            
-            # Execute ready tasks
-            for task in ready[:available_slots]:
+
+            for task in ready[:max(1, max_parallel)]:
                 task.status = TaskStatus.RUNNING
                 task.started_at = datetime.utcnow()
-                
-                # Find appropriate agent for this task
+                task.attempts += 1
+
                 agent = self._find_agent_for_task(task)
                 if not agent:
                     task.status = TaskStatus.FAILED
                     task.error = f"No agent available for role: {task.agent_role}"
+                    task.completed_at = datetime.utcnow()
                     plan.failed_task_ids.add(task.id)
                     results["tasks_failed"] += 1
                     continue
-                
+
                 try:
-                    # Build context from completed dependencies
                     context = self._build_task_context(plan, task)
-                    
-                    # Execute task with agent (AgentWorker.run takes task + optional context)
-                    result = await agent.run(
-                        f"{task.name}: {task.description}\n\nContext:\n{context}",
-                    )
-                    
+                    prompt = f"{task.name}: {task.description}\n\nContext:\n{context}"
+                    if task.definition_of_done:
+                        prompt += f"\n\nDefinition of done (must satisfy): {task.definition_of_done}"
+                    result = await asyncio.wait_for(agent.run(prompt), timeout=task.timeout_seconds)
+
                     task.result = result
                     task.status = TaskStatus.COMPLETED
                     task.completed_at = datetime.utcnow()
@@ -423,12 +434,15 @@ class MultiAgentOrchestrator:
                     task.completed_at = datetime.utcnow()
                     plan.failed_task_ids.add(task.id)
                     results["tasks_failed"] += 1
-            
+            planning_engine.save(plan, "orchestrated_batch", f"+{len(ready)} tasks")
+
             await asyncio.sleep(0.2)
-        
-        plan.status = PlanStatus.COMPLETED if not plan.has_failures() else PlanStatus.FAILED
-        plan.completed_at = datetime.utcnow()
-        
+
+        if plan.status != PlanStatus.PAUSED:
+            plan.status = PlanStatus.COMPLETED if not plan.has_failures() else PlanStatus.FAILED
+            plan.completed_at = datetime.utcnow()
+        planning_engine.save(plan, "orchestrated_finished", plan.status.value)
+
         return results
     
     def _find_agent_for_task(self, task) -> AgentWorker | None:
