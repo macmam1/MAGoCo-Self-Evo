@@ -501,6 +501,29 @@ async def apply_decay(req: DecayRequest, store=Depends(get_store)):
     return {"success": True, "decayed": n, "half_life_days": req.half_life_days}
 
 
+class HeartbeatRequest(BaseModel):
+    half_life_days: float = 30.0
+    distill_sessions: List[str] = []
+    importance_threshold: float = 0.7
+
+
+@router.post("/heartbeat", response_model=Dict[str, Any])
+async def heartbeat(req: HeartbeatRequest, store=Depends(get_store)):
+    """Sleep-time maintenance (Letta heartbeat lesson): decay + distill + stats.
+
+    Safe + idempotent: call from cron (e.g. hourly). No live-path changes.
+    """
+    decayed = store.apply_decay(req.half_life_days)
+    distilled: Dict[str, int] = {}
+    for sid in req.distill_sessions[:10]:
+        try:
+            distilled[sid] = store.consolidate_working_to_longterm(sid, req.importance_threshold)
+        except Exception:
+            distilled[sid] = -1
+    return {"success": True, "decayed": decayed, "distilled": distilled,
+            "stats": store.get_stats()}
+
+
 @router.post("/{memory_id}/touch", response_model=Dict[str, Any])
 async def touch_memory(memory_id: str, boost: float = 0.05, store=Depends(get_store)):
     """Reinforce a memory on access (bump decay + count)."""
