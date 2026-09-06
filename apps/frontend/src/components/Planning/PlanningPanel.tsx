@@ -21,6 +21,19 @@ interface Plan {
   };
 }
 
+interface TaskQuality {
+  passed: boolean;
+  score: number;
+  missing: string[];
+  method: string;
+}
+
+interface TaskGrounding {
+  ratio: number;
+  unverified: string[];
+  false_completion: boolean;
+}
+
 interface Task {
   id: string;
   name: string;
@@ -31,6 +44,12 @@ interface Task {
   status: string;
   result?: string;
   error?: string;
+  metadata?: {
+    quality?: TaskQuality;
+    grounding?: TaskGrounding;
+    bridges?: string;
+    gap_kind?: string;
+  };
 }
 
 export function PlanningPanel() {
@@ -307,12 +326,51 @@ export function PlanningPanel() {
               <button onClick={() => setSelectedPlan(null)} className="text-[11px] text-text-2">close</button>
             </div>
             <div className="space-y-1">
-              {selectedPlan.tasks?.map((task: Task) => (
-                <div key={task.id} className="text-[11px] flex items-center justify-between gap-2 p-1.5 rounded bg-white/[0.03]">
-                  <span style={{ color: "var(--text-0)" }}>{task.name} <span className="text-text-2">({task.agent_role})</span></span>
-                  <span className="text-text-2">{task.status}</span>
-                </div>
-              ))}
+              {selectedPlan.tasks?.map((task: Task) => {
+                const q = task.metadata?.quality;
+                const g = task.metadata?.grounding;
+                return (
+                  <div key={task.id} className="text-[11px] p-1.5 rounded bg-white/[0.03] space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span style={{ color: "var(--text-0)" }}>{task.name} <span className="text-text-2">({task.agent_role})</span></span>
+                      <span className="flex items-center gap-1 shrink-0">
+                        {q && (
+                          <span
+                            title={q.missing?.length ? `missing: ${q.missing.join(", ")}` : "DoD covered"}
+                            className={cn(
+                              "px-1.5 py-0.5 rounded-full border",
+                              q.passed
+                                ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20"
+                                : "bg-orange-500/10 text-orange-300 border-orange-500/20",
+                            )}
+                          >
+                            Q {Math.round((q.score || 0) * 100)}%
+                          </span>
+                        )}
+                        {g && g.false_completion && (
+                          <span title="Completion claimed without evidence" className="px-1.5 py-0.5 rounded-full border bg-red-500/10 text-red-300 border-red-500/20">
+                            UNPROVEN
+                          </span>
+                        )}
+                        {g && !g.false_completion && typeof g.ratio === "number" && (
+                          <span title={(g.unverified || []).join("\n") || "grounded"} className="px-1.5 py-0.5 rounded-full border bg-white/5 text-text-2 border-white/10">
+                            G {Math.round(g.ratio * 100)}%
+                          </span>
+                        )}
+                        {task.metadata?.bridges && (
+                          <span title={`Bridges ${task.metadata.bridges}`} className="px-1.5 py-0.5 rounded-full border bg-sky-500/10 text-sky-300 border-sky-500/20">
+                            bridge
+                          </span>
+                        )}
+                        <span className="text-text-2">{task.status}</span>
+                      </span>
+                    </div>
+                    {task.error && (
+                      <div className="text-red-300/90 break-words">{task.error.slice(0, 300)}</div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
