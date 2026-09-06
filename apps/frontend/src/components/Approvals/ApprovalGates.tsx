@@ -8,9 +8,23 @@ interface ApprovalRequest {
   agent_name: string;
   action_description: string;
   proposed_input: Record<string, unknown>;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "expired" | "skipped";
   created_at: string;
+  tool_name?: string;
+  action?: string;
+  resource?: string;
+  risk?: string;
+  risk_score?: number;
+  expires_at?: string | null;
+  decided_by?: string;
 }
+
+const RISK_STYLES: Record<string, string> = {
+  low: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
+  medium: "bg-yellow-500/10 text-yellow-300 border-yellow-500/30",
+  high: "bg-orange-500/10 text-orange-300 border-orange-500/30",
+  critical: "bg-red-500/10 text-red-300 border-red-500/30",
+};
 
 export function ApprovalGates() {
   const [requests, setRequests] = useState<ApprovalRequest[]>([]);
@@ -50,6 +64,8 @@ export function ApprovalGates() {
 
   useEffect(() => {
     fetchPending();
+    const t = setInterval(fetchPending, 15000);
+    return () => clearInterval(t);
   }, [fetchPending]);
 
   const handleApproval = async (id: string, status: "approved" | "rejected") => {
@@ -101,14 +117,25 @@ export function ApprovalGates() {
         >
           <div className="flex items-start justify-between">
             <div>
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <Clock className="w-4 h-4 text-yellow-400" />
                 <span className="text-sm text-yellow-300 font-medium">
                   {req.agent_name}
                 </span>
                 <Badge className="bg-yellow-500/10 text-yellow-300 text-xs">PENDING</Badge>
+                {req.risk && (
+                  <Badge className={`text-xs border ${RISK_STYLES[req.risk] || RISK_STYLES.medium}`}>
+                    RISK: {req.risk.toUpperCase()}{typeof req.risk_score === "number" ? ` ${req.risk_score}` : ""}
+                  </Badge>
+                )}
+                {req.tool_name && (
+                  <Badge className="bg-white/5 text-gray-300 text-xs font-mono">{req.tool_name}</Badge>
+                )}
               </div>
               <p className="text-white font-medium">{req.action_description}</p>
+              {req.expires_at && (
+                <p className="text-gray-500 text-xs mt-1">Expires: {new Date(req.expires_at).toLocaleString()}</p>
+              )}
             </div>
           </div>
 

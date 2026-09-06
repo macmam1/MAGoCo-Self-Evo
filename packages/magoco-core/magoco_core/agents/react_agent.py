@@ -147,11 +147,22 @@ class ReActAgent:
             },
         )
 
-    async def _act(self, tool_name: str, **kwargs) -> ToolResult:
-        """Execute a tool action via the guarded executor (policy + hooks + audit)."""
+    async def _act(self, tool_name: str, require_approval: bool = False,
+                   session_id: str = "", approval_timeout: float = 600.0,
+                   **kwargs) -> ToolResult:
+        """Execute a tool action via the guarded executor (policy + hooks + audit).
+
+        require_approval=False (default): legacy non-blocking run — unchanged behavior.
+        require_approval=True: run_gated — ASK pauses for human approval in the
+        Approvals tab, then resumes or aborts. Nothing executes while pending.
+        """
         from magoco_core.security import default_executor
 
-        result = await default_executor.run(tool_name, kwargs)
+        if require_approval:
+            result = await default_executor.run_gated(
+                tool_name, kwargs, session_id=session_id, timeout=approval_timeout)
+        else:
+            result = await default_executor.run(tool_name, kwargs)
         self.memory.append({"role": "tool", "content": result.content})
         return result
 

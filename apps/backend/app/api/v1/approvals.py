@@ -18,6 +18,7 @@ class ApprovalCreate(BaseModel):
 class ApprovalResolve(BaseModel):
     status: str = "approved"
     comment: Optional[str] = None
+    decided_by: str = "human"
 
 
 @router.get("/pending")
@@ -47,6 +48,13 @@ async def get_approval(request_id: str):
     return r
 
 
+@router.post("/sweep-expired")
+async def sweep_expired(limit: int = 100):
+    """Auto-expire stale pending approvals (housekeeping; safe to cron)."""
+    store = get_approvals_store()
+    return {"expired": store.sweep_expired(limit)}
+
+
 @router.post("/{request_id}/resolve")
 async def resolve_approval(request_id: str, req: ApprovalResolve):
     store = get_approvals_store()
@@ -55,7 +63,8 @@ async def resolve_approval(request_id: str, req: ApprovalResolve):
     if not r:
         raise HTTPException(status_code=404, detail="not found")
     try:
-        out = store.resolve(request_id, req.status, req.comment)
+        out = store.resolve(request_id, req.status, req.comment,
+                            decided_by=req.decided_by or "human")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     sid = (r.get("proposed_input") or {}).get("suggestion_id")
