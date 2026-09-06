@@ -50,6 +50,7 @@
 | T12 | Model compensator: weak vs strong preamble | `POST /memory/compensate {"model":"llama3.1:8b",...}` در برابر `{"model":"gpt-4o",...}` (مقایسه طول/صراحت preamble) | حداقل | ⏳ ساخته‌شده، تست‌نشده |
 | T13 | Escalation + JSON guard + overrides | `POST /memory/escalation/advise {"model":"...","error":"json parse failed",...}` + `task_needs` در compensate | حداقل | ⏳ ساخته‌شده، تست‌نشده |
 | T14 | Capability gate + deferred queue | `POST /memory/gate-check` با تسک پیچیده روی مدل ضعیف → queued → `GET /memory/deferred` → resolve؛ + تست kill-switch (`enabled=false`) | حداقل | ⏳ ساخته‌شده، تست‌نشده |
+| T15 | **سیم‌کشی دروازه به چت زنده (بعداً + با تست کامل)** | فقط بعد از PASS شدن T14: وصل opt-in به WS چت (پیش‌فرض خاموش) → تست پیام ساده (assign) + پیام پیچیده روی مدل ضعیف (defer شفاف) + تست خاموش بودن flag → بعد روشن کردن پیش‌فرض | حداقل | ⏳ عمداً وصل نشده — خطر تغییر رفتار زنده بدون تست |
 
 ## 3) قرارداد
 - هر فیچر جدید که نیاز به بک‌اند زنده دارد → یک ردیف جدید به جدول بالا اضافه کن.
