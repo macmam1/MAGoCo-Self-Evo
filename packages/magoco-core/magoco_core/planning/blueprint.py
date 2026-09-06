@@ -187,13 +187,15 @@ def build_blueprint(goal: str, project_type: str = "auto",
         definition_of_done="All DoDs checked; remaining gaps listed explicitly")
     plan.add_task(verify)
 
-    # Phase 5: ship (human approval gate lives here — orchestrator pauses via HITL)
+    # Phase 5: ship (human approval gate — executors pause here via HITL)
     ship = PlanTask(
         name="Ship",
         description="Final synthesis + HUMAN APPROVAL before release",
         agent_role="coordinator", tool_requirements=[],
         dependencies=[verify.id],
-        definition_of_done="Human approved; release notes written")
+        definition_of_done="Human approved; release notes written",
+        metadata={"requires_approval": True,
+                  "approval_prompt": "Review the verified build. Approve to release."})
     plan.add_task(ship)
 
     errors = plan.validate()

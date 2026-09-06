@@ -562,8 +562,29 @@ Return as JSON array of tasks.
                 await asyncio.sleep(0.2)
                 continue
             batch = ready[:max(1, max_parallel)]
+            # Human approval gates (Mike-style team leadership): a task flagged
+            # requires_approval pauses the whole plan BEFORE it runs. The human
+            # approves in the Approvals tab, then re-runs execute to resume.
+            gated = [t for t in batch if t.metadata.get("requires_approval")]
+            if gated:
+                # Already approved since pausing? Consume the approval and proceed.
+                gated = [t for t in gated if not self.consume_gate_approval(plan, t)]
+            if gated:
+                from magoco_core.evolution.approvals_store import get_approvals_store
+                for t in gated:
+                    get_approvals_store().create(
+                        agent_name="team-leader",
+                        action_description=f"Phase gate: {t.name} — {t.metadata.get('approval_prompt', t.description)}",
+                        proposed_input={"plan_id": plan.id, "task_id": t.id,
+                                        "phase": "ship-gate"},
+                        session_id=plan.project_id or "",
+                    )
+                plan.status = PlanStatus.PAUSED
+                self._persist(plan, "phase_gate_waiting",
+                              f"{len(gated)} task(s) awaiting human approval")
+                return plan
             results = await asyncio.gather(
-                *(self._execute_task(plan, t, agent_executor) for t in batch),
+                *(self._execute_task(plan, task, agent_executor) for t in batch),
                 return_exceptions=True,
             )
             for task, res in zip(batch, results):
@@ -605,6 +626,23 @@ Return as JSON array of tasks.
         plan.status = PlanStatus.PAUSED
         self._persist(plan, "paused", "")
         return plan
+
+    def consume_gate_approval(self, plan: "Plan", task: "PlanTask") -> bool:
+        """One-shot gate pass: if a human approved this (plan_id, task_id),
+        clear the flag so re-execution proceeds past the gate exactly once."""
+        try:
+            from magoco_core.evolution.approvals_store import get_approvals_store
+            store = get_approvals_store()
+            hits = [a for a in store.find_by_ref("task_id", task.id)
+                    if a.get("status") == "approved"
+                    and str((a.get("proposed_input") or {}).get("plan_id")) == plan.id]
+            if hits:
+                task.metadata.pop("requires_approval", None)
+                self._persist(plan, "gate_passed", task.id)
+                return True
+        except Exception:
+            pass
+        return False
 
     def get_plan(self, plan_id: str) -> Optional[Plan]:
         data = self.store.load(plan_id)

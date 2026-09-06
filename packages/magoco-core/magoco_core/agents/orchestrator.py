@@ -413,6 +413,28 @@ class MultiAgentOrchestrator:
                 await asyncio.sleep(0.2)
                 continue
 
+            # Human approval gates (Mike-style): pause BEFORE gated tasks run.
+            # Already-approved gates are consumed (one-shot pass) so resume works.
+            from magoco_core.planning import planning_engine as _pe
+            ready_batch = ready[:max(1, max_parallel)]
+            gated = [t for t in ready_batch if t.metadata.get("requires_approval")]
+            if gated:
+                gated = [t for t in gated if not _pe.consume_gate_approval(plan, t)]
+            if gated:
+                from magoco_core.evolution.approvals_store import get_approvals_store
+                for t in gated:
+                    get_approvals_store().create(
+                        agent_name="team-leader",
+                        action_description=f"Phase gate: {t.name} — {t.metadata.get('approval_prompt', t.description)}",
+                        proposed_input={"plan_id": plan.id, "task_id": t.id,
+                                        "phase": "ship-gate"},
+                        session_id=plan.project_id or "",
+                    )
+                plan.status = PlanStatus.PAUSED
+                planning_engine.save(plan, "phase_gate_waiting",
+                                     f"{len(gated)} task(s) awaiting human approval")
+                break
+
             for task in ready[:max(1, max_parallel)]:
                 task.status = TaskStatus.RUNNING
                 task.started_at = datetime.utcnow()
