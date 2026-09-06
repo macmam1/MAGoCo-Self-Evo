@@ -70,6 +70,103 @@ async def create_provider(req: ProviderCreate):
     return _public(cfg)
 
 
+# NOTE: static routes must stay ABOVE /{provider_id} (FastAPI matches in order).
+
+@router.post("/autodetect-ollama")
+async def autodetect_ollama():
+    reg = get_provider_registry()
+    cfg = await reg.autodetect_ollama()
+    if not cfg:
+        return {"success": False, "message": "no reachable Ollama, or already configured"}
+    return {"success": True, "provider": _public(cfg)}
+
+
+# ===== Import/Export Endpoints =====
+
+@router.get("/export")
+async def export_providers(include_secrets: bool = False):
+    """Export all providers as JSON (for backup/migration)."""
+    reg = get_provider_registry()
+    providers = reg.list(enabled_only=False)
+    if include_secrets:
+        data = [_exportable(c) for c in providers]
+    else:
+        data = [_public(c) for c in providers]
+    return {
+        "version": "1.0",
+        "exported_at": datetime.utcnow().isoformat(),
+        "count": len(data),
+        "providers": data
+    }
+
+
+@router.post("/import")
+async def import_providers(req: ProviderImport):
+    """Bulk import providers from JSON."""
+    reg = get_provider_registry()
+    results = {"created": 0, "updated": 0, "skipped": 0, "errors": []}
+
+    for p in req.providers:
+        try:
+            # Check if provider with same ID exists
+            existing = reg.get(p.name.lower().strip().replace(" ", "-") or "")
+            if existing:
+                if req.overwrite:
+                    reg.delete(existing.id)
+                    cfg = reg.create(p.name, p.kind, p.base_url, p.api_key, p.models,
+                                     p.default_model, p.enabled, p.timeout, p.extra_headers)
+                    results["updated"] += 1
+                else:
+                    results["skipped"] += 1
+                    results["errors"].append(f"Provider '{p.name}' already exists (use overwrite=true)")
+                    continue
+            else:
+                cfg = reg.create(p.name, p.kind, p.base_url, p.api_key, p.models,
+                                 p.default_model, p.enabled, p.timeout, p.extra_headers)
+                results["created"] += 1
+        except Exception as e:
+            results["errors"].append(f"{p.name}: {str(e)}")
+
+    return results
+
+
+@router.post("/import-file")
+async def import_providers_file(file: UploadFile = File(...), overwrite: bool = False):
+    """Import providers from uploaded JSON file."""
+    import json
+    content = await file.read()
+    try:
+        data = json.loads(content)
+        providers = data.get("providers", [])
+        req = ProviderImport(providers=providers, overwrite=overwrite)
+        return await import_providers(req)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Invalid JSON file")
+
+
+# ===== Gateway observability (read-only) =====
+
+@router.get("/gateway/status")
+async def gateway_status():
+    """Costs + rate limits + available models (read-only monitoring)."""
+    from magoco_core.llm.gateway import llm_gateway
+    return {
+        "providers": list(llm_gateway.providers.keys()),
+        "preferred_order": llm_gateway.preferred_order,
+        "costs": llm_gateway.get_current_costs(),
+        "rate_limits": {name: llm_gateway.get_rate_limit_status(name)
+                        for name in llm_gateway.providers.keys()},
+        "models": llm_gateway.get_available_models(),
+    }
+
+
+@router.get("/gateway/fallbacks")
+async def gateway_fallbacks(limit: int = 20):
+    """Recent fallback chains (which provider failed, where it landed, latency)."""
+    from magoco_core.llm.gateway import llm_gateway
+    return llm_gateway.get_fallback_chains(limit)
+
+
 @router.get("/{provider_id}")
 async def get_provider(provider_id: str):
     reg = get_provider_registry()
@@ -117,73 +214,4 @@ async def test_provider(provider_id: str):
     return result
 
 
-@router.post("/autodetect-ollama")
-async def autodetect_ollama():
-    reg = get_provider_registry()
-    cfg = await reg.autodetect_ollama()
-    if not cfg:
-        return {"success": False, "message": "no reachable Ollama, or already configured"}
-    return {"success": True, "provider": _public(cfg)}
 
-
-# ===== Import/Export Endpoints =====
-
-@router.get("/export")
-async def export_providers(include_secrets: bool = False):
-    """Export all providers as JSON (for backup/migration)."""
-    reg = get_provider_registry()
-    providers = reg.list(enabled_only=False)
-    if include_secrets:
-        data = [_exportable(c) for c in providers]
-    else:
-        data = [_public(c) for c in providers]
-    return {
-        "version": "1.0",
-        "exported_at": datetime.utcnow().isoformat(),
-        "count": len(data),
-        "providers": data
-    }
-
-
-@router.post("/import")
-async def import_providers(req: ProviderImport):
-    """Bulk import providers from JSON."""
-    reg = get_provider_registry()
-    results = {"created": 0, "updated": 0, "skipped": 0, "errors": []}
-    
-    for p in req.providers:
-        try:
-            # Check if provider with same ID exists
-            existing = reg.get(p.name.lower().strip().replace(" ", "-") or "")
-            if existing:
-                if req.overwrite:
-                    reg.delete(existing.id)
-                    cfg = reg.create(p.name, p.kind, p.base_url, p.api_key, p.models,
-                                     p.default_model, p.enabled, p.timeout, p.extra_headers)
-                    results["updated"] += 1
-                else:
-                    results["skipped"] += 1
-                    results["errors"].append(f"Provider '{p.name}' already exists (use overwrite=true)")
-                    continue
-            else:
-                cfg = reg.create(p.name, p.kind, p.base_url, p.api_key, p.models,
-                                 p.default_model, p.enabled, p.timeout, p.extra_headers)
-                results["created"] += 1
-        except Exception as e:
-            results["errors"].append(f"{p.name}: {str(e)}")
-    
-    return results
-
-
-@router.post("/import-file")
-async def import_providers_file(file: UploadFile = File(...), overwrite: bool = False):
-    """Import providers from uploaded JSON file."""
-    import json
-    content = await file.read()
-    try:
-        data = json.loads(content)
-        providers = data.get("providers", [])
-        req = ProviderImport(providers=providers, overwrite=overwrite)
-        return await import_providers(req)
-    except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="Invalid JSON file")
