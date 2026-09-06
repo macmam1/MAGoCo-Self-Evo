@@ -99,6 +99,66 @@ def _budget_for_model(model_name: str, fraction: float = 0.15) -> int:
     return max(800, int(window * fraction))
 
 
+# ---------- Escalation policy (weak tries first, cost-aware) ----------
+
+ESCALATION_LADDER: List[ModelTier] = [
+    ModelTier.FREE, ModelTier.ECONOMY, ModelTier.STANDARD, ModelTier.PREMIUM,
+]
+
+
+def next_stronger_tier(tier: ModelTier) -> Optional[ModelTier]:
+    """Next rung up the cost ladder, or None if already top."""
+    try:
+        i = ESCALATION_LADDER.index(tier)
+    except ValueError:
+        return ModelTier.ECONOMY
+    return ESCALATION_LADDER[i + 1] if i + 1 < len(ESCALATION_LADDER) else None
+
+
+def should_escalate(error: str = "", confidence: float = 1.0,
+                    attempts: int = 1, max_attempts: int = 2) -> Dict[str, Any]:
+    """Rule-based escalation decision (explicit, auditable).
+
+    Escalate when: tool/JSON failure signals, low confidence, or attempts exhausted.
+    Never loops forever: capped by max_attempts.
+    """
+    err = (error or "").lower()
+    failure_signals = ["tool", "json", "parse", "timeout", "format", "schema",
+                       "function", "invalid", "failed"]
+    hit = any(s in err for s in failure_signals)
+    if attempts >= max_attempts or hit or confidence < 0.4:
+        return {"escalate": True,
+                "reason": "attempts-exhausted" if attempts >= max_attempts
+                else ("low-confidence" if confidence < 0.4 else "failure-signal")}
+    return {"escalate": False, "reason": "retry-same-tier"}
+
+
+def json_contract(schema_desc: str, example: str = "") -> str:
+    """Strict JSON contract for weak models (schema + repair rule)."""
+    ex = f"\nExample:\n{example}" if example else ""
+    return (
+        "OUTPUT CONTRACT (must follow exactly):\n"
+        f"Return ONLY valid JSON matching: {schema_desc}{ex}\n"
+        "Rules: no prose outside JSON, no trailing commas, quote all keys. "
+        "If you cannot comply, return {\"error\": \"<reason>\"} instead of guessing."
+    )
+
+
+def record_model_failure(model_name: str, task_type: str, error: str) -> str:
+    """Persist a model failure as semantic memory for routing feedback."""
+    from magoco_core.memory.models import MemoryEntry, MemoryType, MemoryScope
+    from magoco_core.memory.store import get_memory_store
+    store = get_memory_store()
+    entry = MemoryEntry(
+        type=MemoryType.SEMANTIC, scope=MemoryScope.GLOBAL,
+        content=f"Model failure: {model_name} on {task_type}: {error[:300]}",
+        importance=0.6, source="os-feedback",
+        tags={"model-feedback", "failure", task_type, model_name},
+        metadata={"model": model_name, "task_type": task_type},
+    )
+    return store.add(entry)
+
+
 def build_augmented_context(
     model_name: str,
     core_blocks: List[Dict[str, str]] | None = None,

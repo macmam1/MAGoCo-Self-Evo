@@ -569,6 +569,45 @@ async def list_snapshots(session_id: str, limit: int = 20, store=Depends(get_sto
     return store.list_snapshots(session_id, limit)
 
 
+class EscalationRequest(BaseModel):
+    model: str = ""
+    task_type: str = "general"
+    error: str = ""
+    confidence: float = 1.0
+    attempts: int = 1
+    max_attempts: int = 2
+    schema_desc: str = ""
+
+
+@router.post("/escalation/advise", response_model=Dict[str, Any])
+async def escalation_advise(req: EscalationRequest):
+    """Cost-aware escalation advice + strict JSON contract for weak models."""
+    from magoco_core.memory.compensation import (
+        profile_for_model, next_stronger_tier, should_escalate,
+        json_contract, record_model_failure,
+    )
+    from magoco_core.llm.models import ModelTier
+    prof = profile_for_model(req.model)
+    decision = should_escalate(req.error, req.confidence, req.attempts, req.max_attempts)
+    suggestion = None
+    if decision["escalate"]:
+        nxt = next_stronger_tier(prof.tier)
+        suggestion = {"next_tier": nxt.name if nxt else None}
+    feedback_id = None
+    if req.error:
+        try:
+            feedback_id = record_model_failure(req.model, req.task_type, req.error)
+        except Exception:
+            pass
+    return {
+        "current_tier": prof.tier.name,
+        "decision": decision,
+        "suggestion": suggestion,
+        "json_contract": json_contract(req.schema_desc) if req.schema_desc else None,
+        "feedback_memory_id": feedback_id,
+    }
+
+
 @router.post("/compensate", response_model=Dict[str, Any])
 async def compensate_context(req: CompensateRequest, store=Depends(get_store)):
     """Build model-strength-aware memory preamble (covers weak/medium models)."""
