@@ -21,9 +21,9 @@ except ImportError:
     lancedb = None
 
 from .models import (
-    MemoryEntry, MemoryType, MemoryScope, MemoryQuery, 
-    MemorySearchResult, MemoryEntry, KnowledgeGraphNode, 
-    KnowledgeGraphEdge, DocumentChunk
+    MemoryEntry, MemoryType, MemoryScope, MemoryQuery,
+    MemorySearchResult, KnowledgeGraphNode,
+    KnowledgeGraphEdge, DocumentChunk, CoreBlock, CommunitySummary
 )
 
 logger = logging.getLogger(__name__)
@@ -133,12 +133,57 @@ class MemoryStore:
             )
         """)
         
+        # --- v2 migrations: supersession / decay (backward compatible) ---
+        for col, ddl in [
+            ("supersedes", "TEXT DEFAULT '[]'"),
+            ("superseded_by", "TEXT"),
+            ("is_current", "INTEGER DEFAULT 1"),
+            ("contradiction_of", "TEXT"),
+            ("decay_score", "REAL DEFAULT 1.0"),
+            ("next_review_at", "TEXT"),
+        ]:
+            try:
+                cursor.execute(f"ALTER TABLE memories ADD COLUMN {col} {ddl}")
+            except Exception:
+                pass  # column already exists
+
+        # Core memory blocks (Letta-style, always-in-context)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS core_blocks (
+                id TEXT PRIMARY KEY,
+                label TEXT NOT NULL,
+                content TEXT DEFAULT '',
+                description TEXT DEFAULT '',
+                scope TEXT DEFAULT 'user',
+                agent_id TEXT,
+                shared INTEGER DEFAULT 0,
+                char_limit INTEGER DEFAULT 4000,
+                version INTEGER DEFAULT 1,
+                updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_core_blocks_label ON core_blocks(label)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_core_blocks_agent ON core_blocks(agent_id)")
+
+        # Community summaries (GraphRAG-light, hierarchical)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS community_summaries (
+                id TEXT PRIMARY KEY,
+                level INTEGER DEFAULT 0,
+                member_entities TEXT DEFAULT '[]',
+                summary TEXT DEFAULT '',
+                source_memory_ids TEXT DEFAULT '[]',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
         # Create indexes
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(type)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_scope ON memories(scope)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_session ON memories(session_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_timestamp ON memories(timestamp)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_tags ON memories(tags)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_current ON memories(is_current)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_kg_nodes_label ON kg_nodes(label)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_kg_edges_source ON kg_edges(source)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_kg_edges_target ON kg_edges(target)")
@@ -203,15 +248,17 @@ class MemoryStore:
     # ============ Memory CRUD ============
     
     def add(self, entry: MemoryEntry) -> str:
-        """Add a new memory entry"""
+        """Add a new memory entry (ADD-default: never auto-overwrites)."""
         with self._get_cursor() as cursor:
             cursor.execute("""
                 INSERT INTO memories (
                     id, type, scope, content, metadata, embedding, embedding_model,
                     entities, relations, timestamp, session_id, experience_type,
                     importance, access_count, last_accessed, version, parent_id,
-                    is_deleted, source, confidence, tags
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    is_deleted, source, confidence, tags,
+                    supersedes, superseded_by, is_current, contradiction_of,
+                    decay_score, next_review_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 entry.id, entry.type.value, entry.scope.value, entry.content,
                 json.dumps(entry.metadata),
@@ -231,6 +278,12 @@ class MemoryStore:
                 entry.source,
                 entry.confidence,
                 json.dumps(list(entry.tags)),
+                json.dumps(entry.supersedes),
+                entry.superseded_by,
+                int(entry.is_current),
+                entry.contradiction_of,
+                entry.decay_score,
+                entry.next_review_at.isoformat() if entry.next_review_at else None,
             ))
         
         # Add to vector store if embedding exists
@@ -266,9 +319,8 @@ class MemoryStore:
     
     def update(self, entry: MemoryEntry) -> bool:
         """Update an existing memory entry"""
-        entry.updated_at = datetime.utcnow().isoformat()
         entry.version += 1
-        
+
         with self._get_cursor() as cursor:
             cursor.execute("""
                 UPDATE memories SET
@@ -276,7 +328,9 @@ class MemoryStore:
                     embedding_model=?, entities=?, relations=?, timestamp=?,
                     session_id=?, experience_type=?, importance=?, access_count=?,
                     last_accessed=?, version=?, parent_id=?, is_deleted=?,
-                    source=?, confidence=?, tags=?, updated_at=CURRENT_TIMESTAMP
+                    source=?, confidence=?, tags=?,
+                    supersedes=?, superseded_by=?, is_current=?, contradiction_of=?,
+                    decay_score=?, next_review_at=?, updated_at=CURRENT_TIMESTAMP
                 WHERE id=?
             """, (
                 entry.type.value, entry.scope.value, entry.content,
@@ -297,6 +351,12 @@ class MemoryStore:
                 entry.source,
                 entry.confidence,
                 json.dumps(list(entry.tags)),
+                json.dumps(entry.supersedes),
+                entry.superseded_by,
+                int(entry.is_current),
+                entry.contradiction_of,
+                entry.decay_score,
+                entry.next_review_at.isoformat() if entry.next_review_at else None,
                 entry.id,
             ))
         
@@ -426,6 +486,8 @@ class MemoryStore:
         
         if not query.include_deleted:
             filter_conditions.append("is_deleted = 0")
+        if query.current_only:
+            filter_conditions.append("is_current = 1")
         
         if filter_conditions:
             where_clause = f"WHERE {where_clause} AND " + " AND ".join(filter_conditions)
@@ -459,6 +521,8 @@ class MemoryStore:
     
     def _matches_filters(self, entry: MemoryEntry, query: MemoryQuery) -> bool:
         """Check if entry matches query filters"""
+        if query.current_only and not entry.is_current:
+            return False
         if query.types and entry.type not in query.types:
             return False
         if query.scopes and entry.scope not in query.scopes:
@@ -498,7 +562,13 @@ class MemoryStore:
         return results
     
     def _row_to_entry(self, row: sqlite3.Row) -> MemoryEntry:
-        """Convert SQLite row to MemoryEntry"""
+        """Convert SQLite row to MemoryEntry (tolerant to old DBs)."""
+        keys = set(row.keys())
+        def _j(k, default):
+            try:
+                return json.loads(row[k] or json.dumps(default))
+            except Exception:
+                return default
         return MemoryEntry(
             id=row["id"],
             type=MemoryType(row["type"]),
@@ -518,10 +588,70 @@ class MemoryStore:
             version=row["version"],
             parent_id=row["parent_id"],
             is_deleted=bool(row["is_deleted"]),
+            supersedes=_j("supersedes", []) if "supersedes" in keys else [],
+            superseded_by=row["superseded_by"] if "superseded_by" in keys else None,
+            is_current=bool(row["is_current"]) if "is_current" in keys else True,
+            contradiction_of=row["contradiction_of"] if "contradiction_of" in keys else None,
+            decay_score=row["decay_score"] if "decay_score" in keys else 1.0,
+            next_review_at=datetime.fromisoformat(row["next_review_at"]) if ("next_review_at" in keys and row["next_review_at"]) else None,
             source=row["source"] or "user",
             confidence=row["confidence"],
             tags=set(json.loads(row["tags"] or "[]")),
         )
+
+    # ============ Supersession / current view (explicit replace, never blind merge) ============
+
+    def supersede(self, old_id: str, new_entry: MemoryEntry, reason: str = "") -> str:
+        """Explicitly replace old memory with new one. Old stays for audit, flagged not-current."""
+        old = self.get(old_id)
+        new_id = self.add(new_entry)
+        if old:
+            old.superseded_by = new_id
+            old.is_current = False
+            old.metadata = {**(old.metadata or {}), "supersede_reason": reason,
+                            "superseded_at": datetime.utcnow().isoformat()}
+            self.update(old)
+            new_entry.supersedes = [*new_entry.supersedes, old_id]
+            new_entry.superseded_by = None
+            new_entry.is_current = True
+            # re-save new with link (add already persisted; update link)
+            stored = self.get(new_id)
+            if stored:
+                stored.supersedes = new_entry.supersedes
+                self.update(stored)
+        return new_id
+
+    def touch(self, memory_id: str, boost: float = 0.05) -> None:
+        """Reinforce a memory on access (Ebbinghaus: bump decay, count, timestamp)."""
+        entry = self.get(memory_id)
+        if not entry:
+            return
+        entry.access_count += 1
+        entry.last_accessed = datetime.utcnow()
+        entry.decay_score = min(1.0, entry.decay_score + boost)
+        self.update(entry)
+
+    def apply_decay(self, half_life_days: float = 30.0) -> int:
+        """Decay all current memories by elapsed time. Returns count touched."""
+        from datetime import timedelta
+        now = datetime.utcnow()
+        n = 0
+        with self._get_cursor() as cursor:
+            cursor.execute("SELECT id, last_accessed, timestamp, decay_score FROM memories WHERE is_deleted=0 AND is_current=1")
+            rows = cursor.fetchall()
+        for r in rows:
+            try:
+                base = datetime.fromisoformat(r["last_accessed"]) if r["last_accessed"] else datetime.fromisoformat(r["timestamp"])
+            except Exception:
+                continue
+            days = max(0.0, (now - base).total_seconds() / 86400.0)
+            decayed = 0.5 ** (days / half_life_days)
+            entry = self.get(r["id"])
+            if entry:
+                entry.decay_score = round(decayed, 4)
+                self.update(entry)
+                n += 1
+        return n
     
     def _append_episodic(self, entry: MemoryEntry):
         """Append to episodic JSONL log"""
@@ -531,6 +661,113 @@ class MemoryStore:
         except Exception as e:
             logger.error(f"Failed to write episodic log: {e}")
     
+    # ============ Core Blocks (Letta-style) ============
+
+    def upsert_core_block(self, block: CoreBlock) -> str:
+        """Create or update a core block (enforces char_limit, bumps version)."""
+        if len(block.content) > block.char_limit:
+            block.content = block.content[-block.char_limit:]
+        existing = None
+        with self._get_cursor() as cursor:
+            cursor.execute("SELECT * FROM core_blocks WHERE label=? AND COALESCE(agent_id,'')=COALESCE(?, '')",
+                           (block.label, block.agent_id))
+            row = cursor.fetchone()
+            if row:
+                existing = row
+        if existing:
+            block.id = existing["id"]
+            block.version = (existing["version"] or 1) + 1
+            block.updated_at = datetime.utcnow()
+            with self._get_cursor() as cursor:
+                cursor.execute("""UPDATE core_blocks SET content=?, description=?, scope=?,
+                    agent_id=?, shared=?, char_limit=?, version=?, updated_at=? WHERE id=?""",
+                    (block.content, block.description, block.scope.value, block.agent_id,
+                     int(block.shared), block.char_limit, block.version,
+                     block.updated_at.isoformat(), block.id))
+        else:
+            with self._get_cursor() as cursor:
+                cursor.execute("""INSERT INTO core_blocks
+                    (id,label,content,description,scope,agent_id,shared,char_limit,version,updated_at)
+                    VALUES (?,?,?,?,?,?,?,?,?,?)""",
+                    (block.id, block.label, block.content, block.description, block.scope.value,
+                     block.agent_id, int(block.shared), block.char_limit, block.version,
+                     block.updated_at.isoformat()))
+        return block.id
+
+    def get_core_block(self, label: str, agent_id: Optional[str] = None) -> Optional[CoreBlock]:
+        with self._get_cursor() as cursor:
+            cursor.execute("SELECT * FROM core_blocks WHERE label=? AND COALESCE(agent_id,'')=COALESCE(?, '')",
+                           (label, agent_id))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            return CoreBlock(
+                id=row["id"], label=row["label"], content=row["content"] or "",
+                description=row["description"] or "", scope=MemoryScope(row["scope"] or "user"),
+                agent_id=row["agent_id"], shared=bool(row["shared"]),
+                char_limit=row["char_limit"] or 4000, version=row["version"] or 1,
+                updated_at=datetime.fromisoformat(row["updated_at"]) if row["updated_at"] else datetime.utcnow(),
+            )
+
+    def list_core_blocks(self, agent_id: Optional[str] = None, include_shared: bool = True) -> List[CoreBlock]:
+        with self._get_cursor() as cursor:
+            if agent_id is None:
+                cursor.execute("SELECT * FROM core_blocks ORDER BY label")
+            elif include_shared:
+                cursor.execute("SELECT * FROM core_blocks WHERE agent_id IS NULL OR agent_id=? OR shared=1 ORDER BY label",
+                               (agent_id,))
+            else:
+                cursor.execute("SELECT * FROM core_blocks WHERE agent_id=? ORDER BY label", (agent_id,))
+            out = []
+            for row in cursor.fetchall():
+                out.append(CoreBlock(
+                    id=row["id"], label=row["label"], content=row["content"] or "",
+                    description=row["description"] or "", scope=MemoryScope(row["scope"] or "user"),
+                    agent_id=row["agent_id"], shared=bool(row["shared"]),
+                    char_limit=row["char_limit"] or 4000, version=row["version"] or 1,
+                    updated_at=datetime.fromisoformat(row["updated_at"]) if row["updated_at"] else datetime.utcnow(),
+                ))
+            return out
+
+    def append_core_block(self, label: str, content: str, agent_id: Optional[str] = None) -> Optional[CoreBlock]:
+        """Append-safe edit for shared blocks (Letta concurrency lesson)."""
+        block = self.get_core_block(label, agent_id)
+        if not block:
+            return None
+        block.content = (block.content + "\n" + content)[-block.char_limit:]
+        self.upsert_core_block(block)
+        return self.get_core_block(label, agent_id)
+
+    # ============ Community Summaries (GraphRAG-light) ============
+
+    def save_community_summary(self, summary: CommunitySummary) -> str:
+        with self._get_cursor() as cursor:
+            cursor.execute("""INSERT OR REPLACE INTO community_summaries
+                (id, level, member_entities, summary, source_memory_ids, created_at)
+                VALUES (?,?,?,?,?,?)""",
+                (summary.id, summary.level, json.dumps(summary.member_entities),
+                 summary.summary, json.dumps(summary.source_memory_ids),
+                 summary.created_at.isoformat()))
+        return summary.id
+
+    def list_community_summaries(self, level: Optional[int] = None, limit: int = 50) -> List[CommunitySummary]:
+        with self._get_cursor() as cursor:
+            if level is None:
+                cursor.execute("SELECT * FROM community_summaries ORDER BY level, created_at DESC LIMIT ?", (limit,))
+            else:
+                cursor.execute("SELECT * FROM community_summaries WHERE level=? ORDER BY created_at DESC LIMIT ?",
+                               (level, limit))
+            out = []
+            for row in cursor.fetchall():
+                out.append(CommunitySummary(
+                    id=row["id"], level=row["level"],
+                    member_entities=json.loads(row["member_entities"] or "[]"),
+                    summary=row["summary"] or "",
+                    source_memory_ids=json.loads(row["source_memory_ids"] or "[]"),
+                    created_at=datetime.fromisoformat(row["created_at"]) if row["created_at"] else datetime.utcnow(),
+                ))
+            return out
+
     # ============ Knowledge Graph ============
     
     def add_kg_node(self, node: KnowledgeGraphNode) -> str:
@@ -645,7 +882,7 @@ class MemoryStore:
             return []
         
         try:
-            results = self.vancedb.search(query_embedding).limit(top_k).to_list()
+            results = self.vector_table.search(query_embedding).limit(top_k).to_list()
             chunks = []
             for row in results:
                 with self._get_cursor() as cursor:

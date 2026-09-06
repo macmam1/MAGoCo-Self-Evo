@@ -60,11 +60,22 @@ class MemoryEntry:
     version: int = 1
     parent_id: Optional[str] = None
     is_deleted: bool = False
-    
+
+    # Supersession / conflict model (ADD-default, explicit replace — Mem0 lesson:
+    # never blind-cosine-overwrite. New fact links, old stays for audit.)
+    supersedes: List[str] = field(default_factory=list)   # ids this entry replaces
+    superseded_by: Optional[str] = None                   # id of newer entry that replaces this
+    is_current: bool = True                               # False when superseded
+    contradiction_of: Optional[str] = None                # linked id if mutually exclusive
+
+    # Decay / reinforcement (Ebbinghaus-inspired)
+    decay_score: float = 1.0     # 0-1, multiplied down over time, bumped on access
+    next_review_at: Optional[datetime] = None
+
     # Source tracking
     source: str = "user"         # "user", "agent", "system", "extracted"
     confidence: float = 1.0      # 0-1
-    
+
     # Tags for organization
     tags: Set[str] = field(default_factory=set)
     
@@ -88,11 +99,17 @@ class MemoryEntry:
             "version": self.version,
             "parent_id": self.parent_id,
             "is_deleted": self.is_deleted,
+            "supersedes": self.supersedes,
+            "superseded_by": self.superseded_by,
+            "is_current": self.is_current,
+            "contradiction_of": self.contradiction_of,
+            "decay_score": self.decay_score,
+            "next_review_at": self.next_review_at.isoformat() if self.next_review_at else None,
             "source": self.source,
             "confidence": self.confidence,
             "tags": list(self.tags),
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "MemoryEntry":
         return cls(
@@ -114,10 +131,74 @@ class MemoryEntry:
             version=data.get("version", 1),
             parent_id=data.get("parent_id"),
             is_deleted=data.get("is_deleted", False),
+            supersedes=data.get("supersedes", []),
+            superseded_by=data.get("superseded_by"),
+            is_current=data.get("is_current", True),
+            contradiction_of=data.get("contradiction_of"),
+            decay_score=data.get("decay_score", 1.0),
+            next_review_at=datetime.fromisoformat(data["next_review_at"]) if data.get("next_review_at") else None,
             source=data.get("source", "user"),
             confidence=data.get("confidence", 1.0),
             tags=set(data.get("tags", [])),
         )
+
+
+@dataclass
+class CoreBlock:
+    """Letta-style always-in-context memory block (persona/human/custom, shared support)."""
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    label: str = ""              # e.g. persona, human, project_brief
+    content: str = ""
+    description: str = ""        # when to read/write — guides the agent
+    scope: MemoryScope = MemoryScope.USER
+    agent_id: Optional[str] = None   # None + shared=True => cross-agent
+    shared: bool = False
+    char_limit: int = 4000
+    version: int = 1
+    updated_at: datetime = field(default_factory=datetime.utcnow)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id, "label": self.label, "content": self.content,
+            "description": self.description, "scope": self.scope.value,
+            "agent_id": self.agent_id, "shared": self.shared,
+            "char_limit": self.char_limit, "version": self.version,
+            "updated_at": self.updated_at.isoformat(),
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "CoreBlock":
+        return cls(
+            id=data.get("id", str(uuid.uuid4())),
+            label=data.get("label", ""),
+            content=data.get("content", ""),
+            description=data.get("description", ""),
+            scope=MemoryScope(data.get("scope", "user")),
+            agent_id=data.get("agent_id"),
+            shared=bool(data.get("shared", False)),
+            char_limit=int(data.get("char_limit", 4000)),
+            version=int(data.get("version", 1)),
+            updated_at=datetime.fromisoformat(data["updated_at"]) if data.get("updated_at") else datetime.utcnow(),
+        )
+
+
+@dataclass
+class CommunitySummary:
+    """GraphRAG-light: bottom-up summary of a KG community."""
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    level: int = 0               # 0 = leaf community, higher = more abstract
+    member_entities: List[str] = field(default_factory=list)
+    summary: str = ""
+    source_memory_ids: List[str] = field(default_factory=list)
+    created_at: datetime = field(default_factory=datetime.utcnow)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id, "level": self.level,
+            "member_entities": self.member_entities, "summary": self.summary,
+            "source_memory_ids": self.source_memory_ids,
+            "created_at": self.created_at.isoformat(),
+        }
 
 
 @dataclass
@@ -139,6 +220,7 @@ class MemoryQuery:
     top_k: int = 10
     similarity_threshold: float = 0.7
     include_deleted: bool = False
+    current_only: bool = False  # when True, hide superseded (non-current) memories
     
     # Hybrid search
     use_vector: bool = True
