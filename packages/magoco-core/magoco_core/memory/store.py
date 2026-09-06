@@ -191,6 +191,24 @@ class MemoryStore:
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_snapshots_session ON context_snapshots(session_id)")
 
+        # Deferred tasks (Capability Gate queue — reviewable, never silent)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS deferred_tasks (
+                id TEXT PRIMARY KEY,
+                session_id TEXT DEFAULT '',
+                model TEXT DEFAULT '',
+                task_text TEXT DEFAULT '',
+                task_needs TEXT DEFAULT '[]',
+                reason TEXT DEFAULT '',
+                complexity INTEGER DEFAULT 0,
+                status TEXT DEFAULT 'queued',
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                resolved_at TEXT,
+                resolved_model TEXT DEFAULT ''
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_deferred_status ON deferred_tasks(status)")
+
         # Create indexes
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(type)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_memories_scope ON memories(scope)")
@@ -807,6 +825,35 @@ class MemoryStore:
             cursor.execute("SELECT * FROM context_snapshots WHERE id=?", (snapshot_id,))
             row = cursor.fetchone()
             return dict(row) if row else None
+
+    # ============ Deferred Queue ============
+
+    def enqueue_deferred(self, session_id: str, model: str, task_text: str,
+                         task_needs: list, reason: str, complexity: int) -> str:
+        import uuid as _uuid
+        did = _uuid.uuid4().hex[:8]
+        with self._get_cursor() as cursor:
+            cursor.execute("""INSERT INTO deferred_tasks
+                (id, session_id, model, task_text, task_needs, reason, complexity, status)
+                VALUES (?,?,?,?,?,?,?, 'queued')""",
+                (did, session_id, model, task_text, json.dumps(task_needs),
+                 reason, complexity))
+        return did
+
+    def list_deferred(self, status: str = "queued", limit: int = 50) -> list:
+        with self._get_cursor() as cursor:
+            cursor.execute("SELECT * FROM deferred_tasks WHERE status=? ORDER BY created_at DESC LIMIT ?",
+                           (status, limit))
+            return [dict(r) for r in cursor.fetchall()]
+
+    def resolve_deferred(self, task_id: str, status: str,
+                         resolved_model: str = "") -> bool:
+        if status not in ("approved", "cancelled", "assigned"):
+            return False
+        with self._get_cursor() as cursor:
+            cursor.execute("""UPDATE deferred_tasks SET status=?, resolved_at=CURRENT_TIMESTAMP,
+                resolved_model=? WHERE id=?""", (status, resolved_model, task_id))
+            return cursor.rowcount > 0
 
     # ============ Knowledge Graph ============
     

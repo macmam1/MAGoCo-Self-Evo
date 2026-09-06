@@ -569,6 +569,57 @@ async def list_snapshots(session_id: str, limit: int = 20, store=Depends(get_sto
     return store.list_snapshots(session_id, limit)
 
 
+class GateCheckRequest(BaseModel):
+    model: str = ""
+    task_text: str = ""
+    task_needs: List[str] = []
+    session_id: str = ""
+    enabled: Optional[bool] = None
+    auto_queue: bool = True
+
+
+@router.post("/gate-check", response_model=Dict[str, Any])
+async def gate_check(req: GateCheckRequest, store=Depends(get_store)):
+    """Capability gate: assign now or defer to queue (transparent, reviewable).
+
+    Set enabled=false to bypass. Global kill-switch: DEFERRED_QUEUE_ENABLED env.
+    """
+    from magoco_core.memory.deferred_queue import gate_check as _gate
+    decision = _gate(req.model, req.task_text, req.task_needs, enabled=req.enabled)
+    queued_id = None
+    if decision.get("deferred") and req.auto_queue:
+        queued_id = store.enqueue_deferred(
+            req.session_id, req.model, req.task_text[:2000], req.task_needs,
+            decision.get("reason", ""), decision.get("complexity", {}).get("score", 0))
+    return {**decision, "queued_id": queued_id}
+
+
+@router.get("/deferred", response_model=List[Dict[str, Any]])
+async def list_deferred(status: str = "queued", limit: int = 50,
+                        store=Depends(get_store)):
+    """Review queued (deferred) tasks."""
+    return store.list_deferred(status, limit)
+
+
+@router.post("/deferred/{task_id}/resolve", response_model=Dict[str, Any])
+async def resolve_deferred(task_id: str, status: str = "approved",
+                           resolved_model: str = "", store=Depends(get_store)):
+    """Approve (assign, optionally to a stronger model) or cancel a deferred task."""
+    ok = store.resolve_deferred(task_id, status, resolved_model)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Invalid id or status (approved|cancelled|assigned)")
+    return {"success": True, "id": task_id, "status": status}
+
+
+@router.get("/gate-status", response_model=Dict[str, Any])
+async def gate_status():
+    """Show the kill-switch state (is the gate active?)."""
+    from magoco_core.core.config import settings as _s
+    return {"enabled": _s.DEFERRED_QUEUE_ENABLED,
+            "min_gap": _s.DEFERRED_QUEUE_MIN_GAP,
+            "toggle_via": "env DEFERRED_QUEUE_ENABLED=false or per-request enabled=false"}
+
+
 class EscalationRequest(BaseModel):
     model: str = ""
     task_type: str = "general"
