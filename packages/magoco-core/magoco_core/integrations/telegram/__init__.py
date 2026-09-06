@@ -16,6 +16,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import sqlite3
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -65,14 +66,72 @@ class TelegramBotConfig:
 
 
 class TelegramGateway:
-    """Manages multiple Telegram bots with per-chat agent sessions."""
+    """Manages multiple Telegram bots with per-chat agent sessions.
 
-    def __init__(self):
+    Bots persist to SQLite (survive restarts); sessions stay in memory
+    (conversation state is rebuilt from history on demand).
+    """
+
+    def __init__(self, db_path: str = "./data/telegram/bots.db"):
         self.bots: Dict[str, TelegramBotConfig] = {}
         self.sessions: Dict[str, TelegramChatSession] = {}  # key: bot_id:chat_id
         self.agent_executor: Optional[Callable[..., Coroutine[Any, Any, str]]] = None
         self._polling_tasks: Dict[str, asyncio.Task] = {}
         self._running = False
+        self._db_path = db_path
+        self._init_db()
+
+    def _init_db(self) -> None:
+        from pathlib import Path
+        Path(self._db_path).parent.mkdir(parents=True, exist_ok=True)
+        self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
+        self._conn.row_factory = sqlite3.Row
+        cur = self._conn.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS telegram_bots
+            (bot_id TEXT PRIMARY KEY, name TEXT, token TEXT, mode TEXT,
+             webhook_url TEXT, allowed_chat_ids TEXT, admin_chat_ids TEXT,
+             default_provider_id TEXT, default_model TEXT, system_prompt TEXT,
+             max_history INTEGER, enabled INTEGER, created_at TEXT)""")
+        self._conn.commit()
+
+    def _persist_bot(self, config: TelegramBotConfig) -> None:
+        cur = self._conn.cursor()
+        cur.execute("""INSERT OR REPLACE INTO telegram_bots VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (config.bot_id, config.name, config.token, config.mode.value,
+                     config.webhook_url, json.dumps(config.allowed_chat_ids),
+                     json.dumps(config.admin_chat_ids), config.default_provider_id or "",
+                     config.default_model or "", config.system_prompt,
+                     config.max_history, int(config.enabled), datetime.utcnow().isoformat()))
+        self._conn.commit()
+
+    def _delete_bot_row(self, bot_id: str) -> None:
+        cur = self._conn.cursor()
+        cur.execute("DELETE FROM telegram_bots WHERE bot_id=?", (bot_id,))
+        self._conn.commit()
+
+    def load_bots(self) -> int:
+        """Load persisted bots into memory. Returns count loaded."""
+        cur = self._conn.cursor()
+        cur.execute("SELECT * FROM telegram_bots")
+        count = 0
+        for row in cur.fetchall():
+            try:
+                cfg = TelegramBotConfig(
+                    bot_id=row["bot_id"], token=row["token"], name=row["name"],
+                    mode=TelegramMode(row["mode"]), webhook_url=row["webhook_url"] or "",
+                    allowed_chat_ids=json.loads(row["allowed_chat_ids"] or "[]"),
+                    admin_chat_ids=json.loads(row["admin_chat_ids"] or "[]"),
+                    default_provider_id=row["default_provider_id"] or None,
+                    default_model=row["default_model"] or None,
+                    system_prompt=row["system_prompt"] or "",
+                    max_history=row["max_history"] or 20,
+                    enabled=bool(row["enabled"]),
+                )
+                self.bots[cfg.bot_id] = cfg
+                count += 1
+            except Exception as e:
+                logger.warning(f"[Telegram] failed to load bot {row['bot_id']}: {e}")
+        return count
 
     def register_agent_executor(
         self, executor: Callable[..., Coroutine[Any, Any, str]]
@@ -81,12 +140,14 @@ class TelegramGateway:
         self.agent_executor = executor
 
     def add_bot(self, config: TelegramBotConfig) -> None:
-        """Register a bot configuration."""
+        """Register a bot configuration (persisted)."""
         self.bots[config.bot_id] = config
+        self._persist_bot(config)
 
     def remove_bot(self, bot_id: str) -> None:
-        """Remove a bot."""
+        """Remove a bot (also deletes from storage)."""
         self.bots.pop(bot_id, None)
+        self._delete_bot_row(bot_id)
         task = self._polling_tasks.pop(bot_id, None)
         if task and not task.done():
             task.cancel()

@@ -1,10 +1,13 @@
 """Provider Groups API - Group providers for team-based routing."""
 
+from datetime import datetime
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, List, Optional, Any
 
 from magoco_core.llm.registry import get_provider_registry
+from magoco_core.llm.groups import get_group_store
 
 router = APIRouter(prefix="/provider-groups", tags=["provider-groups"])
 
@@ -36,14 +39,13 @@ class GroupRecommendation(BaseModel):
     confidence: float
 
 
-# ===== In-memory storage (replace with DB in production) =====
-_provider_groups: Dict[str, Dict[str, Any]] = {}
-
+# ===== Persistent storage (SQLite — survives restarts) =====
 
 def _get_group(group_id: str) -> Dict[str, Any]:
-    if group_id not in _provider_groups:
+    group = get_group_store().get(group_id)
+    if not group:
         raise HTTPException(status_code=404, detail="Group not found")
-    return _provider_groups[group_id]
+    return group
 
 
 def _validate_providers(provider_ids: List[str]) -> List[str]:
@@ -65,11 +67,11 @@ async def create_group(req: ProviderGroupCreate):
     """Create a new provider group."""
     import uuid
     validated_ids = _validate_providers(req.provider_ids)
-    
+
     group_id = req.name.lower().strip().replace(" ", "-") or uuid.uuid4().hex[:8]
-    if group_id in _provider_groups:
+    if get_group_store().get(group_id):
         raise HTTPException(status_code=400, detail="Group with this name already exists")
-    
+
     group = {
         "id": group_id,
         "name": req.name,
@@ -78,17 +80,14 @@ async def create_group(req: ProviderGroupCreate):
         "default_model": req.default_model,
         "task_routing": req.task_routing,
         "metadata": req.metadata,
-        "created_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
     }
-    _provider_groups[group_id] = group
-    return group
+    return get_group_store().create(group)
 
 
 @router.get("/", response_model=List[Dict[str, Any]])
 async def list_groups():
     """List all provider groups."""
-    return list(_provider_groups.values())
+    return get_group_store().list()
 
 
 @router.get("/{group_id}", response_model=Dict[str, Any])
@@ -100,30 +99,18 @@ async def get_group(group_id: str):
 @router.patch("/{group_id}", response_model=Dict[str, Any])
 async def update_group(group_id: str, req: ProviderGroupUpdate):
     """Update a provider group."""
-    group = _get_group(group_id)
-    
-    if req.name:
-        group["name"] = req.name
-    if req.description is not None:
-        group["description"] = req.description
-    if req.provider_ids is not None:
-        group["provider_ids"] = _validate_providers(req.provider_ids)
-    if req.default_model is not None:
-        group["default_model"] = req.default_model
-    if req.task_routing is not None:
-        group["task_routing"] = req.task_routing
-    if req.metadata is not None:
-        group["metadata"] = req.metadata
-    
-    group["updated_at"] = datetime.utcnow().isoformat()
-    return group
+    _get_group(group_id)  # 404 if missing
+    fields = req.model_dump(exclude_none=True)
+    if "provider_ids" in fields:
+        fields["provider_ids"] = _validate_providers(fields["provider_ids"])
+    updated = get_group_store().update(group_id, fields)
+    return updated
 
 
 @router.delete("/{group_id}")
 async def delete_group(group_id: str):
     """Delete a provider group."""
-    if group_id in _provider_groups:
-        del _provider_groups[group_id]
+    if get_group_store().delete(group_id):
         return {"success": True}
     raise HTTPException(status_code=404, detail="Group not found")
 
@@ -231,6 +218,3 @@ async def is_provider_available(cfg) -> bool:
         return await runtime.is_available()
     except Exception:
         return False
-
-
-from datetime import datetime
