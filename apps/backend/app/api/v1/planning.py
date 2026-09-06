@@ -322,6 +322,21 @@ async def pivot_task(plan_id: str, task_id: str, req: PivotRequest):
     return _plan_to_dict(plan)
 
 
+@router.post("/{plan_id}/tasks/{task_id}/verify", response_model=Dict[str, Any])
+async def verify_task(plan_id: str, task_id: str):
+    """Check a task's stored result against its definition-of-done."""
+    from magoco_core.planning.quality import check_dod
+    plan = planning_engine.get_plan(plan_id)
+    if not plan:
+        raise HTTPException(status_code=404, detail="Plan not found")
+    task = plan.get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    verdict = check_dod(task.name, task.definition_of_done, task.result)
+    return {"task_id": task_id, "passed": verdict.passed, "score": verdict.score,
+            "missing": verdict.missing, "notes": verdict.notes}
+
+
 @router.get("/{plan_id}/critical-path", response_model=List[str])
 async def plan_critical_path(plan_id: str):
     """Longest dependency chain — focus where it matters."""

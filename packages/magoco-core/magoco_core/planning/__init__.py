@@ -602,6 +602,9 @@ Return as JSON array of tasks.
 
     async def _execute_task(self, plan: Plan, task: PlanTask,
                             agent_executor: Callable[[PlanTask], Coroutine[Any, Any, Any]]) -> None:
+        from magoco_core.planning.quality import (
+            check_dod, judge_with_llm, bridging_task_spec, new_task_id,
+        )
         task.status = TaskStatus.RUNNING
         task.started_at = datetime.utcnow()
         task.attempts += 1
@@ -611,6 +614,29 @@ Return as JSON array of tasks.
             task.status = TaskStatus.COMPLETED
             task.completed_at = datetime.utcnow()
             plan.completed_task_ids.add(task.id)
+            # QualityGate: verify output vs DoD; auto-inject bridging task on miss.
+            try:
+                if self.llm and task.metadata.get("llm_judge"):
+                    verdict = await judge_with_llm(task.name, task.definition_of_done, result, self.llm)
+                else:
+                    verdict = check_dod(task.name, task.definition_of_done, result)
+                task.metadata["quality"] = {"passed": verdict.passed, "score": verdict.score,
+                                            "missing": verdict.missing, "method": verdict.method}
+                if not verdict.passed and task.metadata.get("auto_bridge", True):
+                    spec = bridging_task_spec(task.name, task.id, verdict)
+                    bridge = PlanTask(id=new_task_id(), name=spec["name"],
+                                      description=spec["description"],
+                                      agent_role=spec["agent_role"],
+                                      tool_requirements=spec["tool_requirements"],
+                                      dependencies=spec["dependencies"],
+                                      metadata=spec["metadata"],
+                                      definition_of_done=spec["definition_of_done"])
+                    plan.tasks.append(bridge)  # direct append: plan is frozen, injection is the exception
+                    plan.updated_at = datetime.utcnow()
+                    self.store.log_event(plan.id, "bridging_injected",
+                                         f"{bridge.id} for {task.id}: {verdict.notes[:200]}")
+            except Exception as qe:
+                self.store.log_event(plan.id, "quality_check_error", str(qe)[:200])
             self.store.log_event(plan.id, "task_completed", f"{task.id} {task.name}")
         except Exception as e:
             task.error = str(e)
