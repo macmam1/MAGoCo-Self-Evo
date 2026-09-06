@@ -45,6 +45,7 @@ from app.api.v1.providers import router as providers_router
 from app.api.v1.planning import router as planning_router
 from app.api.v1.provider_groups import router as provider_groups_router
 from app.api.v1.telegram import router as telegram_router
+from app.api.v1.agent_tasks import router as agent_tasks_router
 from app.core.config import settings
 from app.db import init_db
 from app.services.browser_service import browser_service
@@ -77,11 +78,32 @@ async def lifespan(app: FastAPI):
     telegram_gateway.register_agent_executor(telegram_agent_executor)
     print("[MAGoCo] Telegram gateway ready (bots can be added via API) ✓")
 
+    # Scheduler: durable cron + background tasks (kill-switchable)
+    from magoco_core.agents.scheduler import get_scheduler
+
+    async def scheduler_dispatch(agent_name: str, task: str, provider_id="", model=""):
+        agent = ReActAgent()
+        result = await agent.run(
+            task,
+            provider_id=provider_id or None,
+            model=model or None,
+        )
+        return result.content
+
+    scheduler = get_scheduler()
+    scheduler.on_dispatch(scheduler_dispatch)
+    if settings.SCHEDULER_ENABLED:
+        await scheduler.start()
+        print("[MAGoCo] Scheduler started ✓")
+    else:
+        print("[MAGoCo] Scheduler disabled (SCHEDULER_ENABLED=false)")
+
     yield
 
     # Cleanup
     await browser_service.stop()
     await telegram_gateway.stop()
+    await get_scheduler().stop()
     print("[MAGoCo] Shutdown complete")
 
 
@@ -117,6 +139,7 @@ app.include_router(providers_router, prefix="/api/v1")
 app.include_router(planning_router, prefix="/api/v1")
 app.include_router(provider_groups_router, prefix="/api/v1")
 app.include_router(telegram_router, prefix="/api/v1")
+app.include_router(agent_tasks_router, prefix="/api/v1")
 
 
 @app.get("/health")

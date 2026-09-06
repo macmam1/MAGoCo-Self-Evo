@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     # Skill auto-suggest at project start (kill-switch: set false to disable)
     SKILL_AUTO_SUGGEST: bool = True
 
+    # Background + cron scheduler (kill-switch: set false to disable)
+    SCHEDULER_ENABLED: bool = True
+    SCHEDULER_TICK_SECONDS: float = 30.0
+
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./magoco.db"
 
