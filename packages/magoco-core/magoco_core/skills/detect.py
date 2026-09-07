@@ -37,6 +37,34 @@ def _keywords(text: str) -> set:
     return set(_WORD_RE.findall((text or "").lower()))
 
 
+def _stem(word: str) -> str:
+    """Lightweight stemmer for matching (debug~debugging, tests~testing).
+
+    Conservative: strips common suffixes only when the stem stays meaningful.
+    """
+    for suffix in ("ing", "ed", "es", "s"):
+        if word.endswith(suffix) and len(word) - len(suffix) >= 4:
+            return word[: -len(suffix)]
+    return word
+
+
+def _fuzzy_hit(words: set, hay: set) -> set:
+    """Exact hits plus stem/substring hits (either direction)."""
+    hit = set(words & hay)
+    stems = {_stem(w) for w in words}
+    hay_stems = {_stem(h) for h in hay}
+    hit |= {w for w in words if _stem(w) in hay_stems}
+    hit |= {h for h in hay if _stem(h) in stems}
+    # substring fallback for short technical tokens (e.g. debug ⊂ debugging)
+    for w in words:
+        if len(w) >= 4:
+            for h in hay:
+                if len(h) >= 5 and (w in h or h in w):
+                    hit.add(h if w in h else w)
+                    break
+    return hit
+
+
 def suggest_for_text(text: str, top_k: int = 5,
                      registry=None) -> List[SkillSuggestion]:
     """Score registry skills against free text (task, message, goal)."""
@@ -50,11 +78,11 @@ def suggest_for_text(text: str, top_k: int = 5,
     out: List[SkillSuggestion] = []
     for m in manifests:
         hay = _keywords(f"{m.name} {m.display_name} {m.description} {' '.join(m.tags)}")
-        hit = words & hay
+        hit = _fuzzy_hit(words, hay)
         if not hit:
             continue
         # Tag hits weigh more than description hits
-        tag_hit = words & {t.lower() for t in m.tags}
+        tag_hit = _fuzzy_hit(words, {t.lower() for t in m.tags})
         score = round(len(tag_hit) * 2.0 + len(hit) * 0.5, 2)
         out.append(SkillSuggestion(
             skill_id=m.id, display_name=m.display_name,
