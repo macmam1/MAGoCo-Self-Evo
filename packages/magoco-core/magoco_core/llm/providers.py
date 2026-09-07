@@ -127,7 +127,12 @@ class CompatibleProvider(LLMProvider):
             r = await client.post(f"{self.base_url}/chat/completions",
                                   headers=self._headers(), json=body)
             r.raise_for_status()
-            data = r.json()
+            try:
+                data = r.json()
+            except Exception:
+                # Some gateways (e.g. 9Router) always stream SSE, even for
+                # non-streaming requests. Parse data: chunks into one message.
+                data = _sse_to_openai(r.text)
         choice = data["choices"][0]
         msg = choice.get("message", {})
         tool_calls = [
@@ -145,6 +150,49 @@ class CompatibleProvider(LLMProvider):
                    "total_tokens": usage.get("total_tokens", 0)} if usage else None,
             finish_reason=choice.get("finish_reason", "stop"),
         )
+
+
+def _sse_to_openai(text: str) -> Dict[str, Any]:
+    """Parse SSE `data: {...}` chunks into a standard OpenAI response dict.
+
+    Handles gateways that stream chat.completion.chunk objects for every
+    request. Picks model/finish_reason from the last chunk carrying them.
+    """
+    import json as _json
+    contents: List[str] = []
+    model = ""
+    finish_reason = "stop"
+    tool_calls: List[Dict[str, Any]] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line.startswith("data:"):
+            continue
+        payload = line[5:].strip()
+        if payload == "[DONE]":
+            continue
+        try:
+            chunk = _json.loads(payload)
+        except Exception:
+            continue
+        if not model and chunk.get("model"):
+            model = chunk["model"]
+        for choice in chunk.get("choices", []):
+            delta = choice.get("delta", {})
+            if isinstance(delta.get("content"), str):
+                contents.append(delta["content"])
+            for tc in delta.get("tool_calls") or []:
+                tool_calls.append(tc)
+            if choice.get("finish_reason"):
+                finish_reason = choice["finish_reason"]
+    return {
+        "choices": [{
+            "message": {"content": "".join(contents),
+                        "tool_calls": tool_calls or None},
+            "finish_reason": finish_reason,
+        }],
+        "model": model,
+        "usage": None,
+    }
 
 
 async def fetch_models(base_url: str, api_key: str = "",
