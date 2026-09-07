@@ -143,7 +143,7 @@ class Scheduler:
     def _new_run(self, kind: str, ref_id: str, agent_name: str) -> str:
         rid = uuid.uuid4().hex[:8]
         with self._cur() as cur:
-            cur.execute("INSERT INTO task_runs VALUES (?,?,?,?,?,?,?,?)",
+            cur.execute("INSERT INTO task_runs VALUES (?,?,?,?,?,?,?,?,?)",
                         (rid, kind, ref_id, agent_name, "running", "", "",
                          datetime.utcnow().isoformat(), None))
         return rid
