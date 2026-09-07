@@ -534,18 +534,18 @@ class SkillsRegistry:
         # Build WHERE clause
         where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
         
-        # Sort
+        # Sort (columns only — direction applied once below)
         sort_fields = {
-            "relevance": "rating DESC, downloads DESC",
-            "rating": "rating DESC",
-            "downloads": "downloads DESC",
-            "updated": "updated_at DESC",
-            "created": "created_at DESC",
-            "name": "name ASC",
+            "relevance": "rating, downloads",
+            "rating": "rating",
+            "downloads": "downloads",
+            "updated": "updated_at",
+            "created": "created_at",
+            "name": "name",
         }
-        sort_by = sort_fields.get(query.sort_by, "rating DESC")
+        sort_by = sort_fields.get(query.sort_by, "rating")
         sort_order = "DESC" if query.sort_order == "desc" else "ASC"
-        order_clause = f"ORDER BY {sort_by} {sort_order}"
+        order_clause = f"ORDER BY {', '.join(f'{c} {sort_order}' for c in sort_by.split(', '))}"
         
         # Pagination
         offset = (query.page - 1) * query.page_size
