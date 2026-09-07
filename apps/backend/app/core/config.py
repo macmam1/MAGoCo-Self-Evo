@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     HUGGINGFACE_HUB_TOKEN: str = ""
     OLLAMA_BASE_URL: str = "http://ollama:11434"
 
+    # ===== Scheduler (kill-switchable background + cron tasks) =====
+    SCHEDULER_ENABLED: bool = True
+    SCHEDULER_TICK_SECONDS: float = 30.0
+
     # ===== Storage =====
     STORAGE_BACKEND: Literal["local", "hf_datasets", "s3", "gcs"] = "local"
     STORAGE_LOCAL_PATH: str = "/app/storage"
