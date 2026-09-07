@@ -210,7 +210,8 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
       <div className="max-h-[85vh] overflow-y-auto">
         {/* Progress Steps */}
         <div className="flex items-center justify-between mb-6">
-          {[1, 2, 3, 4].map((step) => (
+          {[1, 2, 3, 4].map((step) => {
+            return (
             <div key={step} className="flex items-center">
               <div
                 className={cn(
@@ -231,7 +232,8 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                 />
               ) : null}
             </div>
-          ))}
+            );
+          })}
           </div>
 
           {/* Step 1: Basic Info */}
@@ -478,7 +480,8 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  {formData.parameters.map((param: any, i: number) => (
+                  {formData.parameters.map((param: any, i: number) => {
+                    return (
                     <div key={i} className="p-4 rounded-lg border" style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}>
                       <div className="flex items-center justify-between mb-3">
                         <h5 className="font-medium">{t("skills.parameter")} #{i + 1}</h5>
@@ -539,7 +542,8 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                           />
                         </div>
                       </div>
-                    ))}
+                    );
+                  })}
                   </div>
 
                   {/* Returns */}
@@ -574,7 +578,8 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                       </Button>
                     </div>
                     <div className="space-y-3">
-                      {formData.dependencies.map((dep: any, i: number) => (
+                      {formData.dependencies.map((dep: any, i: number) => {
+                        return (
                         <div key={i} className="flex gap-2 p-3 rounded-lg border" style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}>
                           <input
                             value={dep.skill_id}
@@ -599,7 +604,8 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                           </label>
                           <button onClick={() => removeDependency(i)} className="text-red-400 hover:text-red-300">×</button>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
