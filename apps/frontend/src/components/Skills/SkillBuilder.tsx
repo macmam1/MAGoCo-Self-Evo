@@ -610,8 +610,8 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           )}
 
           {/* Step 4: Code & Publish */}
