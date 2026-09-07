@@ -123,7 +123,9 @@ class ReActAgent:
             code = " ".join(parts[1:]) if len(parts) > 1 else ""
             result = await self._act("python_exec", code=code)
         else:
-            result = ToolResult(success=True, content=f"Processed: '{user_input}'")
+            # Plain message (no tool command): return the LLM's own response
+            # instead of a canned placeholder, so chat works end-to-end.
+            result = ToolResult(success=True, content=thought)
 
         # Record step
         self.steps.append(
