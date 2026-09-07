@@ -539,7 +539,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                           />
                         </div>
                       </div>
-                    ))}
+                    ))
                   </div>
 
                   {/* Returns */}
