@@ -612,7 +612,6 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                 </div>
               </div>
             )}
-          )}
 
           {/* Step 4: Code & Publish */}
           {activeStep === 4 && (
