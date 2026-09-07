@@ -41,20 +41,32 @@ class BrowserAgentService:
         self._running = False
 
     async def start(self):
-        """Initialize Playwright and launch browser."""
+        """Initialize Playwright and launch browser.
+
+        Fault-tolerant: if browsers aren't downloaded (e.g. `playwright install`
+        never ran), the service stays DOWN instead of crashing the whole
+        backend. Browser endpoints return 503 until browsers are installed.
+        """
         if self._running:
             return
 
-        self.playwright = await async_playwright().start()
-        self.browser = await self.playwright.chromium.launch(
-            headless=True,
-            args=[
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-gpu",
-            ],
-        )
+        try:
+            self.playwright = await async_playwright().start()
+            self.browser = await self.playwright.chromium.launch(
+                headless=True,
+                args=[
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                ],
+            )
+        except Exception as e:
+            logger.warning(f"BrowserAgentService unavailable (run `playwright install`): {e}")
+            self.playwright = None
+            self.browser = None
+            self._running = False
+            return
         self._running = True
         logger.info("BrowserAgentService started")
 
@@ -73,6 +85,8 @@ class BrowserAgentService:
         """Create a new browser session with its own context."""
         if not self._running:
             await self.start()
+        if not self._running or not self.browser:
+            raise RuntimeError("Browser unavailable: run `playwright install` on the server")
 
         context = await self.browser.new_context(
             viewport={"width": 1280, "height": 720},
