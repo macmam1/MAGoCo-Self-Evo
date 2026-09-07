@@ -542,6 +542,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                           />
                         </div>
                       </div>
+                    </div>
                     );
                   })}
                   </div>
@@ -625,7 +626,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                   onChange={e => setFormData(prev => ({ ...prev, code_content: e.target.value }))}
                   rows={20}
                   className="w-full bg-gray-900/50 border border-white/10 rounded-lg px-4 py-3 font-mono text-sm focus:ring-2 focus:ring-primary resize-none"
-                  placeholder="# Enter your skill code here\ndef main(input_data):\n    # Your skill logic here\n    return {\"result\": \"success\"}"
+                  placeholder="# Enter your skill code here&#10;def main(input_data):&#10;    # Your skill logic here&#10;    return {&quot;result&quot;: &quot;success&quot;}"
                   spellCheck={false}
                 />
               </div>
