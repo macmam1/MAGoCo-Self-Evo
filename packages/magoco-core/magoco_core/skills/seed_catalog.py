@@ -11,7 +11,7 @@ ComposioHQ/awesome-claude-skills, xcodethink collection.
 
 from __future__ import annotations
 
-from typing Any, Dict, List
+from typing import Any, Dict, List
 
 
 # Each entry: id, display_name, description, category (our SkillCategory value),

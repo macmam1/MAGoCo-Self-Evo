@@ -18,7 +18,7 @@ import uuid
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing Any, Callable, Coroutine, Dict, List, Optional
+from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

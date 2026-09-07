@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from magoco_core.core.config import settings
 from magoco_core.llm.models import ModelTier, get_model_pricing

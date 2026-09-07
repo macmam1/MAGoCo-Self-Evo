@@ -19,7 +19,7 @@ import uuid
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing Any, Callable, Coroutine, Dict, List, Optional
+from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 
 _WORD_RE = re.compile(r"[a-zA-Z\u0600-\u06FF0-9]{3,}")

@@ -18,7 +18,7 @@ Roster (roles map to orchestrator AgentRoles):
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing Dict, List, Optional
+from typing import Dict, List, Optional
 
 
 @dataclass(frozen=True)

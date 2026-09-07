@@ -10,7 +10,7 @@ Language follows the dashboard/OS locale (fa/en).
 
 from __future__ import annotations
 
-from typing Any, Dict
+from typing import Any, Dict
 
 
 def _is_fa(lang: str) -> bool:

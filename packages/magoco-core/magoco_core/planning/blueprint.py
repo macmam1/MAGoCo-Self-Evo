@@ -20,7 +20,7 @@ Better than atoms.dev's black box:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from magoco_core.planning import Plan, PlanLayer, PlanTask
 

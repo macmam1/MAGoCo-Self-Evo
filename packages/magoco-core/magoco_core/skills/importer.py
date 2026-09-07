@@ -13,7 +13,7 @@ Also accepts raw GitHub blob URLs (auto-converted to raw.githubusercontent).
 from __future__ import annotations
 
 import re
-from typing Any, Dict, Optional
+from typing import Any, Dict, Optional
 
 import httpx
 
