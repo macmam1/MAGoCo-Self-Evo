@@ -696,7 +696,6 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
             </div>
           </div>
         </div>
-      </div>
     </Modal>
   );
 }
