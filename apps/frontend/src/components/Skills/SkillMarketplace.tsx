@@ -263,6 +263,7 @@ function MarketplaceSkillCard({ skill, onInstall }: { skill: any; onInstall: (id
             <Star className="h-3 w-3 text-yellow-400" />
           </div>
         )}
+      </div>
 
       {/* Description */}
       <p className="text-sm text-text-2 line-clamp-2 mb-3">

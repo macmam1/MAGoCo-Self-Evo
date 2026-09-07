@@ -222,15 +222,16 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
               >
                 {step}
               </div>
-              {step < 4 && (
+              {step < 4 ? (
                 <div
                   className={cn(
                     "w-16 h-0.5 mx-2",
                     activeStep > step ? "bg-[var(--accent)]" : "bg-white/10"
                   )}
                 />
-              )}
-            ))}
+              ) : null}
+            </div>
+          ))}
           </div>
 
           {/* Step 1: Basic Info */}

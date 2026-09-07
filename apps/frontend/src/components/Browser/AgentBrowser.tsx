@@ -195,6 +195,7 @@ export function AgentBrowser() {
   }
 
   return (
+    <>
     <div className="flex flex-col h-full">
       {/* Browser header */}
       <div className="flex items-center justify-between p-4 border-b border-white/5 flex-nowrap">
@@ -275,7 +276,6 @@ export function AgentBrowser() {
               onCloseSession={() => closeSession(activeSessionId!)}
             />
           ) : (
-            {/* Empty state */}
             <div className="p-8 flex flex-col items-center justify-center h-full text-text-2">
               <h3>{t("browser.no_active_session")}</h3>
               <p>{t("browser.start_new_session")}</p>
@@ -378,7 +378,7 @@ export function AgentBrowser() {
         </Button>
       </div>
     </Modal>
-    </div>
+    </>
   );
 }
 

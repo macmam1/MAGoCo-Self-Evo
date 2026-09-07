@@ -645,6 +645,8 @@ export function ChatConsole() {
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-accent to-accent-2 flex items-center justify-center mr-2">
                   <User size={14} />
                 </div>
+              </div>
+            )}
 
             {/* Assistant bubble with streaming thinking */}
             {(msg.role === "assistant" || msg.role === "status") && (
