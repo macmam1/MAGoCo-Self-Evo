@@ -136,7 +136,14 @@ async def list_plans(layer: Optional[str] = None, project_id: Optional[str] = No
     return [_plan_to_dict(p) for p in plans]
 
 
-# NOTE: static GETs (/projects/..., /os/active) must stay ABOVE /{plan_id}.
+# NOTE: static GETs (/projects/..., /os/active, /team) must stay ABOVE /{plan_id}.
+
+@router.get("/team", response_model=List[Dict[str, str]])
+async def get_team_roster():
+    """Named specialist team (stable identities for memory + trust)."""
+    from magoco_core.planning.team import roster_summary
+    return roster_summary()
+
 
 @router.get("/projects/{project_id}/plans", response_model=List[Dict[str, Any]])
 async def get_project_plans(project_id: str):
@@ -420,13 +427,6 @@ async def create_blueprint(req: BlueprintRequest):
         except Exception:
             pass
     return d
-
-
-@router.get("/team", response_model=List[Dict[str, str]])
-async def get_team_roster():
-    """Named specialist team (stable identities for memory + trust)."""
-    from magoco_core.planning.team import roster_summary
-    return roster_summary()
 
 
 # ===== AI-Powered Decomposition =====

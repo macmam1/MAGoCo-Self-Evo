@@ -39,14 +39,7 @@ async def create_approval(req: ApprovalCreate):
     return store.create(req.agent_name, req.action_description, req.proposed_input)
 
 
-@router.get("/{request_id}")
-async def get_approval(request_id: str):
-    store = get_approvals_store()
-    r = store.get(request_id)
-    if not r:
-        raise HTTPException(status_code=404, detail="not found")
-    return r
-
+# NOTE: static routes must stay ABOVE /{request_id} (FastAPI matches in order).
 
 @router.post("/sweep-expired")
 async def sweep_expired(limit: int = 100):
@@ -75,6 +68,15 @@ async def trust_reset(req: TrustReset):
     """Revoke earned trust (on regression or manually)."""
     from magoco_core.security.trust import get_trust_registry
     return {"cleared": get_trust_registry().reset(req.actor, req.action)}
+
+
+@router.get("/{request_id}")
+async def get_approval(request_id: str):
+    store = get_approvals_store()
+    r = store.get(request_id)
+    if not r:
+        raise HTTPException(status_code=404, detail="not found")
+    return r
 
 
 @router.post("/{request_id}/resolve")
