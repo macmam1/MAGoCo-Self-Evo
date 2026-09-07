@@ -1,6 +1,6 @@
 """LLM Models and Pricing for Smart Gateway."""
 from dataclasses import dataclass, field
-from enum import IntEnum
+from enum import Enum, IntEnum
 from typing import Optional, List
 
 
