@@ -37,7 +37,7 @@
 | # | بخش | دستور تست | محیط لازم | وضعیت |
 |---|---|---|---|---|
 | T1 | Provider e2e کامل (10 مرحله) | `BASE_URL=http://localhost:8000 TEST_BASE_URL=https://api.openai.com/v1 TEST_API_KEY=sk-... TEST_MODEL=gpt-4o bash tests/e2e_providers.sh` | حداقل (steps 8-10) / حداکثری (steps 1-7 با Ollama) | ⏳ منتظر محیط |
-| T2 | Growth loop e2e (8/8) | `BASE_URL=http://localhost:8000 bash tests/e2e_growth_loop.sh` | حداقل | ⏳ رگرسیون بعد از تغییرات حافظه |
+| T2 | Growth loop e2e (8/8) | `BASE_URL=http://localhost:8000 bash tests/e2e_growth_loop.sh` | حداقل | ✅ PASS=8 FAIL=0 (۷ سپتامبر ۲۰۲۶، سندباکس 5b2eca99، DB تمیز) |
 | T3 | Memory v2: core-blocks CRUD + append | `PUT /memory/core-blocks` → `POST /memory/core-blocks/{label}/append` → `GET /memory/core-blocks` | حداقل | ⏳ ساخته‌شده، تست‌نشده |
 | T4 | Memory v2: supersede + current_only | `POST /memory/supersede` → `POST /memory/search {"current_only": true}` | حداقل | ⏳ ساخته‌شده، تست‌نشده |
 | T5 | Memory v2: decay + touch | `POST /memory/decay` → `POST /memory/{id}/touch` | حداقل | ⏳ ساخته‌شده، تست‌نشده |
