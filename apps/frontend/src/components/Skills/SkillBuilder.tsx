@@ -539,7 +539,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                           />
                         </div>
                       </div>
-                    ))
+                    ))}
                   </div>
 
                   {/* Returns */}
@@ -599,7 +599,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                           </label>
                           <button onClick={() => removeDependency(i)} className="text-red-400 hover:text-red-300">×</button>
                         </div>
-                      ))
+                      ))}
                     </div>
                   </div>
                 </div>
