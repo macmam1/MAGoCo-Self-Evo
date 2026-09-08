@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Key, Shield, HardDrive, Cpu, RefreshCw, Save, Palette, Activity } from "lucide-react";
+import { Key, Shield, HardDrive, Cpu, Save, Palette, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "./ThemeSwitcher";
 import { ProvidersPanel } from "./ProvidersPanel";

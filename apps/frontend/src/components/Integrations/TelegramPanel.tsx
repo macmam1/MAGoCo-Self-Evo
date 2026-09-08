@@ -49,7 +49,7 @@ export function TelegramPanel() {
   useEffect(() => {
     fetchBots();
     const interval = setInterval(fetchBots, 10000);
-    return () => setInterval(fetchBots, 10000);
+    return () => clearInterval(interval);
   }, [fetchBots]);
 
   const testBotToken = async () => {

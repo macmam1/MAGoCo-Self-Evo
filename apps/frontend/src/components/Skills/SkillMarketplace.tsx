@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { X, Search, Download, Star, Package, Shield, Zap, Globe, Code, ArrowRight } from "lucide-react";
+import { Search, Download, Star, Package, Shield } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { Button, Badge, Card, CardHeader, CardTitle, CardContent, Input } from "@/components/ui";
+import { Button, Badge } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 
 interface SkillMarketplaceProps {

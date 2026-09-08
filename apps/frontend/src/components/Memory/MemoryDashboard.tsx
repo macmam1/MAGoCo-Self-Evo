@@ -87,7 +87,7 @@ export function MemoryDashboard() {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => setActiveTab(tab.id as typeof activeTab)}
             className={cn(
               "flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors",
               "hover:text-white hover:border-[var(--accent)]",
@@ -537,7 +537,7 @@ function MemoryResultCard({ result, index }: { result: any; index: number }) {
       <div className="flex items-center gap-2 mt-2 text-[10px] text-text-2">
         {entry.tags && entry.tags.size > 0 && (
           <span className="flex gap-1">
-            {Array.from(entry.tags).slice(0, 3).map(tag => (
+            {Array.from(entry.tags as Set<string>).slice(0, 3).map((tag: string) => (
               <Badge key={tag} variant="outline" className="text-[9px] px-1.5 py-0.5">#{tag}</Badge>
             ))}
           </span>

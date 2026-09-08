@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip, Brain, Edit, GitBranch, RotateCcw, MoreHorizontal, Trash2, Zap, Swap, Settings, FileText, Target } from "lucide-react";
+import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip, Brain, Edit, GitBranch, RotateCcw, MoreHorizontal, Trash2, Zap, ArrowLeftRight, Settings, FileText, Target } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_CHAT_URL, API_URL } from "@/config";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ArtifactsPanel, Artifact } from "./ArtifactsPanel";
 
 export function ChatConsole() {
@@ -121,29 +122,6 @@ export function ChatConsole() {
     }
   }, [isConnected, fetchSessionState]);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isThinking]);
-
-  const sendChat = useCallback((text: string) => {
-    sendMessage(text, { provider_id: selected.provider_id, model: selected.model });
-  }, [sendMessage, selected]);
-
-  const handleSend = () => {
-    const trimmed = input.trim();
-    if (!trimmed || !isConnected) return;
-    sendChat(trimmed);
-    setInput("");
-    inputRef.current?.focus();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
   // ... rest of the existing functions (toggleThinking, startEditing, saveEdit, cancelEdit, forkMessage, resubmitMessage, deleteMessage)
 
   const toggleThinking = useCallback((msgId: string) => {
@@ -204,7 +182,7 @@ export function ChatConsole() {
     if (!isThinking) return;
     
     // Find the last assistant message that's being streamed
-    const streamingMsg = messages.findLast((m) => m.role === "assistant" && !m.content);
+    const streamingMsg = [...messages].reverse().find((m) => m.role === "assistant" && !m.content);
     if (!streamingMsg) return;
 
     const interval = setInterval(() => {
@@ -306,7 +284,7 @@ export function ChatConsole() {
                 className="ml-1 p-0.5 rounded hover:bg-white/[0.05] transition-colors"
                 title={t("chat.quick_switch")}
               >
-                <Swap className="h-3.5 w-3.5 text-text-2 hover:text-accent transition-colors" />
+                <ArrowLeftRight className="h-3.5 w-3.5 text-text-2 hover:text-accent transition-colors" />
               </button>
             </div>
           )}

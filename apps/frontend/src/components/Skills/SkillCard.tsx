@@ -1,4 +1,4 @@
-import { Star, Download, ExternalLink, Tag, Zap, Shield, Globe, Code } from "lucide-react";
+import { Star, Download, Tag, Zap, Shield, Globe, Code, Package } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";

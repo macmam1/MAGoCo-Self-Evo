@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { X, Trash2, Play, CheckCircle2, Circle } from "lucide-react";
+import { X, Trash2, CheckCircle2, Circle, ChevronDown } from "lucide-react";
 
 export interface ToolExecutionCardProps {
   tool: {

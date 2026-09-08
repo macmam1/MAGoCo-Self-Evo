@@ -10,11 +10,13 @@ export interface ChatMessage {
   isStreaming?: boolean;
 }
 
-export function useWebSocket(url: string) {
+export function useWebSocket(url: string, onRawMessage?: (data: any) => void) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
+  const rawHandlerRef = useRef(onRawMessage);
+  rawHandlerRef.current = onRawMessage;
 
   const connect = useCallback(() => {
     const ws = new WebSocket(url);
@@ -28,6 +30,7 @@ export function useWebSocket(url: string) {
 
     ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      rawHandlerRef.current?.(data);
 
       if (data.type === "status" && data.content === "thinking") {
         setIsThinking(true);
@@ -63,7 +66,7 @@ export function useWebSocket(url: string) {
   }, [url]);
 
   const sendMessage = useCallback(
-    (content: string, extra?: { provider_id?: string | null; model?: string | null }) => {
+    (content: string, extra?: { provider_id?: string | null; model?: string | null; type?: string }) => {
       const userMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "user",
@@ -75,6 +78,7 @@ export function useWebSocket(url: string) {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
         wsRef.current.send(JSON.stringify({
           message: content,
+          type: extra?.type ?? "chat",
           provider_id: extra?.provider_id ?? null,
           model: extra?.model ?? null,
         }));

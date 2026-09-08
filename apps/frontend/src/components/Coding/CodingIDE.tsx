@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Editor, { DiffEditor } from "@monaco-editor/react";
-import { Folder, FileText, Play, Check, RefreshCw, GitCompare, Save, FileCode } from "lucide-react";
+import { Folder, FileText, RefreshCw, GitCompare, Save, FileCode } from "lucide-react";
 
 interface FileNode {
   name: string;

@@ -1,13 +1,10 @@
 import { useState, useEffect } from "react";
 import { 
-  Search, Filter, Plus, Star, Download, Upload, 
-  Tag, Package, Code, Globe, Zap, Shield,
-  ChevronRight, ExternalLink, Eye, Edit, Trash2,
-  Menu, X, Filter as FilterIcon
+  Search, Plus, Star, Tag, Package, Globe, ChevronRight, Filter
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { Button, Badge, Card, CardHeader, CardTitle, CardContent, Input } from "@/components/ui";
+import { Button, Badge } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { SkillsTabs } from "./SkillsTabs";
 import { SkillCard } from "./SkillCard";
@@ -30,7 +27,7 @@ export function SkillsDashboard() {
   const [pagination, setPagination] = useState({ page: 1, total: 0, page_size: 20 });
   const [activeView, setActiveView] = useState<"grid" | "list">("grid");
   const [showBuilder, setShowBuilder] = useState(false);
-  const [showMarketplace, setShowMarketplace] = false;
+  const [showMarketplace, setShowMarketplace] = useState(false);
   const [selectedSkill, setSelectedSkill] = useState<any>(null);
   const [showSkillDetail, setShowSkillDetail] = useState(false);
 
@@ -183,7 +180,7 @@ export function SkillsDashboard() {
           </div>
 
           <Button variant="outline" size="sm" onClick={fetchSkills} disabled={loading}>
-            <FilterIcon className="h-4 w-4 mr-1" /> {t("skills.apply_filters")}
+            <Filter className="h-4 w-4 mr-1" /> {t("skills.apply_filters")}
           </Button>
         </div>
       </div>

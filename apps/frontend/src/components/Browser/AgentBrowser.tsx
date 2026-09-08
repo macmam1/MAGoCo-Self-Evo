@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Bot, User, Mic, Paperclip, ArrowRight, AlertTriangle } from "lucide-react";
+import { Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_AGENT_BROWSER_URL } from "@/config";
 import { cn } from "@/lib/utils";
-import { Button, Badge, Card, CardHeader, CardTitle, CardContent } from "@/components/ui";
+import { Button, Badge } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 
@@ -35,56 +35,59 @@ export function AgentBrowser() {
     setBrowserSessionCount(sessions.length);
   }, [sessions.length, setBrowserSessionCount]);
 
-  const { messages, isConnected, connect, sendMessage, ws } = useWebSocket(
-    WS_AGENT_BROWSER_URL
+  const activeIdRef = useRef<string | null>(null);
+  activeIdRef.current = activeSessionId;
+
+  const handleBrowserMessage = useCallback((data: any) => {
+    if (data.type === "session_created") {
+      setSessions((prev) => {
+        if (prev.some((s) => s.id === data.sessionId)) return prev;
+        return [
+          { id: data.sessionId, ...data.sessionData, timestamp: Date.now() },
+          ...prev,
+        ];
+      });
+      setActiveSessionId(data.sessionId);
+    } else if (data.type === "session_updated") {
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === data.sessionId
+            ? { ...s, ...data.sessionData, timestamp: Date.now() }
+            : s
+        )
+      );
+    } else if (data.type === "screenshot_frame") {
+      const activeId = activeIdRef.current;
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === activeId
+            ? { ...s, screenshot: data.screenshot, status: data.status }
+            : s
+        )
+      );
+    } else if (data.type === "server_status") {
+      setServerStatus(data.status);
+    }
+  }, []);
+
+  const { isConnected, connect, sendMessage } = useWebSocket(
+    WS_AGENT_BROWSER_URL,
+    handleBrowserMessage
   );
 
   // Connect to browser service on mount
   useEffect(() => {
     connect();
     setIsConnecting(true);
+  }, [connect]);
 
-    // Listen for session broadcast messages from the backend
-    if (ws) {
-      ws.onmessage = (event: MessageEvent) => {
-        const data = JSON.parse(event.data);
-
-        if (data.type === "session_created") {
-          setSessions((prev) => {
-            if (prev.some((s) => s.id === data.sessionId)) return prev;
-            return [
-              { id: data.sessionId, ...data.sessionData, timestamp: Date.now() },
-              ...prev,
-            ];
-          });
-          setActiveSessionId(data.sessionId);
-        } else if (data.type === "session_updated") {
-          setSessions((prev) =>
-            prev.map((s) =>
-              s.id === data.sessionId
-                ? { ...s, ...data.sessionData, timestamp: Date.now() }
-                : s
-            )
-          );
-        } else if (data.type === "screenshot_frame") {
-          setSessions((prev) =>
-            prev.map((s) =>
-              s.id === activeSessionId
-                ? { ...s, screenshot: data.screenshot, status: data.status }
-                : s
-            )
-          );
-        } else if (data.type === "server_status") {
-          setServerStatus(data.status);
-        }
-      };
-
-      // Cleanup on unmount
-      return () => {
-        ws.onmessage = null;
-      };
-    }
-  }, [ws, connect]);
+  // Confirm action handler
+  const confirmAction = useCallback(
+    (type: "navigate" | "close" | "approve", data: any) => {
+      setPendingAction({ type, data });
+    },
+    []
+  );
 
   // Send navigation command to agent
   const navigate = useCallback(
@@ -134,14 +137,6 @@ export function AgentBrowser() {
       if (activeSessionId === id) setActiveSessionId(null);
     },
     [isConnected, sendMessage, activeSessionId]
-  );
-
-  // Confirm action handler
-  const confirmAction = useCallback(
-    (type: "navigate" | "close" | "approve", data: any) => {
-      setPendingAction({ type, data });
-    },
-    []
   );
 
   const executePendingAction = useCallback(() => {
@@ -399,6 +394,7 @@ function BrowserView({
   onType,
   onCloseSession,
 }: BrowserViewProps) {
+  const { t } = useTranslation();
   return (
     <div>
       {/* Screenshot preview */}
@@ -408,7 +404,7 @@ function BrowserView({
           alt={session.title || t("browser.viewport")}
           className="w-full h-full object-cover transition-opacity duration-500"
           onError={(e) => {
-            e.target.src = "/placeholder-browser.svg";
+            (e.target as HTMLImageElement).src = "/placeholder-browser.svg";
           }}
         />
 

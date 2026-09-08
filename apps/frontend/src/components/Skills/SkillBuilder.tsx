@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { X, Plus, Minus, Save, FileCode, Download, Upload } from "lucide-react";
+import { useState } from "react";
+import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
-import { Button, Badge, Card, CardHeader, CardTitle, CardContent, Input, Textarea, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
+import { Button } from "@/components/ui";
 import { Modal } from "@/components/ui/Modal";
 
 const semverValid = (version: string): boolean => {
@@ -139,7 +139,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
   };
 
   const removeRequirement = (req: string) => {
-    setFormData(prev => ({ ...prev, requirements: prev.requirements.filter(r => r !== req) }));
+    setFormData(prev => ({ ...prev, requirements: prev.requirements.filter((r: any) => r !== req) }));
   };
 
   const addDomain = () => {
@@ -149,7 +149,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
   };
 
   const removeDomain = (domain: string) => {
-    setFormData(prev => ({ ...prev, allowed_domains: prev.allowed_domains.filter(d => d !== domain) }));
+    setFormData(prev => ({ ...prev, allowed_domains: prev.allowed_domains.filter((d: any) => d !== domain) }));
   };
 
   const addCommand = () => {
@@ -159,7 +159,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
   };
 
   const removeCommand = (cmd: string) => {
-    setFormData(prev => ({ ...prev, allowed_commands: prev.allowed_commands.filter(c => c !== cmd) }));
+    setFormData(prev => ({ ...prev, allowed_commands: prev.allowed_commands.filter((c: any) => c !== cmd) }));
   };
 
   const addDependency = () => {
@@ -173,7 +173,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
   };
 
   const removeDependency = (index: number) => {
-    setFormData(prev => ({ ...prev, dependencies: prev.dependencies.filter((_, i) => i !== index) }));
+    setFormData(prev => ({ ...prev, dependencies: prev.dependencies.filter((_: any, i: number) => i !== index) }));
   };
 
   const addParameter = () => {
@@ -190,13 +190,13 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
   };
 
   const removeParameter = (index: number) => {
-    setFormData(prev => ({ ...prev, parameters: prev.parameters.filter((_, i) => i !== index) }));
+    setFormData(prev => ({ ...prev, parameters: prev.parameters.filter((_: any, i: number) => i !== index) }));
   };
 
   const updateParameter = (index: number, field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
-      parameters: prev.parameters.map((p, i) => i === index ? { ...p, [field]: value } : p),
+      parameters: prev.parameters.map((p: any, i: number) => i === index ? { ...p, [field]: value } : p),
     }));
   };
 
@@ -584,13 +584,13 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                         <div key={i} className="flex gap-2 p-3 rounded-lg border" style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}>
                           <input
                             value={dep.skill_id}
-                            onChange={e => setFormData(prev => ({ ...prev, dependencies: prev.dependencies.map((d, j) => j === i ? { ...d, skill_id: e.target.value } : d) }))}
+                            onChange={e => setFormData(prev => ({ ...prev, dependencies: prev.dependencies.map((d: any, j: number) => j === i ? { ...d, skill_id: e.target.value } : d) }))}
                             placeholder="skill-id"
                             className="flex-1 bg-gray-800/50 border border-white/10 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary"
                           />
                           <input
                             value={dep.version_spec}
-                            onChange={e => setFormData(prev => ({ ...prev, dependencies: prev.dependencies.map((d, j) => j === i ? { ...d, version_spec: e.target.value } : d) }))}
+                            onChange={e => setFormData(prev => ({ ...prev, dependencies: prev.dependencies.map((d: any, j: number) => j === i ? { ...d, version_spec: e.target.value } : d) }))}
                             placeholder=">=1.0.0"
                             className="w-32 bg-gray-800/50 border border-white/10 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary"
                           />
@@ -598,7 +598,7 @@ export function SkillBuilder({ isOpen, onClose, onSuccess, initialSkill }: Skill
                             <input
                               type="checkbox"
                               checked={dep.required}
-                              onChange={e => setFormData(prev => ({ ...prev, dependencies: prev.dependencies.map((d, j) => j === i ? { ...d, required: e.target.checked } : d) }))}
+                              onChange={e => setFormData(prev => ({ ...prev, dependencies: prev.dependencies.map((d: any, j: number) => j === i ? { ...d, required: e.target.checked } : d) }))}
                               className="rounded border-white/20"
                             />
                             <span className="text-sm">{t("skills.required")}</span>

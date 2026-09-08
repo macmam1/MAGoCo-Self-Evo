@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { X, Copy, Download, FileCode, FileText, Image, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
+import { X, Copy, Download, FileCode, FileText, Image, ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";

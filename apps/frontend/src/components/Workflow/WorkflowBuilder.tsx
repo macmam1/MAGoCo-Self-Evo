@@ -1,10 +1,6 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { 
-  Plus, Minus, RotateCcw, Download, Upload, 
-  Trash2, Copy, Settings, Play, Pause,
-  Square, GitBranch, Diamond, Circle, 
-  ChevronDown, ChevronUp, MoreHorizontal,
-  X, Check, AlertTriangle
+  Plus, Minus, RotateCcw, Settings, Play, Square, GitBranch, Diamond, Circle
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
@@ -549,8 +545,8 @@ export function WorkflowBuilder() {
   
   // Add node from palette
   const addNode = useCallback((type: WorkflowNode["type"]) => {
-    const centerX = (-workflow.viewport.x + canvasRef.current?.width / 2 / workflow.viewport.zoom) || 400;
-    const centerY = (-workflow.viewport.y + canvasRef.current?.height / 2 / workflow.viewport.zoom) || 300;
+    const centerX = (-workflow.viewport.x + (canvasRef.current?.width ?? 800) / 2 / workflow.viewport.zoom) || 400;
+    const centerY = (-workflow.viewport.y + (canvasRef.current?.height ?? 600) / 2 / workflow.viewport.zoom) || 300;
     
     const nodeType = NODE_TYPES.find(nt => nt.type === type);
     const newNode: WorkflowNode = {
@@ -761,7 +757,7 @@ export function WorkflowBuilder() {
             return (
               <button
                 key={nodeType.type}
-                onClick={() => addNode(nodeType.type)}
+                onClick={() => addNode(nodeType.type as WorkflowNode["type"])}
                 className={cn(
                   "p-4 rounded-xl border text-left transition-colors hover:border-[var(--accent)]",
                   "flex flex-col items-center gap-2"
