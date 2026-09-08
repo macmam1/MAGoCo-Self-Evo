@@ -58,6 +58,14 @@ async def lifespan(app: FastAPI):
     await init_db()
     print("[MAGoCo] Database initialized ✓")
 
+    # Sync persisted providers into the live LLM gateway (fallback + rate limits)
+    try:
+        from app.api.v1.providers import sync_gateway_from_registry
+        n = sync_gateway_from_registry()
+        print(f"[MAGoCo] LLM gateway synced ({n} providers) ✓")
+    except Exception as e:
+        print(f"[MAGoCo] LLM gateway sync skipped: {e}")
+
     # Initialize evolution + HITL engines
     init_evolution_engine(ThreeLayerMemory())
     init_hitl_manager()

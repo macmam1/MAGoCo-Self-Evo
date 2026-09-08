@@ -168,6 +168,16 @@ class LLMGateway:
         self._rate_limit_configs[provider.name] = config
         self._rate_limit_states[provider.name] = RateLimitState()
 
+    def unregister(self, provider_name: str) -> bool:
+        """Remove a provider from the live gateway (registry delete/disable)."""
+        removed = self.providers.pop(provider_name, None) is not None
+        if provider_name in self.preferred_order:
+            self.preferred_order.remove(provider_name)
+        self.usage_costs.pop(provider_name, None)
+        self._rate_limit_configs.pop(provider_name, None)
+        self._rate_limit_states.pop(provider_name, None)
+        return removed
+
     def _generate_cache_key(self, messages: List[LLMMessage], **kwargs) -> str:
         # Create a deterministic key from messages and kwargs
         # Exclude non-deterministic items like temperature if caching is strict
@@ -333,7 +343,8 @@ class LLMGateway:
                 if settings.LLM_CACHE_ENABLED:
                     await self._set_to_cache(cache_key, response)
                 await self._update_costs(provider_name, response)
-                
+                self._add_fallback_chain(fallback_chain)
+
                 return response
             except Exception as e:
                 latency_ms = (time.time() - start_time) * 1000 if 'start_time' in locals() else 0

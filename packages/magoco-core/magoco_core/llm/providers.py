@@ -78,13 +78,15 @@ class CompatibleProvider(LLMProvider):
 
     def __init__(self, base_url: str, api_key: str = "", name: str = "custom",
                  models: Optional[List[str]] = None, timeout: float = 120.0,
-                 extra_headers: Optional[Dict[str, str]] = None):
+                 extra_headers: Optional[Dict[str, str]] = None,
+                 avail_timeout: float = 5.0):
         self._name = name
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key or "not-needed"
         self.models = models or []
         self.timeout = timeout
         self.extra_headers = extra_headers or {}
+        self.avail_timeout = avail_timeout
 
     @property
     def name(self) -> str:
@@ -93,7 +95,7 @@ class CompatibleProvider(LLMProvider):
     async def is_available(self) -> bool:
         import httpx
         try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
+            async with httpx.AsyncClient(timeout=self.avail_timeout) as client:
                 r = await client.get(f"{self.base_url}/models",
                                      headers=self._headers())
                 return r.status_code < 500

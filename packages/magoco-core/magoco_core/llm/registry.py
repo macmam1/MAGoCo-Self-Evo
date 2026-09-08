@@ -127,6 +127,7 @@ class ProviderRegistry:
             base_url=cfg.base_url, api_key=self.decrypt_key(cfg),
             name=f"{cfg.id}", models=cfg.models,
             timeout=cfg.timeout, extra_headers=cfg.extra_headers,
+            avail_timeout=min(cfg.timeout, 10.0),
         )
 
     async def fetch_and_save_models(self, provider_id: str) -> List[str]:

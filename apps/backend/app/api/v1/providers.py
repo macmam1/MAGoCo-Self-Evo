@@ -10,6 +10,42 @@ from magoco_core.llm.registry import get_provider_registry
 router = APIRouter(prefix="/providers", tags=["providers"])
 
 
+def sync_gateway_from_registry() -> int:
+    """(Re)register all enabled registry providers on the live gateway.
+
+    Keeps the serving gateway in sync with the persisted registry so that
+    providers added via API actually receive traffic (with fallback +
+    rate-limit tracking). Returns the number of registered providers.
+    """
+    from magoco_core.llm.gateway import llm_gateway
+    reg = get_provider_registry()
+    count = 0
+    for cfg in reg.list(enabled_only=True):
+        try:
+            llm_gateway.register(reg.to_runtime(cfg))
+            count += 1
+        except Exception:
+            continue
+    return count
+
+
+def _sync_one(provider_id: str, enabled: bool) -> None:
+    """Sync a single provider after create/update/delete."""
+    from magoco_core.llm.gateway import llm_gateway
+    try:
+        if not enabled:
+            llm_gateway.unregister(provider_id)
+            return
+        reg = get_provider_registry()
+        cfg = reg.get(provider_id)
+        if cfg and cfg.enabled:
+            llm_gateway.register(reg.to_runtime(cfg))
+        else:
+            llm_gateway.unregister(provider_id)
+    except Exception:
+        pass
+
+
 class ProviderCreate(BaseModel):
     name: str
     kind: str = "openai-compatible"  # ollama-local | openai-compatible
@@ -67,6 +103,7 @@ async def create_provider(req: ProviderCreate):
         raise HTTPException(status_code=400, detail="base_url required")
     cfg = reg.create(req.name, req.kind, req.base_url, req.api_key, req.models,
                      req.default_model, req.enabled, req.timeout, req.extra_headers)
+    _sync_one(cfg.id, req.enabled)
     return _public(cfg)
 
 
@@ -127,6 +164,7 @@ async def import_providers(req: ProviderImport):
         except Exception as e:
             results["errors"].append(f"{p.name}: {str(e)}")
 
+    sync_gateway_from_registry()
     return results
 
 
@@ -182,6 +220,7 @@ async def update_provider(provider_id: str, req: ProviderUpdate):
     cfg = reg.update(provider_id, **{k: v for k, v in req.model_dump().items() if v is not None})
     if not cfg:
         raise HTTPException(status_code=404, detail="not found")
+    _sync_one(provider_id, cfg.enabled)
     return _public(cfg)
 
 
@@ -190,6 +229,7 @@ async def delete_provider(provider_id: str):
     reg = get_provider_registry()
     if not reg.delete(provider_id):
         raise HTTPException(status_code=404, detail="not found")
+    _sync_one(provider_id, False)
     return {"success": True}
 
 
