@@ -55,7 +55,8 @@ class Settings(BaseSettings):
     SCHEDULER_ENABLED: bool = True
     SCHEDULER_TICK_SECONDS: float = 30.0
 
-    # ===== Storage =====
+    # ===== Gating =====
+    LLM_GATING_ENABLED: bool = False
     STORAGE_BACKEND: Literal["local", "hf_datasets", "s3", "gcs"] = "local"
     STORAGE_LOCAL_PATH: str = "/app/storage"
     HF_STORAGE_REPO: str = ""

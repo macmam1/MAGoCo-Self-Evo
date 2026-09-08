@@ -29,6 +29,7 @@ from magoco_core.memory.three_layer import ThreeLayerMemory
 from magoco_core import tools  # Ensure all tools are registered
 from magoco_core.evolution.engine import init_evolution_engine
 from magoco_core.evolution.hitl import init_hitl_manager
+from magoco_core.memory.deferred_queue import gate_check
 
 from app.api.v1.chat import router as chat_router
 from app.api.v1.integrations import router as integrations_router
@@ -206,6 +207,21 @@ async def websocket_chat_endpoint(websocket: WebSocket):
             # Use session state if not explicitly provided
             provider_id = payload.get("provider_id") or current_provider_id
             model = payload.get("model") or current_model
+            session_id = payload.get("session_id", "default")
+
+            # 1. Opt-in Capability Gate (defer if model is too weak)
+            if settings.LLM_GATING_ENABLED:
+                from magoco_core.memory.compensation import detect_needed_capabilities
+                needs = detect_needed_capabilities(user_input)
+                decision = gate_check(model or "gpt-4o-mini", user_input, task_needs=needs, session_id=session_id)
+                if decision.get("deferred"):
+                    await websocket.send_json({
+                        "type": "message",
+                        "role": "assistant",
+                        "content": f"Task deferred to queue: {decision['reason']}. Task ID: {decision['queued_id']}",
+                        "metadata": {"deferred": True, "queued_id": decision["queued_id"], "reason": decision["reason"]}
+                    })
+                    continue
 
             memory.add_turn("user", user_input)
             await websocket.send_json({"type": "status", "content": "thinking"})
