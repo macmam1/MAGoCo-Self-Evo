@@ -133,16 +133,20 @@ class LLMGateway:
     rate limiting, and fallback chain tracking."""
 
     def __init__(self):
+        logger.info(f"[LLM Gateway] Initialized instance id={id(self)}")
         self.providers: Dict[str, LLMProvider] = {}
         self.preferred_order: List[str] = []
         self._cache: Dict[str, CacheEntry] = {}  # In-memory cache
         self._lock = Lock()
-        self._cost_lock = Lock()  # For cost-related operations
+        self._cost_lock = asyncio.Lock()  # For cost-related operations
         self.usage_costs: Dict[str, float] = {}  # Tracks costs per provider
-        
+        self.fallback_chains: List["FallbackChain"] = []
+        self._max_fallback_chains = 100  # Keep last 100 chains
+
         # Rate limiting
         self._rate_limit_configs: Dict[str, RateLimitConfig] = {}
         self._rate_limit_states: Dict[str, RateLimitState] = {}
+
         
         # Fallback chain tracking
         self.fallback_chains: List["FallbackChain"] = []
