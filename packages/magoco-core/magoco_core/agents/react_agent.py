@@ -53,18 +53,14 @@ class ReActAgent:
         try:
             from magoco_core.llm import llm_gateway, LLMMessage
             if getattr(llm_gateway, "preferred_order", None):
-                if provider_id and provider_id in llm_gateway.providers:
-                    order_backup = list(llm_gateway.preferred_order)
-                    llm_gateway.preferred_order = [provider_id] + [p for p in order_backup if p != provider_id]
                 try:
                     response = await llm_gateway.complete(
                         [LLMMessage(role="user", content=user_input)],
                         model=model or "",
                     )
                     return response.content
-                finally:
-                    if provider_id:
-                        llm_gateway.preferred_order = order_backup
+                except RuntimeError:
+                    pass
         except Exception:
             pass
 
