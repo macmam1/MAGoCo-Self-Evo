@@ -42,12 +42,31 @@ class ReActAgent:
 
     async def _call_llm(self, user_input: str, provider_id: Optional[str] = None,
                           model: Optional[str] = None) -> str:
-        """Try user-configured providers first, then env gateway, then rules."""
+        """Try live gateway first (tracks fallback+rate-limit+cost), then per-provider, then env."""
         if self.llm:
             try:
                 return await self.llm(user_input)
             except Exception:
                 pass
+
+        # 0. Live LLM gateway (preferred — cost tracking, rate limits, fallback chain)
+        try:
+            from magoco_core.llm import llm_gateway, LLMMessage
+            if getattr(llm_gateway, "preferred_order", None):
+                if provider_id and provider_id in llm_gateway.providers:
+                    order_backup = list(llm_gateway.preferred_order)
+                    llm_gateway.preferred_order = [provider_id] + [p for p in order_backup if p != provider_id]
+                try:
+                    response = await llm_gateway.complete(
+                        [LLMMessage(role="user", content=user_input)],
+                        model=model or "",
+                    )
+                    return response.content
+                finally:
+                    if provider_id:
+                        llm_gateway.preferred_order = order_backup
+        except Exception:
+            pass
 
         # 1. User-configured providers (Settings -> Providers, encrypted keys)
         try:
