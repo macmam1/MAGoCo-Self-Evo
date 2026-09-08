@@ -211,18 +211,28 @@ async def websocket_chat_endpoint(websocket: WebSocket):
 
             # 1. Opt-in Capability Gate (defer if model is too weak)
             if settings.LLM_GATING_ENABLED:
-                from magoco_core.memory.compensation import detect_needed_capabilities
-                needs = detect_needed_capabilities(user_input)
-                decision = gate_check(model or "gpt-4o-mini", user_input, task_needs=needs, session_id=session_id)
-                if decision.get("deferred"):
-                    await websocket.send_json({
-                        "type": "message",
-                        "role": "assistant",
-                        "content": f"Task deferred to queue: {decision['reason']}. Task ID: {decision['queued_id']}",
-                        "metadata": {"deferred": True, "queued_id": decision["queued_id"], "reason": decision["reason"]}
-                    })
-                    continue
-
+                try:
+                    decision = gate_check(model or "gpt-4o-mini", user_input)
+                    if decision.get("deferred"):
+                        from magoco_core.memory import get_memory_store
+                        queued_id = None
+                        try:
+                            store = get_memory_store()
+                            queued_id = store.enqueue_deferred(
+                                session_id, model or "gpt-4o-mini", user_input[:2000], [],
+                                decision.get("reason", ""),
+                                decision.get("complexity", {}).get("score", 0))
+                        except Exception:
+                            pass
+                        await websocket.send_json({
+                            "type": "message",
+                            "role": "assistant",
+                            "content": f"Task deferred to queue: {decision['reason']}. Task ID: {queued_id or 'n/a'}",
+                            "metadata": {"deferred": True, "queued_id": queued_id, "reason": decision["reason"]}
+                        })
+                        continue
+                except Exception:
+                    pass
             memory.add_turn("user", user_input)
             await websocket.send_json({"type": "status", "content": "thinking"})
 
