@@ -326,6 +326,23 @@ class TelegramGateway:
 
     # ---------- Polling ----------
 
+    def ensure_bot_polling(self, bot_id: str) -> bool:
+        """Start tracked polling for one bot (safe to call repeatedly).
+
+        Registration path never flipped _running, so ad-hoc start_polling()
+        tasks exited immediately and were untracked (invisible in status,
+        un-cancellable in stop()).
+        """
+        bot = self.bots.get(bot_id)
+        if not bot or bot.mode != TelegramMode.POLLING or not bot.enabled:
+            return False
+        existing = self._polling_tasks.get(bot_id)
+        if existing is not None and not existing.done():
+            return True
+        self._running = True
+        self._polling_tasks[bot_id] = asyncio.create_task(self.start_polling(bot_id))
+        return True
+
     async def start_polling(self, bot_id: str) -> None:
         """Start long-polling for a bot."""
         bot = self.bots.get(bot_id)

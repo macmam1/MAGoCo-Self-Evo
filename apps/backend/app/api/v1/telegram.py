@@ -73,10 +73,9 @@ async def create_bot(req: BotCreate):
 
     telegram_gateway.add_bot(config)
 
-    # Auto-start if polling mode
+    # Auto-start if polling mode (tracked so status/stop see it)
     if mode == TelegramMode.POLLING:
-        import asyncio
-        asyncio.create_task(telegram_gateway.start_polling(bot_id))
+        telegram_gateway.ensure_bot_polling(bot_id)
 
     return {
         "success": True,
