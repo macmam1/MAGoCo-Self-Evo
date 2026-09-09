@@ -115,6 +115,7 @@ async def autodetect_ollama():
     cfg = await reg.autodetect_ollama()
     if not cfg:
         return {"success": False, "message": "no reachable Ollama, or already configured"}
+    _sync_one(cfg.id, cfg.enabled)
     return {"success": True, "provider": _public(cfg)}
 
 
