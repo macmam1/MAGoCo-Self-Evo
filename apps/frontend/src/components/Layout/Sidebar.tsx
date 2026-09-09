@@ -4,6 +4,7 @@ import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { useCommandStats } from "@/hooks/useCommandStats";
 import { getDensity } from "@/theme/theme";
 
 export interface SidebarTab {
@@ -72,6 +73,12 @@ export function Sidebar({
   browserSessions?: number;
 }) {
   const [compact, setCompact] = useState(getDensity() === "compact");
+  const cmd = useCommandStats();
+  const providerLabel = !cmd.online
+    ? "Offline"
+    : cmd.providers.length > 0
+      ? cmd.providers[0]
+      : "No provider";
   const [storedBrowserSessions, setStoredBrowserSessions] = useLocalStorage(
     "browser-sessions-count",
     browserSessions
@@ -117,7 +124,7 @@ export function Sidebar({
           )}
         </div>
 
-        {/* Model pill (LucidAI pattern) */}
+        {/* Provider pill — live gateway state */}
         {!compact && (
           <button
             className="w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium border"
@@ -126,10 +133,20 @@ export function Sidebar({
               borderColor: "var(--border-glass)",
               color: "var(--text-1)",
             }}
+            title={
+              cmd.online
+                ? `Live providers: ${cmd.providers.join(", ") || "none"}`
+                : "Backend offline"
+            }
           >
             <span className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              9Router · Auto
+              <span
+                className="w-2 h-2 rounded-full"
+                style={{
+                  background: cmd.online && cmd.providers.length > 0 ? "#34d399" : "#f87171",
+                }}
+              />
+              {providerLabel}
             </span>
             <Badge variant="default" className="h-2.5 w-2.5 rounded-full">
               {storedBrowserSessions > 0 && <span>{storedBrowserSessions}</span>}

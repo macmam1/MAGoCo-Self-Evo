@@ -1,13 +1,6 @@
 import { ArrowRight, Bot, Play, History, Workflow as WorkflowIcon, Globe } from "lucide-react";
 import { PageHeader } from "@/components/Layout/PageHeader";
-import { useBackendStatus } from "@/hooks/useBackendStatus";
-
-const STATS = [
-  { label: "Agents ready", value: "5", sub: "Coordinator · Coder · Reviewer…", tint: "#7c5cff" },
-  { label: "Tools registered", value: "7", sub: "guarded + audited", tint: "#22d3ee" },
-  { label: "Approvals pending", value: "3", sub: "needs your sign-off", tint: "#f5a524" },
-  { label: "Runs today", value: "12", sub: "all green", tint: "#34d399" },
-];
+import { useCommandStats } from "@/hooks/useCommandStats";
 
 const QUICK = [
   {
@@ -36,40 +29,86 @@ const QUICK = [
   },
 ];
 
+function fmt(v: number | null): string {
+  return v === null ? "—" : String(v);
+}
+
 export function CommandCenter({ onNavigate }: { onNavigate: (id: string) => void }) {
-  const backend = useBackendStatus();
+  const s = useCommandStats();
+  const providerCount = s.online ? s.providers.length : null;
+
+  const STATS = [
+    {
+      label: "Agents on roster",
+      value: fmt(s.agents),
+      sub: s.online ? "named specialists" : "backend offline",
+      tint: "#7c5cff",
+    },
+    {
+      label: "Tools registered",
+      value: fmt(s.tools),
+      sub: s.online ? "guarded + audited" : "backend offline",
+      tint: "#22d3ee",
+    },
+    {
+      label: "Approvals pending",
+      value: fmt(s.approvalsPending),
+      sub:
+        s.approvalsPending === null
+          ? "backend offline"
+          : s.approvalsPending > 0
+            ? "needs your sign-off"
+            : "queue clear",
+      tint: "#f5a524",
+    },
+    {
+      label: "Providers live",
+      value: fmt(providerCount),
+      sub:
+        providerCount === null
+          ? "backend offline"
+          : providerCount > 0
+            ? s.providers.slice(0, 3).join(" · ") + (s.providers.length > 3 ? "…" : "")
+            : "none configured",
+      tint: "#34d399",
+    },
+  ];
 
   return (
     <div className="h-full overflow-y-auto p-6">
       <div className="max-w-5xl mx-auto">
         <PageHeader
-          title="Good evening, Operator 👋"
-          description="Your multi-agent command center — agents, workflows and tools in one place."
+          title="Command Center"
+          description={
+            s.online
+              ? "Live system state — every number below comes from the running backend."
+              : "Backend offline — showing last known structure, no live data."
+          }
         />
 
-        {/* Stats (Finley pattern) */}
+        {/* Stats — all live, never mocked */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          {STATS.map((s) => (
+          {STATS.map((st) => (
             <div
-              key={s.label}
+              key={st.label}
               className="rounded-2xl border p-4"
               style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}
             >
               <div className="text-[11px] font-medium" style={{ color: "var(--text-2)" }}>
-                {s.label}
+                {st.label}
               </div>
-              <div className="text-2xl font-bold mt-1" style={{ color: s.tint }}>
-                {s.label === "Tools registered" && backend.tools ? backend.tools : s.value}
+              <div className="text-2xl font-bold mt-1" style={{ color: st.tint }}>
+                {st.value}
               </div>
-              <div className="text-[11px] mt-0.5" style={{ color: "var(--text-2)" }}>
-                {s.sub}
+              <div className="text-[11px] mt-0.5 truncate" style={{ color: "var(--text-2)" }}>
+                {st.sub}
               </div>
             </div>
           ))}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {/* Quick launch (NeuroNest pattern) */}
+          {/* Quick launch */}
           <div
             className="rounded-2xl border p-4"
             style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}
@@ -100,7 +139,7 @@ export function CommandCenter({ onNavigate }: { onNavigate: (id: string) => void
             </div>
           </div>
 
-          {/* System status */}
+          {/* System status — live only */}
           <div
             className="rounded-2xl border p-4"
             style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}
@@ -109,13 +148,26 @@ export function CommandCenter({ onNavigate }: { onNavigate: (id: string) => void
               System status
             </div>
             <div className="space-y-2.5 text-[13px]" style={{ color: "var(--text-1)" }}>
+              <Row ok={s.online} label="Backend API" />
               <Row
-                ok={backend.online}
-                label={`Backend ${backend.version ? `v${backend.version}` : ""}`}
+                ok={s.online && s.providers.length > 0}
+                label={
+                  !s.online
+                    ? "LLM providers (unknown — offline)"
+                    : s.providers.length > 0
+                      ? `LLM providers (${s.providers.length} live)`
+                      : "LLM providers (none configured)"
+                }
               />
-              <Row ok label="Permission engine + hooks" />
-              <Row ok={backend.online} label="WebSocket chat" />
-              <Row ok={false} label="LLM provider (mock — connect 9Router)" warn />
+              <Row
+                ok={s.online && (s.approvalsPending ?? 1) === 0}
+                warn={s.online && (s.approvalsPending ?? 0) > 0}
+                label={
+                  !s.online
+                    ? "Approvals queue (unknown — offline)"
+                    : `Approvals queue (${s.approvalsPending ?? 0} pending)`
+                }
+              />
               <button
                 onClick={() => onNavigate("chat")}
                 className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold rounded-lg px-3 py-2 text-white"

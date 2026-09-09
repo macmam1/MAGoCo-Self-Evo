@@ -2,10 +2,12 @@ import { useState } from "react";
 import { Search, ChevronDown, Languages } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useBackendStatus } from "@/hooks/useBackendStatus";
+import { useCommandStats } from "@/hooks/useCommandStats";
 import { applyLang, getLang } from "@/theme/theme";
 
 export function TopBar({ onOpenPalette }: { onOpenPalette: () => void }) {
   const backend = useBackendStatus();
+  const cmd = useCommandStats();
   const { t, i18n } = useTranslation();
   const [lang, setLang] = useState(getLang());
 
@@ -42,7 +44,7 @@ export function TopBar({ onOpenPalette }: { onOpenPalette: () => void }) {
 
       <div className="flex-1" />
 
-      {/* Model pill */}
+      {/* Provider pill — live gateway state, never hardcoded */}
       <span
         className="text-[11px] font-medium px-2.5 py-1 rounded-full border hidden sm:inline-flex items-center gap-1.5"
         style={{
@@ -50,8 +52,20 @@ export function TopBar({ onOpenPalette }: { onOpenPalette: () => void }) {
           borderColor: "var(--border-glass)",
           color: "var(--text-1)",
         }}
+        title={
+          !cmd.online
+            ? "Backend offline"
+            : cmd.providers.length > 0
+              ? `Live providers: ${cmd.providers.join(", ")}`
+              : "No providers configured — add one in Settings"
+        }
       >
-        9Router · Auto <ChevronDown className="h-3 w-3" />
+        {!cmd.online
+          ? "Offline"
+          : cmd.providers.length > 0
+            ? cmd.providers[0]
+            : "No provider"}{" "}
+        <ChevronDown className="h-3 w-3" />
       </span>
 
       {/* Backend status */}
