@@ -172,7 +172,11 @@ export function Sidebar({
                   key={t.id}
                   icon={t.icon}
                   label={t.label}
-                  badge={t.id === "approvals" ? "3" : undefined}
+                  badge={
+                    t.id === "approvals" && (cmd.approvalsPending ?? 0) > 0
+                      ? String(cmd.approvalsPending)
+                      : undefined
+                  }
                   active={activeTab === t.id}
                   compact={compact}
                   onClick={() => onTabChange(t.id)}
