@@ -4,23 +4,32 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import jwt
-from passlib.context import CryptContext
+import bcrypt
 
 from app.core.config import settings
 
-# ===== Password Hashing =====
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# ===== Password Hashing (bcrypt directly; passlib 1.7.4 is unmaintained
+# and incompatible with bcrypt>=4.1) =====
+
+_BCRYPT_MAX = 72
+
+
+def _pw_bytes(password: str) -> bytes:
+    pw = password.encode("utf-8")
+    if len(pw) > _BCRYPT_MAX:
+        raise ValueError("password cannot be longer than 72 bytes")
+    return pw
 
 
 def hash_password(password: str) -> str:
     """Hash a plain password."""
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(_pw_bytes(password), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
     """Verify a plain password against a hash."""
     try:
-        return pwd_context.verify(plain, hashed)
+        return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
     except Exception:
         return False
 
