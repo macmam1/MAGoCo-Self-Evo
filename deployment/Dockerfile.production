@@ -4,11 +4,10 @@
 # ===== Stage 1: Frontend Build =====
 FROM node:20-alpine AS frontend-builder
 WORKDIR /build
-COPY apps/frontend/package.json apps/frontend/pnpm-lock.yaml* ./
-RUN corepack enable && corepack prepare pnpm@latest --activate && \
-    pnpm install --frozen-lockfile || pnpm install
+COPY apps/frontend/package.json apps/frontend/package-lock.json ./
+RUN npm ci
 COPY apps/frontend/ ./
-RUN pnpm build
+RUN npm run build
 
 # ===== Stage 2: Backend =====
 FROM python:3.11-slim AS backend
@@ -26,13 +25,19 @@ RUN useradd -m -u 1000 user && \
 
 WORKDIR /home/user/app
 
-# Install Python deps
+# Install Python deps (backend + gradio UI)
 COPY --chown=user apps/backend/pyproject.toml ./
+COPY --chown=user packages/magoco-core ./packages/magoco-core
+COPY --chown=user packages/magoco-workflows ./packages/magoco-workflows
+COPY --chown=user packages/shared ./packages/shared
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir .
+    pip install --no-cache-dir . && \
+    pip install --no-cache-dir "gradio>=5.6.0" httpx
+ENV PYTHONPATH=/home/user/app/packages/magoco-core:/home/user/app/packages/magoco-workflows:/home/user/app/packages/shared
 
-# Copy backend code
+# Copy backend code + gradio UI
 COPY --chown=user apps/backend/app ./app
+COPY --chown=user apps/gradio-ui/app.py ./gradio_app.py
 
 # Copy frontend build
 COPY --from=frontend-builder --chown=user /build/dist ./static
