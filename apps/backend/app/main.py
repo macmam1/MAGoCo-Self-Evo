@@ -47,6 +47,7 @@ from app.api.v1.planning import router as planning_router
 from app.api.v1.provider_groups import router as provider_groups_router
 from app.api.v1.telegram import router as telegram_router
 from app.api.v1.agent_tasks import router as agent_tasks_router
+from app.api.v1.auth import router as auth_router
 from app.core.config import settings
 from app.db import init_db
 from app.services.browser_service import browser_service
@@ -154,9 +155,21 @@ app.include_router(planning_router, prefix="/api/v1")
 app.include_router(provider_groups_router, prefix="/api/v1")
 app.include_router(telegram_router, prefix="/api/v1")
 app.include_router(agent_tasks_router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1/auth")
+
+
+@app.get("/")
+async def root():
+    return {"name": "MAGoCo-Self-Evo", "status": "running"}
+
+
+@app.get("/api/v1/ping")
+async def ping():
+    return {"pong": "true"}
 
 
 @app.get("/health")
+@app.get("/api/v1/health")
 async def health_check():
     db_type = "postgresql" if "postgresql" in settings.DATABASE_URL else "sqlite"
     return {
