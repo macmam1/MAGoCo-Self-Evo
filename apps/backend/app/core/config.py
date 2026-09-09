@@ -1,7 +1,7 @@
 """Application settings (Pydantic v2)."""
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -72,6 +72,15 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM: str = ""
+
+    @model_validator(mode="after")
+    def _require_prod_secret(self):
+        if self.ENVIRONMENT == "production" and self.JWT_SECRET_KEY == "change-me-in-production":
+            raise ValueError(
+                "JWT_SECRET_KEY must be set to a strong random value in production "
+                "(generate with: openssl rand -hex 32)"
+            )
+        return self
 
 
 settings = Settings()
