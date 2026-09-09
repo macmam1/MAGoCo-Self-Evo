@@ -17,7 +17,7 @@ class Settings(BaseSettings):
 
     # ===== General =====
     PROJECT_NAME: str = "MAGoCo-Self-Evo"
-    ENVIRONMENT: Literal["development", "staging", "production"] = "development"
+    ENVIRONMENT: Literal["development", "test", "staging", "production"] = "development"
     DEBUG: bool = True
     LOG_LEVEL: str = "INFO"
 
