@@ -129,10 +129,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS configuration
+# CORS configuration (regex covers rotating Daytona preview subdomains)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_origin_regex=r"https://.*\.daytonaproxy01\.eu",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
