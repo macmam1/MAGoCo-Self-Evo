@@ -57,6 +57,7 @@
 | T21 | Agent-tasks API (background + cron) | background: start→running→completed؛ schedules: create/list/toggle-off-on/delete؛ cron نامعتبر→۴۰۰؛ runs history | حداقل | ✅ PASS کامل (۷ سپتامبر، سندباکس 5b2eca99) |
 | T20 | Skill bank + auto-detect + bootstrap | `POST /skills/seed-catalog` → ۲۵ اسکیل؛ `POST /skills/suggest {"text":"debug..."}` → diagnosing-bugs؛ `POST /planning/blueprint` → `suggested_skills` غیرخالی؛ ابزار `skill_search` در لیست تولز ایجنت | حداقل (بک‌اند) | ✅ PASS: seed ۲۵/۲۵، suggest دقیق (بعد از فیکس fuzzy)، blueprint=۸ پیشنهاد |
 | T18 | Project blueprint (atoms.dev-style) | `POST /planning/blueprint {"goal":"...","project_type":"auto"}` → بررسی tracks موازی + قراردادها + DoD + validate=true → اجرا تا Integration، توقف قبل از Ship برای approval | حداقل (بک‌اند) | ✅ PASS (ساختار): web_app + ۶ ترک؛ اجرای تا Ship + گیت انسانی مانده |
+| T22 | Browser automation (session+navigate+screenshot) | WS `/ws/browser`: `new_session` → `navigate https://example.com` → `request_screenshot` (فریم base64) | حداقل (بک‌اند + باینری مرورگر) | ✅ PASS (۹ سپتامبر ۲۰۲۶، سندباکس c81e5af7): `chromium_headless_shell-1234` + `install-deps` نصب شد؛ سشن ساخته شد، navigate به example.com موفق، فریم اسکرین‌شات ۸KB دریافت شد |
 
 ## 3) قرارداد
 - هر فیچر جدید که نیاز به بک‌اند زنده دارد → یک ردیف جدید به جدول بالا اضافه کن.
