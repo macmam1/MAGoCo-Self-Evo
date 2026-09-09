@@ -159,6 +159,9 @@ class ProviderRegistry:
         base = await detect_ollama()
         if not base:
             return None
+        # Use Ollama's OpenAI-compatible surface (/v1) so the same
+        # CompatibleProvider paths (/v1/models, /v1/chat/completions) work.
+        base = base.rstrip("/") + "/v1"
         cfg = self.create(name="Ollama (local)", kind="ollama-local", base_url=base)
         try:
             await self.fetch_and_save_models(cfg.id)
