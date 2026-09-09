@@ -85,7 +85,12 @@ async def lifespan(app: FastAPI):
         return result.content
 
     telegram_gateway.register_agent_executor(telegram_agent_executor)
-    print("[MAGoCo] Telegram gateway ready (bots can be added via API) ✓")
+    try:
+        n = telegram_gateway.load_bots()
+        await telegram_gateway.start()
+        print(f"[MAGoCo] Telegram gateway ready ({n} bots loaded) ✓")
+    except Exception as e:
+        print(f"[MAGoCo] Telegram gateway ready (bots can be added via API) ✓ ({e})")
 
     # Scheduler: durable cron + background tasks (kill-switchable)
     from magoco_core.agents.scheduler import get_scheduler
