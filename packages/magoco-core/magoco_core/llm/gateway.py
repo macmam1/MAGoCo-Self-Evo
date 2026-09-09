@@ -133,7 +133,6 @@ class LLMGateway:
     rate limiting, and fallback chain tracking."""
 
     def __init__(self):
-        logger.info(f"[LLM Gateway] Initialized instance id={id(self)}")
         self.providers: Dict[str, LLMProvider] = {}
         self.preferred_order: List[str] = []
         self._cache: Dict[str, CacheEntry] = {}  # In-memory cache
