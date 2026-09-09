@@ -36,7 +36,7 @@
 
 | # | بخش | دستور تست | محیط لازم | وضعیت |
 |---|---|---|---|---|
-| T1 | Provider e2e کامل (10 مرحله) | `BASE_URL=http://localhost:8000 TEST_BASE_URL=https://api.openai.com/v1 TEST_API_KEY=sk-... TEST_MODEL=gpt-4o bash tests/e2e_providers.sh` | حداقل (steps 8-10) / حداکثری (steps 1-7 با Ollama) | ✅ 6/9 PASS (۷ سپتامبر، سندباکس 5b2eca99، کلید 9Router): steps 8-10 PASS + چت واقعی PROVIDER_SMOKE_OK؛ ۳ FAIL فقط Ollama-local (بدون سرور محلی) |
+| T1 | Provider e2e کامل (10 مرحله) | `BASE_URL=http://localhost:8000 TEST_BASE_URL=https://api.openai.com/v1 TEST_API_KEY=sk-... TEST_MODEL=gpt-4o bash tests/e2e_providers.sh` | حداقل (steps 8-10) / حداکثری (steps 1-7 با Ollama) | ✅ 6/9 PASS (۷ سپتامبر، سندباکس 5b2eca99، کلید 9Router): steps 8-10 PASS + چت واقعی PROVIDER_SMOKE_OK + 🟡 نیمه Ollama-local (۹ سپتامبر، سندباکس c81e5af7): باینری Ollama v0.5.11 از GitHub نصب شد، دیمون واقعی بالا (`/api/tags`+`/v1/models` سالم)، autodetect → ثبت «Ollama (local)» + sync زنده gateway، چت واقعی local→cloud fallback با زنجیره `ollama FAIL → nine-router OK`؛ فقط inference محلی مانده چون pull مدل از registry.ollama.ai با Tier بسته است (ollama.com هم بسته؛ فقط github باز است) |
 | T2 | Growth loop e2e (8/8) | `BASE_URL=http://localhost:8000 bash tests/e2e_growth_loop.sh` | حداقل | ✅ PASS=8 FAIL=0 (۷ سپتامبر ۲۰۲۶، سندباکس 5b2eca99، DB تمیز) |
 | T3 | Memory v2: core-blocks CRUD + append | `PUT /memory/core-blocks` → `POST /memory/core-blocks/{label}/append` → `GET /memory/core-blocks` | حداقل | ✅ PASS (۷ سپتامبر، سندباکس 5b2eca99): create/get/append(v2)/list |
 | T4 | Memory v2: supersede + current_only | `POST /memory/supersede` → `POST /memory/search {"current_only": true}` | حداقل | ✅ PASS: supersede موفق، جستجوی current_only قدیمی را مخفی کرد |
