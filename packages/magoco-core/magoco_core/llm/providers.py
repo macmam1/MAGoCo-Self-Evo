@@ -200,16 +200,32 @@ def _sse_to_openai(text: str) -> Dict[str, Any]:
 async def fetch_models(base_url: str, api_key: str = "",
                        extra_headers: Optional[Dict[str, str]] = None,
                        timeout: float = 10.0) -> List[str]:
-    """GET {base}/models -> list of ids. Raises on failure (caller surfaces message)."""
+    """List model ids. Tries /v1/models, then /models, then Ollama /api/tags. Raises on total failure."""
     import httpx
     headers = {"Authorization": f"Bearer {api_key or 'not-needed'}"}
     headers.update(extra_headers or {})
+    base = base_url.rstrip("/")
+    # order: OpenAI-compat first (works for 9Router AND modern Ollama), then legacy, then native Ollama
+    last_err: Exception | None = None
     async with httpx.AsyncClient(timeout=timeout) as client:
-        r = await client.get(f"{base_url.rstrip('/')}/models", headers=headers)
-        r.raise_for_status()
-        data = r.json()
-    items = data.get("data", data if isinstance(data, list) else [])
-    return [m["id"] for m in items if isinstance(m, dict) and m.get("id")]
+        for p in ("/v1/models", "/models"):
+            try:
+                r = await client.get(f"{base}{p}", headers=headers)
+                r.raise_for_status()
+                data = r.json()
+                items = data.get("data", data if isinstance(data, list) else [])
+                ids = [m["id"] for m in items if isinstance(m, dict) and m.get("id")]
+                if ids:
+                    return ids
+            except Exception as e:
+                last_err = e
+        try:
+            r = await client.get(f"{base}/api/tags", headers=headers)
+            r.raise_for_status()
+            return [m["name"] for m in r.json().get("models", []) if isinstance(m, dict) and m.get("name")]
+        except Exception as e:
+            last_err = e
+    raise last_err if last_err else RuntimeError("no models found")
 
 
 async def detect_ollama(candidates: Optional[List[str]] = None) -> Optional[str]:
