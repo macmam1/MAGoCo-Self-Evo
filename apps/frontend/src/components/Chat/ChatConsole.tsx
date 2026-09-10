@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Send, Bot, User, ChevronDown, ChevronUp, Mic, Paperclip, Brain, Edit, GitBranch, RotateCcw, MoreHorizontal, Trash2, Zap, ArrowLeftRight, Settings, FileText, Target } from "lucide-react";
+import { Send, Bot, User, ChevronDown, ChevronUp, Brain, Edit, GitBranch, RotateCcw, MoreHorizontal, Trash2, Zap, ArrowLeftRight, Settings, FileText, Target } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_CHAT_URL, API_URL } from "@/config";
@@ -445,51 +445,29 @@ export function ChatConsole() {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center h-full overflow-y-auto px-6 py-10 max-w-3xl w-full mx-auto">
-            {/* Greeting hero (Ask Rune pattern) */}
+          <div className="flex flex-col items-center px-6 py-10 max-w-2xl w-full mx-auto">
             <h3
-              className="text-2xl font-semibold text-center"
+              className="text-xl font-semibold text-center tracking-tight"
               style={{ color: "var(--text-0)" }}
             >
               {t("hero.greeting")}
             </h3>
-            <p className="text-sm mt-1 mb-6" style={{ color: "var(--text-2)" }}>
-              {t("hero.sub")}
+            <p className="text-[13px] mt-1 mb-6 text-center" style={{ color: "var(--text-2)" }}>
+              {isConnected ? t("hero.sub") : t("hero.sub_offline")}
             </p>
 
-            {/* Example composer → fills the real input */}
-            <button
-              onClick={() =>
-                setInput("Summarise my last agent run and suggest next steps")
-              }
-              className="w-full text-left rounded-2xl border p-4 mb-3 transition-colors hover:border-[var(--accent)]"
-              style={{
-                background: "var(--bg-1)",
-                borderColor: "var(--border-glass)",
-                boxShadow: "var(--shadow-card)",
-              }}
-            >
-              <span className="text-sm block" style={{ color: "var(--text-2)" }}>
-                {t("hero.example")}
-              </span>
-              <span className="flex items-center gap-3 mt-3" style={{ color: "var(--text-2)" }}>
-                <Paperclip className="h-4 w-4" />
-                <Mic className="h-4 w-4" />
-              </span>
-            </button>
-
-            {/* Suggestion chips */}
-            <div className="flex flex-wrap justify-center gap-2 mb-8">
+            {/* Suggestion chips — plain text, fill the real input */}
+            <div className="flex flex-wrap justify-center gap-2">
               {[
-                "✉️ Draft a workflow",
-                "🔍 Review this repo",
-                "🛠️ Explain an error",
-                "📝 New skill idea",
+                "Draft a workflow",
+                "Review this repo",
+                "Explain an error",
+                "New skill idea",
               ].map((s) => (
                 <button
                   key={s}
-                  onClick={() => setInput(s.replace(/^[^\s]+\s/, ""))}
-                  className="text-xs px-3 py-1.5 rounded-full border transition-colors hover:border-[var(--accent)]"
+                  onClick={() => setInput(s)}
+                  className="text-xs px-3 py-1.5 rounded-lg border transition-colors hover:border-[var(--accent)]"
                   style={{
                     background: "var(--bg-1)",
                     borderColor: "var(--border-glass)",
@@ -499,33 +477,6 @@ export function ChatConsole() {
                   {s}
                 </button>
               ))}
-            </div>
-
-            {/* Previous chats (Finley-card pattern, mock for now) */}
-            <div className="w-full">
-              <div className="text-xs font-semibold mb-2" style={{ color: "var(--text-2)" }}>
-                {t("hero.previous")} (128)
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {[
-                  ["Q3 agent performance review", "2h ago"],
-                  ["Debug workflow timeout", "Yesterday"],
-                  ["Plan v2 UI theme", "2d ago"],
-                ].map(([title, when]) => (
-                  <div
-                    key={title}
-                    className="rounded-xl border p-3"
-                    style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}
-                  >
-                    <div className="text-xs font-medium truncate" style={{ color: "var(--text-0)" }}>
-                      {title}
-                    </div>
-                    <div className="text-[10px] mt-1" style={{ color: "var(--text-2)" }}>
-                      {when}
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
           </div>
         )}
