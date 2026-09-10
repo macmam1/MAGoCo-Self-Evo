@@ -97,7 +97,7 @@ export function CommandCenter({ onNavigate }: { onNavigate: (id: string) => void
               <div className="text-[11px] font-medium" style={{ color: "var(--text-2)" }}>
                 {st.label}
               </div>
-              <div className="text-2xl font-bold mt-1" style={{ color: st.tint }}>
+              <div className="text-2xl font-bold mt-1 mono" style={{ color: st.tint }}>
                 {st.value}
               </div>
               <div className="text-[11px] mt-0.5 truncate" style={{ color: "var(--text-2)" }}>

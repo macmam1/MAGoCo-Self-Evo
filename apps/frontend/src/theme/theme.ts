@@ -9,6 +9,13 @@ export interface ThemeMeta {
 
 export const THEMES: ThemeMeta[] = [
   {
+    id: "console",
+    name: "Console",
+    blurb: "Operator instrument — flat ink, mono data, one signal accent",
+    dark: true,
+    preview: ["#0b0d11", "#6e8efb", "#34d399"],
+  },
+  {
     id: "fusion",
     name: "Fusion",
     blurb: "Ask Rune × NeuroNest × LucidAI — pro command center",
@@ -105,8 +112,8 @@ function prefersLight(): boolean {
 }
 
 function resolveTheme(id: string): string {
-  if (id === "system") return prefersLight() ? "light" : "fusion";
-  return THEMES.some((t) => t.id === id) ? id : "fusion";
+  if (id === "system") return prefersLight() ? "light" : "console";
+  return THEMES.some((t) => t.id === id) ? id : "console";
 }
 
 function paint(themeId: string) {
@@ -118,7 +125,7 @@ function paint(themeId: string) {
 }
 
 export function getTheme(): string {
-  return load(THEME_KEY, "fusion");
+  return load(THEME_KEY, "console");
 }
 
 export function applyTheme(id: string) {
@@ -182,7 +189,7 @@ export function applyLang(lang: string) {
 
 /** Apply every persisted preference. Call once at startup. */
 export function applyAllPreferences() {
-  paint(load(THEME_KEY, "fusion"));
+  paint(load(THEME_KEY, "console"));
   const font = FONTS.find((f) => f.id === load(FONT_KEY, "sans")) ?? FONTS[0];
   document.documentElement.style.setProperty("--font-body", font.stack);
   document.documentElement.dataset.density = load(DENSITY_KEY, "default");

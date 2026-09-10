@@ -26,6 +26,26 @@
       #0a0a10;
   }
 
+  [data-theme="console"] {
+    /* Console: operator instrument — flat ink, hairlines, one signal accent, mono data */
+    --font-body: "Vazirmatn", "Inter", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --bg-0: #0b0d11;
+    --bg-1: #11141a;
+    --bg-2: #181c24;
+    --bg-glass: rgba(255, 255, 255, 0.025);
+    --border-glass: rgba(255, 255, 255, 0.09);
+    --accent: #6e8efb;
+    --accent-2: #f5a524;
+    --accent-3: #34d399;
+    --text-0: #eef1f6;
+    --text-1: #9aa3b2;
+    --text-2: #5d6675;
+    --shadow-card: none;
+    --shadow-pop: 0 12px 40px rgba(0, 0, 0, 0.55);
+    --app-bg: #0b0d11;
+  }
+
   [data-theme="midnight"] {
     /* Deep space dark theme (default) */
     --bg-0: #0a0a0f;
@@ -125,6 +145,13 @@
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 12px;
+  }
+
+  /* Monospace data: ids, counts, timestamps, model names */
+  .mono {
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
   }
 
   /* Gradient text */
