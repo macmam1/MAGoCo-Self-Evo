@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Sidebar } from "@/components/Layout/Sidebar";
 import { TopBar } from "@/components/Layout/TopBar";
+import { StatusBar } from "@/components/Layout/StatusBar";
 import { CommandPalette } from "@/components/Layout/CommandPalette";
 import { CommandCenter } from "@/components/Dashboard/CommandCenter";
 import { ChatConsole } from "@/components/Chat/ChatConsole";
@@ -122,6 +123,7 @@ export default function App() {
           {activeTab === "history" && <ExecutionHistory />}
           {activeTab === "settings" && <SettingsDashboard />}
         </main>
+        <StatusBar />
       </div>
       <CommandPalette
         open={paletteOpen}
