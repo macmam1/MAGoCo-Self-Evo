@@ -66,3 +66,9 @@ files/
 *.key
 secrets/
 credentials/
+
+# build artifacts (regenerated locally)
+/apps/frontend/tsconfig.tsbuildinfo
+/apps/frontend/tsconfig.node.tsbuildinfo
+/apps/frontend/vite.config.js
+/apps/frontend/vite.config.d.ts
