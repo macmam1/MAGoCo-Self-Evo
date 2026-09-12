@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   MessageSquare,
@@ -16,7 +16,8 @@ import {
 } from "lucide-react";
 import { Sidebar } from "@/components/Layout/Sidebar";
 import { TopBar } from "@/components/Layout/TopBar";
-import { StatusBar } from "@/components/Layout/StatusBar";
+import { Taskbar } from "@/components/OS/Taskbar";
+import { Desktop, type WinState } from "@/components/OS/WindowManager";
 import { CommandPalette } from "@/components/Layout/CommandPalette";
 import { CommandCenter } from "@/components/Dashboard/CommandCenter";
 import { ChatConsole } from "@/components/Chat/ChatConsole";
@@ -57,7 +58,10 @@ const TABS: AppTab[] = [
 ];
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [windows, setWindows] = useState<WinState[]>([]);
+  const [focusedId, setFocusedId] = useState<string | null>(null);
+  const zTop = useRef(10);
+  const cascade = useRef(0);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const { showShortcuts, setShowShortcuts } = useKeyboardShortcuts();
 
@@ -84,52 +88,179 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const navigate = useCallback((id: string) => setActiveTab(id), []);
+  const navigate = useCallback(
+    (id: string) => {
+      const tab = TABS.find((tb) => tb.id === id);
+      if (!tab) return;
+      setWindows((prev) => {
+        const existing = prev.find((w) => w.tabId === id);
+        zTop.current += 1;
+        if (existing) {
+          setFocusedId(existing.winId);
+          return prev.map((w) =>
+            w.winId === existing.winId ? { ...w, minimized: false, z: zTop.current } : w,
+          );
+        }
+        const n = cascade.current++;
+        const dw = Math.max(900, window.innerWidth - 320);
+        const dh = Math.max(600, window.innerHeight - 140);
+        const w = Math.round(dw * 0.86);
+        const h = Math.round(dh * 0.9);
+        const winId = `win-${Date.now().toString(36)}-${n}`;
+        setFocusedId(winId);
+        return [
+          ...prev,
+          {
+            winId,
+            tabId: id,
+            title: t(tab.label),
+            x: 40 + (n % 6) * 36,
+            y: 24 + (n % 6) * 28,
+            w: Math.min(w, dw),
+            h: Math.min(h, dh),
+            z: zTop.current,
+            minimized: false,
+            maximized: false,
+          },
+        ];
+      });
+    },
+    [t],
+  );
+
+  const renderContent = useCallback(
+    (tabId: string) => {
+      switch (tabId) {
+        case "dashboard":
+          return <CommandCenter onNavigate={navigate} />;
+        case "chat":
+          return <ChatConsole />;
+        case "planning":
+          return <PlanningPanel />;
+        case "ide":
+          return <CodingIDE />;
+        case "workflows":
+          return <WorkflowDesigner />;
+        case "browser":
+          return <AgentBrowser />;
+        case "skills":
+          return <SkillsDashboard />;
+        case "growth":
+          return <GrowthDashboard />;
+        case "approvals":
+          return <ApprovalGates />;
+        case "integrations":
+          return <IntegrationsDashboard />;
+        case "history":
+          return <Processes />;
+        case "settings":
+          return <SettingsDashboard />;
+        default:
+          return null;
+      }
+    },
+    [navigate],
+  );
+
+  const focusWindow = useCallback((winId: string) => {
+    zTop.current += 1;
+    const z = zTop.current;
+    setFocusedId(winId);
+    setWindows((prev) => prev.map((w) => (w.winId === winId ? { ...w, z } : w)));
+  }, []);
+
+  const onWindowClick = useCallback(
+    (winId: string) => {
+      const w = windows.find((x) => x.winId === winId);
+      if (!w) return;
+      if (w.minimized) {
+        zTop.current += 1;
+        const z = zTop.current;
+        setFocusedId(winId);
+        setWindows((prev) => prev.map((x) => (x.winId === winId ? { ...x, minimized: false, z } : x)));
+      } else if (winId === focusedId) {
+        setWindows((prev) => prev.map((x) => (x.winId === winId ? { ...x, minimized: true } : x)));
+        const rest = windows.filter((x) => x.winId !== winId && !x.minimized);
+        setFocusedId(rest.length > 0 ? rest.sort((a, b) => b.z - a.z)[0].winId : null);
+      } else {
+        focusWindow(winId);
+      }
+    },
+    [windows, focusedId, focusWindow],
+  );
+
+  const updateWindow = useCallback((winId: string, patch: Partial<WinState>) => {
+    setWindows((prev) => prev.map((w) => (w.winId === winId ? { ...w, ...patch } : w)));
+  }, []);
+
+  const closeWindow = useCallback(
+    (winId: string) => {
+      setWindows((prev) => {
+        const rest = prev.filter((w) => w.winId !== winId);
+        if (focusedId === winId) {
+          const vis = rest.filter((w) => !w.minimized).sort((a, b) => b.z - a.z);
+          setFocusedId(vis.length > 0 ? vis[0].winId : null);
+        }
+        return rest;
+      });
+    },
+    [focusedId],
+  );
+
+  const focusedTab = windows.find((w) => w.winId === focusedId)?.tabId ?? "";
 
   // Cross-tab navigation events (e.g. Growth "Apply" -> open Skills tab)
   useEffect(() => {
     const onOpenSkill = (e: Event) => {
-      setActiveTab("skills");
+      navigate("skills");
       try {
         const detail = (e as CustomEvent).detail;
         if (detail?.skill_id) localStorage.setItem("magoco:open-skill", JSON.stringify(detail));
       } catch {}
     };
-    const onOpenApprovals = () => setActiveTab("approvals");
+    const onOpenApprovals = () => navigate("approvals");
     window.addEventListener("magoco:open-skill", onOpenSkill);
     window.addEventListener("magoco:open-approvals", onOpenApprovals);
     return () => {
       window.removeEventListener("magoco:open-skill", onOpenSkill);
       window.removeEventListener("magoco:open-approvals", onOpenApprovals);
     };
-  }, []);
+  }, [navigate]);
 
   return (
     <div className="h-screen flex text-gray-100" style={{ background: "var(--app-bg)" }}>
-      <Sidebar tabs={tabs} activeTab={activeTab} onTabChange={navigate} />
+      <Sidebar tabs={tabs} activeTab={focusedTab} onTabChange={navigate} />
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar onOpenPalette={() => setPaletteOpen(true)} />
-        <main className="flex-1 overflow-hidden">
-          {activeTab === "dashboard" && <CommandCenter onNavigate={navigate} />}
-          {activeTab === "chat" && <ChatConsole />}
-          {activeTab === "planning" && <PlanningPanel />}
-          {activeTab === "ide" && <CodingIDE />}
-          {activeTab === "workflows" && <WorkflowDesigner />}
-          {activeTab === "browser" && <AgentBrowser />}
-          {activeTab === "skills" && <SkillsDashboard />}
-          {activeTab === "growth" && <GrowthDashboard />}
-          {activeTab === "approvals" && <ApprovalGates />}
-          {activeTab === "integrations" && <IntegrationsDashboard />}
-          {activeTab === "history" && <Processes />}
-          {activeTab === "settings" && <SettingsDashboard />}
-        </main>
-        <StatusBar />
+        <Desktop
+          windows={windows}
+          focusedId={focusedId}
+          renderContent={renderContent}
+          onFocus={focusWindow}
+          onMove={(id, x, y) => updateWindow(id, { x, y })}
+          onResize={(id, w, h) => updateWindow(id, { w, h })}
+          onMinimize={(id) => updateWindow(id, { minimized: true })}
+          onToggleMax={(id) => {
+            const w = windows.find((x) => x.winId === id);
+            if (w) updateWindow(id, { maximized: !w.maximized });
+          }}
+          onClose={closeWindow}
+        />
+        <Taskbar
+          windows={windows}
+          focusedId={focusedId}
+          onStart={() => setPaletteOpen(true)}
+          onWindowClick={onWindowClick}
+        />
       </div>
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         tabs={tabs}
-        onNavigate={navigate}
+        onNavigate={(id) => {
+          navigate(id);
+          setPaletteOpen(false);
+        }}
       />
       <KeyboardShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
     </div>
