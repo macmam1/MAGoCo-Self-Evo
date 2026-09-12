@@ -10,7 +10,6 @@ Single container with Nginx reverse proxy:
 
 - `/` → Static frontend (Vite + React)
 - `/api/*` → FastAPI backend
-- `/gradio/*` → Simple Gradio interface
 - `/docs` → Swagger UI
 
 ## 🚀 Local Development
@@ -34,7 +33,6 @@ git checkout -b main
 # Copy production files
 cp deployment/Dockerfile.production Dockerfile
 cp deployment/README.hf.md README.md
-cp apps/gradio-ui/app.py gradio_app.py
 cp -r apps/frontend apps/backend packages .
 
 # Push

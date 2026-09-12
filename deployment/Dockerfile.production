@@ -25,19 +25,17 @@ RUN useradd -m -u 1000 user && \
 
 WORKDIR /home/user/app
 
-# Install Python deps (backend + gradio UI)
+# Install Python deps (backend only; the React frontend above is the single UI)
 COPY --chown=user apps/backend/pyproject.toml ./
 COPY --chown=user packages/magoco-core ./packages/magoco-core
 COPY --chown=user packages/magoco-workflows ./packages/magoco-workflows
 COPY --chown=user packages/shared ./packages/shared
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir . && \
-    pip install --no-cache-dir "gradio>=5.6.0" httpx
+    pip install --no-cache-dir .
 ENV PYTHONPATH=/home/user/app/packages/magoco-core:/home/user/app/packages/magoco-workflows:/home/user/app/packages/shared
 
-# Copy backend code + gradio UI
+# Copy backend code
 COPY --chown=user apps/backend/app ./app
-COPY --chown=user apps/gradio-ui/app.py ./gradio_app.py
 
 # Copy frontend build
 COPY --from=frontend-builder --chown=user /build/dist ./static

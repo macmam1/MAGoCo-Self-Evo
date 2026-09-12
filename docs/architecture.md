@@ -13,8 +13,7 @@
 MAGoCo-Self-Evo/
 ├── apps/
 │   ├── backend/               # FastAPI + WebSocket + Celery Worker
-│   ├── frontend/              # Vite + React + Tailwind + Shadcn/ui (Chat + IDE + Settings + Workflow)
-│   └── gradio-ui/             # Gradio lightweight alternative UI
+│   ├── frontend/              # Vite + React + Tailwind (the single UI shell)
 ├── gateways/                  # پل‌های ارتباطی خارجی
 │   ├── telegram/              # ربات تلگرام دوطرفه (متن، وویس، تاپیک‌ها)
 │   └── webhooks/              # وب‌هوک‌های عمومی و ایونت‌ها
