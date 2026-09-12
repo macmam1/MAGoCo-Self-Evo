@@ -48,6 +48,7 @@ from app.api.v1.provider_groups import router as provider_groups_router
 from app.api.v1.telegram import router as telegram_router
 from app.api.v1.agent_tasks import router as agent_tasks_router
 from app.api.v1.browser import router as browser_router
+from app.api.v1.agents import router as agents_router
 from app.api.v1.auth import router as auth_router
 from app.core.config import settings
 from app.db import init_db
@@ -158,6 +159,7 @@ app.include_router(provider_groups_router, prefix="/api/v1")
 app.include_router(telegram_router, prefix="/api/v1")
 app.include_router(agent_tasks_router, prefix="/api/v1")
 app.include_router(browser_router, prefix="/api/v1")
+app.include_router(agents_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1/auth")
 
 

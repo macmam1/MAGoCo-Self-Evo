@@ -141,12 +141,16 @@ class Scheduler:
 
     # ---------- runs ----------
 
-    def _new_run(self, kind: str, ref_id: str, agent_name: str) -> str:
+    def _new_run(self, kind: str, ref_id: str, agent_name: str, agent_id: str = "") -> str:
         rid = uuid.uuid4().hex[:8]
         with self._cur() as cur:
-            cur.execute("INSERT INTO task_runs VALUES (?,?,?,?,?,?,?,?,?)",
+            try:
+                cur.execute("ALTER TABLE task_runs ADD COLUMN agent_id TEXT DEFAULT ''")
+            except Exception:
+                pass
+            cur.execute("INSERT INTO task_runs VALUES (?,?,?,?,?,?,?,?,?,?)",
                         (rid, kind, ref_id, agent_name, "running", "", "",
-                         datetime.utcnow().isoformat(), None))
+                         datetime.utcnow().isoformat(), None, agent_id))
         return rid
 
     def _finish_run(self, rid: str, status: str, result: str = "", error: str = "") -> None:
@@ -174,9 +178,10 @@ class Scheduler:
         self._dispatch = fn
 
     async def run_background(self, agent_name: str, task: str,
-                             provider_id: str = "", model: str = "") -> str:
+                             provider_id: str = "", model: str = "",
+                             agent_id: str = "") -> str:
         """Start a one-shot background task. Returns run id immediately."""
-        rid = self._new_run("background", "", agent_name)
+        rid = self._new_run("background", "", agent_name, agent_id)
         self._bg_tasks[rid] = asyncio.create_task(self._execute(rid, agent_name, task, provider_id, model))
         return rid
 

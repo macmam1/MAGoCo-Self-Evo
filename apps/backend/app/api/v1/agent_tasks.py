@@ -6,6 +6,8 @@ from typing import Dict, List, Optional, Any
 
 from magoco_core.agents.scheduler import get_scheduler, cron_due
 from magoco_core.core.config import settings
+from app.api.deps import get_optional_identity
+from fastapi import Depends
 
 router = APIRouter(prefix="/agent-tasks", tags=["agent-tasks"])
 
@@ -31,13 +33,15 @@ def _guard() -> None:
 
 
 @router.post("/background", response_model=Dict[str, Any])
-async def start_background(req: BackgroundRequest):
+async def start_background(req: BackgroundRequest, ident: Optional[dict] = Depends(get_optional_identity)):
     """Start a background task. Returns run id immediately; poll for result."""
     _guard()
     if not req.task.strip():
         raise HTTPException(status_code=400, detail="task required")
+    agent_id = (ident or {}).get("id", "") if (ident or {}).get("kind") == "agent" else ""
     rid = await get_scheduler().run_background(req.agent_name, req.task,
-                                               req.provider_id, req.model)
+                                               req.provider_id, req.model,
+                                               agent_id=agent_id)
     return {"run_id": rid, "status": "running"}
 
 
