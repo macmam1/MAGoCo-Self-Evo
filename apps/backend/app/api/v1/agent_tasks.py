@@ -49,6 +49,15 @@ async def check_background(run_id: str):
     return run
 
 
+@router.post("/background/{run_id}/cancel", response_model=Dict[str, Any])
+async def cancel_background(run_id: str):
+    """Kill a running background task (process-manager semantics)."""
+    _guard()
+    if not get_scheduler().cancel_run(run_id):
+        raise HTTPException(status_code=404, detail="run not found or already final")
+    return {"run_id": run_id, "status": "cancelled"}
+
+
 @router.get("/runs", response_model=List[Dict[str, Any]])
 async def list_runs(limit: int = 50):
     """Reviewable history of background + scheduled runs."""

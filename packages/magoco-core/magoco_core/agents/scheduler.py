@@ -87,6 +87,7 @@ class Scheduler:
         self.conn.commit()
         self._dispatch: Optional[Callable[..., Coroutine[Any, Any, str]]] = None
         self._loop_task: Optional[asyncio.Task] = None
+        self._bg_tasks: Dict[str, asyncio.Task] = {}
         self._running = False
         self._in_flight: set = set()
 
@@ -176,8 +177,21 @@ class Scheduler:
                              provider_id: str = "", model: str = "") -> str:
         """Start a one-shot background task. Returns run id immediately."""
         rid = self._new_run("background", "", agent_name)
-        asyncio.create_task(self._execute(rid, agent_name, task, provider_id, model))
+        self._bg_tasks[rid] = asyncio.create_task(self._execute(rid, agent_name, task, provider_id, model))
         return rid
+
+    def cancel_run(self, rid: str) -> bool:
+        """Cancel a running background task. Returns False if unknown/already final."""
+        task = self._bg_tasks.pop(rid, None)
+        if task is not None and not task.done():
+            task.cancel()
+            return True
+        run = self.get_run(rid)
+        if run and run.get("status") == "running":
+            # Task handle lost (e.g. restart) but row still open — close it honestly.
+            self._finish_run(rid, "cancelled", error="cancelled by operator (handle lost)")
+            return True
+        return False
 
     async def _execute(self, rid: str, agent_name: str, task: str,
                        provider_id: str, model: str) -> None:
@@ -191,6 +205,8 @@ class Scheduler:
         except Exception as e:
             logger.error(f"[scheduler] run {rid} failed: {e}")
             self._finish_run(rid, "failed", error=str(e))
+        finally:
+            self._bg_tasks.pop(rid, None)
 
     async def _tick(self) -> None:
         """Fire due schedules (single-flight each)."""

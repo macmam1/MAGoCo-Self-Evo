@@ -24,7 +24,7 @@ import { CodingIDE } from "@/components/Coding/CodingIDE";
 import { WorkflowDesigner } from "@/components/Workflow/WorkflowDesigner";
 import { ApprovalGates } from "@/components/Approvals/ApprovalGates";
 import { IntegrationsDashboard } from "@/components/Integrations/IntegrationsDashboard";
-import { ExecutionHistory } from "@/components/History/ExecutionHistory";
+import { Processes } from "@/components/History/Processes";
 import { SettingsDashboard } from "@/components/Settings/SettingsDashboard";
 import { AgentBrowser } from "@/components/Browser/AgentBrowser";
 import { SkillsDashboard } from "@/components/Skills/SkillsDashboard";
@@ -120,7 +120,7 @@ export default function App() {
           {activeTab === "growth" && <GrowthDashboard />}
           {activeTab === "approvals" && <ApprovalGates />}
           {activeTab === "integrations" && <IntegrationsDashboard />}
-          {activeTab === "history" && <ExecutionHistory />}
+          {activeTab === "history" && <Processes />}
           {activeTab === "settings" && <SettingsDashboard />}
         </main>
         <StatusBar />
