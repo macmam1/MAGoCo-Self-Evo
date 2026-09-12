@@ -19,24 +19,30 @@ export function ArtifactsPanel({
   onClose, 
   isOpen,
   onCopy,
-  onDownload 
+  onDownload,
+  docked = false,
 }: { 
   artifacts: Artifact[]; 
   onClose: () => void; 
   isOpen: boolean;
   onCopy?: (content: string) => void;
   onDownload?: (artifact: Artifact) => void;
+  docked?: boolean;
 }) {
   const { t } = useTranslation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  if (!isOpen || artifacts.length === 0) return null;
+  if (!isOpen || (!docked && artifacts.length === 0)) return null;
 
-  return (
-    <div className="fixed right-0 top-0 bottom-0 z-40 flex flex-col animate-slide-right">
-      <div className="absolute left-0 top-0 bottom-0 w-full bg-black/50" onClick={onClose} aria-hidden="true" />
-      
-      <div className="relative flex flex-col w-full max-w-xl h-full bg-white/5 border-l border-white/10 backdrop-blur-xl">
+  const body = (
+    <div
+      className={
+        docked
+          ? "flex flex-col h-full"
+          : "relative flex flex-col w-full max-w-xl h-full bg-white/5 border-l border-white/10 backdrop-blur-xl"
+      }
+      style={docked ? { background: "var(--bg-1)" } : undefined}
+    >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-white/5">
           <div className="flex items-center gap-2">
@@ -76,7 +82,15 @@ export function ArtifactsPanel({
             <p>{t("artifacts.empty")}</p>
           </div>
         )}
-      </div>
+    </div>
+  );
+
+  if (docked) return body;
+
+  return (
+    <div className="fixed right-0 top-0 bottom-0 z-40 flex flex-col animate-slide-right">
+      <div className="absolute left-0 top-0 bottom-0 w-full bg-black/50" onClick={onClose} aria-hidden="true" />
+      {body}
     </div>
   );
 }

@@ -42,17 +42,17 @@ export interface AppTab {
 }
 
 const TABS: AppTab[] = [
-  { id: "dashboard", label: "nav.dashboard", group: "groups.general", icon: LayoutDashboard },
-  { id: "chat", label: "nav.chat", group: "groups.general", icon: MessageSquare },
-  { id: "planning", label: "nav.planning", group: "groups.general", icon: Target },
-  { id: "ide", label: "nav.ide", group: "groups.general", icon: Code },
-  { id: "workflows", label: "nav.workflows", group: "groups.general", icon: Workflow },
-  { id: "browser", label: "nav.browser", group: "groups.general", icon: Globe },
-  { id: "skills", label: "nav.skills", group: "groups.general", icon: Package },
-  { id: "growth", label: "nav.growth", group: "groups.general", icon: TrendingUp },
-  { id: "approvals", label: "nav.approvals", group: "groups.operations", icon: CheckSquare },
-  { id: "integrations", label: "nav.integrations", group: "groups.operations", icon: Link },
-  { id: "history", label: "nav.history", group: "groups.operations", icon: Clock },
+  { id: "dashboard", label: "nav.dashboard", group: "groups.observe", icon: LayoutDashboard },
+  { id: "chat", label: "nav.chat", group: "groups.build", icon: MessageSquare },
+  { id: "planning", label: "nav.planning", group: "groups.build", icon: Target },
+  { id: "ide", label: "nav.ide", group: "groups.build", icon: Code },
+  { id: "workflows", label: "nav.workflows", group: "groups.build", icon: Workflow },
+  { id: "browser", label: "nav.browser", group: "groups.build", icon: Globe },
+  { id: "skills", label: "nav.skills", group: "groups.build", icon: Package },
+  { id: "growth", label: "nav.growth", group: "groups.grow", icon: TrendingUp },
+  { id: "approvals", label: "nav.approvals", group: "groups.observe", icon: CheckSquare },
+  { id: "integrations", label: "nav.integrations", group: "groups.connect", icon: Link },
+  { id: "history", label: "nav.history", group: "groups.observe", icon: Clock },
   { id: "settings", label: "nav.settings", group: "groups.system", icon: Settings },
 ];
 

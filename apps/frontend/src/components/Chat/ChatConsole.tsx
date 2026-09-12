@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Send, Bot, User, ChevronDown, ChevronUp, Brain, Edit, GitBranch, RotateCcw, MoreHorizontal, Trash2, Zap, ArrowLeftRight, Settings, FileText, Target } from "lucide-react";
+import { Send, Bot, User, ChevronDown, ChevronUp, Brain, Edit, GitBranch, RotateCcw, MoreHorizontal, Trash2, Zap, ArrowLeftRight, Settings, FileText, Target, PanelRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { WS_CHAT_URL, API_URL } from "@/config";
@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ArtifactsPanel, Artifact } from "./ArtifactsPanel";
+import { SplitPane } from "@/components/Layout/SplitPane";
 
 export function ChatConsole() {
   const { t } = useTranslation();
@@ -255,19 +256,35 @@ export function ChatConsole() {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-white/5">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent to-accent-2 flex items-center justify-center">
-            <Bot size={16} />
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ background: "var(--accent)" }}
+          >
+            <Bot size={16} className="text-white" />
           </div>
           <div>
-            <h2 className="font-medium text-sm text-white">مگوکو هوش مصنوعی</h2>
+            <h2 className="font-medium text-sm text-white">{t("chat.title")}</h2>
             <p className="text-xs text-text-2">
-              {isConnected ? "متصل به بک‌اند" : "اتصال برقرار نشده"}
+              {isConnected ? t("chat.connected") : t("chat.offline")}
             </p>
           </div>
         </div>
 
         {/* Provider/Model Status & Quick Switch */}
         <div className="flex items-center gap-2">
+          {/* Artifacts pane toggle */}
+          <button
+            onClick={() => setShowArtifacts((v) => !v)}
+            className="p-2 rounded-lg border transition-colors hover:border-[var(--accent)]"
+            style={{
+              borderColor: showArtifacts ? "var(--accent)" : "var(--border-glass)",
+              background: "var(--bg-2)",
+              color: showArtifacts ? "var(--accent)" : undefined,
+            }}
+            title={t("chat.artifacts_toggle")}
+          >
+            <PanelRight className="h-4 w-4 text-text-2" />
+          </button>
           {/* Current Provider/Model Display */}
           {(currentProvider || selected.provider_id || selected.model) && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border glass-soft"
@@ -442,8 +459,14 @@ export function ChatConsole() {
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Workspace: chat + docked artifacts side-by-side */}
+      <div className="flex-1 min-h-0">
+        <SplitPane
+          showRight={showArtifacts}
+          left={
+            <>
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 && (
           <div className="flex flex-col items-center px-6 py-10 max-w-2xl w-full mx-auto">
             <h3
@@ -680,7 +703,7 @@ export function ChatConsole() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="پیام خود را وارد کنید..."
+            placeholder={t("chat.input_placeholder")}
             className="w-full bg-transparent border-none outline-none resize-none text-sm text-text-0 placeholder:text-text-2 min-h-[40px] max-h-32"
             rows={1}
             disabled={!isConnected}
@@ -688,8 +711,8 @@ export function ChatConsole() {
           <div className="flex justify-between items-center mt-2">
             <div className="text-xs text-text-2">
               {isConnected
-                ? "فشار دادن Enter برای ارسال،Shift+Enter برای خط جدید"
-                : "در حال اتصال..."}
+                ? t("chat.hint_send")
+                : t("chat.hint_connecting")}
             </div>
             <button
               onClick={handleSend}
@@ -706,29 +729,34 @@ export function ChatConsole() {
           </div>
         </div>
       </div>
-
-      {/* Artifacts Panel */}
-      <ArtifactsPanel
-        artifacts={artifacts}
-        isOpen={showArtifacts}
-        onClose={() => setShowArtifacts(false)}
-        onCopy={(content) => {
-          navigator.clipboard.writeText(content);
-        }}
-        onDownload={(artifact) => {
-          const blob = new Blob([artifact.content], { 
-            type: artifact.type === "code" ? "text/plain" : 
-                  artifact.type === "html" ? "text/html" : 
-                  artifact.type === "image" ? "image/*" : "text/plain" 
-          });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `${artifact.title.replace(/\s+/g, "_")}.${artifact.language || "txt"}`;
-          a.click();
-          URL.revokeObjectURL(url);
-        }}
-      />
+            </>
+          }
+          right={
+            <ArtifactsPanel
+              docked
+              artifacts={artifacts}
+              isOpen={showArtifacts}
+              onClose={() => setShowArtifacts(false)}
+              onCopy={(content) => {
+                navigator.clipboard.writeText(content);
+              }}
+              onDownload={(artifact) => {
+                const blob = new Blob([artifact.content], {
+                  type: artifact.type === "code" ? "text/plain" :
+                        artifact.type === "html" ? "text/html" :
+                        artifact.type === "image" ? "image/*" : "text/plain"
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${artifact.title.replace(/\s+/g, "_")}.${artifact.language || "txt"}`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+            />
+          }
+        />
+      </div>
     </div>
   );
 }
