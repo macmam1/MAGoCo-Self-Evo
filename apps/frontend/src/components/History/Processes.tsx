@@ -207,7 +207,8 @@ export function Processes() {
                   key={`r-${r.id}`}
                   mono
                   cells={[
-                    (r.agent_name ? `${r.agent_name} · ` : "") + (r.id || "").slice(0, 8),
+                    (r.agent_id ? `[${String(r.agent_id).slice(0, 11)}] ` : "") +
+                      ((r.agent_name ? `${r.agent_name} · ` : "") + (r.id || "").slice(0, 8)),
                     r.kind || "agent",
                     <span key="s" style={{ color: statusColor(r.status) }}>{r.status}</span>,
                     (r.finished_at || "").slice(0, 16).replace("T", " "),
