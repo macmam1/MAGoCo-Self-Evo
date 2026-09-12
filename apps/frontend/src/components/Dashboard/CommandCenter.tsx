@@ -11,8 +11,8 @@ function fmt(v: number | null | undefined): string {
 function Section({ title, right, children }: { title: string; right?: string; children: React.ReactNode }) {
   return (
     <div
-      className="rounded-xl border"
-      style={{ background: "var(--bg-1)", borderColor: "var(--border-glass)" }}
+      className="rounded-2xl border glass"
+      style={{ borderColor: "var(--border-glass)" }}
     >
       <div
         className="flex items-center justify-between px-3 py-2 border-b"
@@ -250,7 +250,7 @@ export function CommandCenter({ onNavigate }: { onNavigate: (id: string) => void
           <button
             onClick={() => onNavigate("chat")}
             className="text-xs font-semibold px-3 py-2 rounded-lg text-white"
-            style={{ background: "var(--accent)" }}
+            style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-2))" }}
           >
             {t("ops.open_chat")}
           </button>

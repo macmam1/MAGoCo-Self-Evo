@@ -9,6 +9,13 @@ export interface ThemeMeta {
 
 export const THEMES: ThemeMeta[] = [
   {
+    id: "aurora",
+    name: "Aurora",
+    blurb: "AI-dashboard genre — deep navy, aurora glow, glass cards",
+    dark: true,
+    preview: ["#070912", "#7c5cff", "#22d3ee"],
+  },
+  {
     id: "console",
     name: "Console",
     blurb: "Operator instrument — flat ink, mono data, one signal accent",
@@ -112,8 +119,8 @@ function prefersLight(): boolean {
 }
 
 function resolveTheme(id: string): string {
-  if (id === "system") return prefersLight() ? "light" : "console";
-  return THEMES.some((t) => t.id === id) ? id : "console";
+  if (id === "system") return prefersLight() ? "light" : "aurora";
+  return THEMES.some((t) => t.id === id) ? id : "aurora";
 }
 
 function paint(themeId: string) {
@@ -125,7 +132,7 @@ function paint(themeId: string) {
 }
 
 export function getTheme(): string {
-  return load(THEME_KEY, "console");
+  return load(THEME_KEY, "aurora");
 }
 
 export function applyTheme(id: string) {
@@ -189,7 +196,7 @@ export function applyLang(lang: string) {
 
 /** Apply every persisted preference. Call once at startup. */
 export function applyAllPreferences() {
-  paint(load(THEME_KEY, "console"));
+  paint(load(THEME_KEY, "aurora"));
   const font = FONTS.find((f) => f.id === load(FONT_KEY, "sans")) ?? FONTS[0];
   document.documentElement.style.setProperty("--font-body", font.stack);
   document.documentElement.dataset.density = load(DENSITY_KEY, "default");

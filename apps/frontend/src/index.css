@@ -26,6 +26,30 @@
       #0a0a10;
   }
 
+  [data-theme="aurora"] {
+    /* Aurora: AI-dashboard genre — deep navy, aurora glows, glass cards */
+    --font-body: "Vazirmatn", "Inter", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --bg-0: #070912;
+    --bg-1: rgba(255, 255, 255, 0.032);
+    --bg-2: rgba(255, 255, 255, 0.055);
+    --bg-glass: rgba(255, 255, 255, 0.04);
+    --border-glass: rgba(255, 255, 255, 0.09);
+    --accent: #7c5cff;
+    --accent-2: #22d3ee;
+    --accent-3: #34d399;
+    --text-0: #f2f4fa;
+    --text-1: #a7aec0;
+    --text-2: #5f6578;
+    --shadow-card: 0 12px 40px rgba(0, 0, 0, 0.5);
+    --shadow-pop: 0 20px 70px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(124, 92, 255, 0.14);
+    --app-bg:
+      radial-gradient(1100px 520px at 12% -10%, rgba(124, 92, 255, 0.16), transparent 60%),
+      radial-gradient(900px 480px at 105% 5%, rgba(34, 211, 238, 0.1), transparent 55%),
+      radial-gradient(700px 500px at 50% 115%, rgba(124, 92, 255, 0.07), transparent 60%),
+      #070912;
+  }
+
   [data-theme="console"] {
     /* Console: operator instrument — flat ink, hairlines, one signal accent, mono data */
     --font-body: "Vazirmatn", "Inter", system-ui, sans-serif;

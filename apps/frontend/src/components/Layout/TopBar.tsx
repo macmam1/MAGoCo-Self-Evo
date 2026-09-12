@@ -99,7 +99,7 @@ export function TopBar({ onOpenPalette }: { onOpenPalette: () => void }) {
       {/* User */}
       <div
         className="h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white"
-        style={{ background: "var(--accent)" }}
+        style={{ background: "linear-gradient(135deg, var(--accent), var(--accent-2))" }}
       >
         O
       </div>
