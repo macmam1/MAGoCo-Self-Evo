@@ -63,7 +63,9 @@ class AgentIdentityStore:
                 (rec["id"], rec["name"], rec["owner"], json.dumps(rec["scopes"]),
                  rec["key_hash"], rec["key_hint"], rec["status"],
                  rec["created_at"], rec["last_used_at"]))
-        return {**rec, "api_key": secret}
+        out = self._public(rec)
+        out["api_key"] = secret
+        return out
 
     def list(self) -> List[Dict[str, Any]]:
         with self._lock:
@@ -101,10 +103,14 @@ class AgentIdentityStore:
     def _public(d: Dict[str, Any]) -> Dict[str, Any]:
         d = dict(d)
         d.pop("key_hash", None)
-        try:
-            d["scopes"] = json.loads(d.get("scopes") or "[]")
-        except Exception:
-            d["scopes"] = []
+        sc = d.get("scopes")
+        if isinstance(sc, list):
+            d["scopes"] = sc
+        else:
+            try:
+                d["scopes"] = json.loads(sc or "[]")
+            except Exception:
+                d["scopes"] = []
         return d
 
 
