@@ -355,7 +355,7 @@ class LLMGateway:
                 
                 # Record failure
                 self._record_failure(provider_name)
-                logger.error(f"[LLM Gateway] {provider.name} failed: {e}, trying next...", exc_info=True)
+                logger.error(f"[LLM Gateway] {provider.name} failed: {e!r}, trying next...", exc_info=True)
                 
                 # Update fallback chain
                 fallback_chain.attempts.append(FallbackAttempt(
