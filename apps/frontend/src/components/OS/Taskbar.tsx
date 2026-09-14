@@ -101,6 +101,15 @@ export function Taskbar({ windows, focusedId, onStart, onWindowClick }: TaskbarP
       <span className="mono text-[11px] shrink-0 tabular-nums" style={{ color: "var(--text-1)" }}>
         {clock}
       </span>
+
+      {/* Build stamp — proves which version is on screen */}
+      <span
+        className="mono text-[10px] shrink-0 hidden lg:inline"
+        style={{ color: "var(--text-2)" }}
+        title="Frontend build id"
+      >
+        {typeof __BUILD_ID__ !== "undefined" ? __BUILD_ID__ : "dev"}
+      </span>
     </footer>
   );
 }
